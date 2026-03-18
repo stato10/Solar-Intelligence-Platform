@@ -6,6 +6,9 @@
 - Finalize architecture
 - Finalize DB schema
 - Finalize API contracts
+- Finalize UI direction (premium, non-generic)
+- Finalize design tokens (color, typography, spacing, radius, motion)
+- Finalize component baseline for web app (`shadcn/ui` customization rules)
 
 ---
 
@@ -22,6 +25,7 @@ DONE WHEN:
 - All services run locally
 - DB connected
 - Basic auth working
+- Base design system is wired in web app (tokens + core layout shell)
 
 ---
 
@@ -84,6 +88,7 @@ DONE WHEN:
 
 DONE WHEN:
 - User can fully interact with app
+- UI is consistent with design tokens and non-generic visual direction
 
 ---
 

@@ -1,16 +1,21 @@
 # Architecture
 
+## Architecture Freeze (Phase 0)
+- Baseline status: **Frozen for Phase 1 scaffold**
+- Approved runtime path: `Web App -> Node.js API -> Decision Layer -> Python Engine -> External APIs`
+- Change policy: architecture changes require explicit approval and synchronized updates to `PROJECT_BOOTSTRAP.md` and `EXECUTION_PLAN.md`
+
 ## System Overview
-Mobile-first, service-oriented monorepo:
-- `apps/mobile` (Expo React Native): user-facing application.
+Web-first, service-oriented monorepo:
+- `apps/web` (Next.js): user-facing application.
 - `apps/api` (NestJS): auth, business orchestration, persistence, AI summary service.
 - `apps/engine` (FastAPI): deterministic scoring/calculation service.
 - `packages/types` and `packages/config`: shared contracts/config.
 
-The API orchestrates provider data and engine results, persists outputs, then returns typed responses to the mobile app.
+The API orchestrates provider data and engine results, persists outputs, then returns typed responses to the web app.
 
 ## Tech Stack
-- Client: Expo, React Native, TypeScript, TanStack Query, form validation with Zod.
+- Client: Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui, Radix UI, Framer Motion, TanStack Query, Zod.
 - Backend: Node.js, NestJS, REST, OpenAPI docs.
 - Engine: Python, FastAPI, Pydantic, NumPy/Pandas where useful.
 - Data: PostgreSQL (primary), optional Redis cache abstraction.
@@ -18,7 +23,7 @@ The API orchestrates provider data and engine results, persists outputs, then re
 - Infra: Docker Compose, `.env`, local health checks.
 
 ## Components
-- Mobile app: onboarding, dashboard, details screens, user interaction.
+- Web app: onboarding, dashboard, details pages, user interaction.
 - API auth module: JWT issuance, password hashing, route guards.
 - API domain modules: sites, systems, forecasts, scores, risks, opportunities, finance, insights.
 - Decision layer (inside API):
@@ -29,7 +34,7 @@ The API orchestrates provider data and engine results, persists outputs, then re
 - AI insight service: summarize deterministic outputs with fallback template summaries.
 
 ## Runtime Flow
-`Mobile/Web App` -> `Node.js API` -> `Decision Layer` -> `Python Engine` -> `External APIs`
+`Web App` -> `Node.js API` -> `Decision Layer` -> `Python Engine` -> `External APIs`
 
 - Decision Layer includes:
   - Solar Orchestrator Agent
@@ -46,7 +51,7 @@ The API orchestrates provider data and engine results, persists outputs, then re
   - Air Quality
 
 ## Data Flow
-1. Mobile app sends authenticated request to API.
+1. Web app sends authenticated request to API.
 2. API loads site/system/device/tariff context from PostgreSQL.
 3. Solar Orchestrator Agent triggers provider fetch and normalization flow.
 4. API/provider layer fetches solar/weather/air-quality data from abstractions.
@@ -54,7 +59,7 @@ The API orchestrates provider data and engine results, persists outputs, then re
 6. Recommendation Router prioritizes actions from deterministic results.
 7. API stores outputs and returns typed response.
 8. API optionally generates AI summary from deterministic payload only.
-9. Mobile app renders metrics, alerts, opportunities, and explanations.
+9. Web app renders metrics, alerts, opportunities, and explanations.
 
 ## Deployment
 - Local: Docker Compose with API, engine, and PostgreSQL (plus optional Redis).

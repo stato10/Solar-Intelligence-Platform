@@ -33,7 +33,7 @@ The system transforms raw solar and weather data into:
 - Advanced anomaly detection
 
 ## Tech Stack (High Level)
-- Frontend: Next.js + React + TypeScript + Tailwind
+- Frontend: Next.js + React + TypeScript + Tailwind + shadcn/ui + Radix UI + Framer Motion
 - Backend: Node.js (NestJS)
 - Engine: Python (FastAPI)
 - Database: PostgreSQL

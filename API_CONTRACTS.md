@@ -1,67 +1,115 @@
 # API Contracts
 
+## Contract Freeze (Phase 0)
+- Baseline status: **Frozen for Phase 1 scaffold**
+- Change policy: contract changes require explicit approval and synchronized updates to `DB_SCHEMA.md`, `ARCHITECTURE.md`, and `PROJECT_BOOTSTRAP.md`
+- Rule: no breaking response shape changes within the same API version
+
 ## Base Information
-- Base URL (local): `http://localhost:3000/api`
+- Base URL (local): `http://localhost:3000/api/v1`
 - Authentication: `Authorization: Bearer <jwt>`
-- Versioning strategy: `v1` namespace via route prefix or module versioning
+- Versioning strategy: strict path versioning (`/api/v1/...`)
 - Content type: `application/json`
+
+## Versioning Rules (Strict)
+- Every public endpoint MUST be prefixed with `/api/v1`.
+- Backward-incompatible contract changes MUST use a new version (`/api/v2`).
+- Optional fields may be added in `v1`; required fields may not be removed or renamed.
+- Internal API-to-engine contracts must be versioned explicitly in DTO/schema names.
+
+## Standard Response Envelope
+- All successful responses must use:
+  - `success` (boolean)
+  - `data` (object | array | null)
+  - `meta` (object, optional)
+- `meta` should include:
+  - `requestId` (string)
+  - `timestamp` (ISO-8601)
+  - `version` (`v1`)
 
 ## Endpoints
 ### Auth
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
 
 ### Sites
-- `POST /api/sites`
-- `GET /api/sites/:id`
-- `PUT /api/sites/:id`
+- `POST /api/v1/sites`
+- `GET /api/v1/sites/:id`
+- `PUT /api/v1/sites/:id`
 
 ### Solar System
-- `POST /api/sites/:siteId/system`
-- `GET /api/sites/:siteId/system`
-- `PUT /api/sites/:siteId/system`
+- `POST /api/v1/sites/:siteId/system`
+- `GET /api/v1/sites/:siteId/system`
+- `PUT /api/v1/sites/:siteId/system`
 
 ### Forecast
-- `GET /api/sites/:siteId/forecast/today`
-- `GET /api/sites/:siteId/forecast/week`
-- `GET /api/sites/:siteId/forecast/month`
+- `GET /api/v1/sites/:siteId/forecast/today`
+- `GET /api/v1/sites/:siteId/forecast/week`
+- `GET /api/v1/sites/:siteId/forecast/month`
 
 ### Soiling
-- `GET /api/sites/:siteId/soiling`
+- `GET /api/v1/sites/:siteId/soiling`
 
 ### Heat
-- `GET /api/sites/:siteId/heat`
+- `GET /api/v1/sites/:siteId/heat`
 
 ### Risks
-- `GET /api/sites/:siteId/risks`
+- `GET /api/v1/sites/:siteId/risks`
 
 ### Optimization
-- `GET /api/sites/:siteId/opportunities`
+- `GET /api/v1/sites/:siteId/opportunities`
 
 ### Financial
-- `GET /api/sites/:siteId/financial-summary`
+- `GET /api/v1/sites/:siteId/financial-summary`
 
 ### Insights
-- `GET /api/sites/:siteId/insights/daily`
-- `GET /api/sites/:siteId/insights/weekly`
+- `GET /api/v1/sites/:siteId/insights/daily`
+- `GET /api/v1/sites/:siteId/insights/weekly`
 
 ## Contract Notes
 - API responses should be typed DTOs with stable keys.
-- All computed endpoints should include:
+- All computed endpoints MUST include in `data`:
   - `siteId`
   - `generatedAt`
-  - `source` metadata where relevant
+  - `source` (provider/engine source metadata)
 - AI insight endpoints must include deterministic metric references used for summary generation.
 - Internal API-to-engine calls must use explicit schemas and timeout/retry policy.
 
+## Computed Endpoint Minimum Data Contract
+- Forecast endpoints:
+  - `siteId`, `generatedAt`, `source`
+  - `expectedDailyKwh`, `expectedWeeklyKwh`, `expectedMonthlyKwh`
+  - `peakWindowStart`, `peakWindowEnd`
+- Soiling endpoint:
+  - `siteId`, `generatedAt`, `source`
+  - `score`, `estimatedLossPercent`, `cleaningRecommended`, `recommendedCleaningDate`, `explanation`
+- Heat endpoint:
+  - `siteId`, `generatedAt`, `source`
+  - `score`, `estimatedLossPercent`, `peakHeatWindowStart`, `peakHeatWindowEnd`
+- Risks endpoint:
+  - `siteId`, `generatedAt`, `source`
+  - `alerts` (array of `{ riskType, severity, message, expectedStart, expectedEnd }`)
+- Optimization endpoint:
+  - `siteId`, `generatedAt`, `source`
+  - `recommendations`, `opportunityScore`, `estimatedValue`
+- Financial endpoint:
+  - `siteId`, `generatedAt`, `source`
+  - `dailyEstimatedSavings`, `monthlyEstimatedSavings`, `yearlyOptimizationPotential`
+- Insights endpoints:
+  - `siteId`, `generatedAt`
+  - `summaryType`, `summaryText`, `recommendations`
+  - `deterministicReferences` (IDs/keys to forecast/score/financial metrics used)
+
 ## Error Model
 - Standard error payload:
+  - `success` (`false`)
   - `statusCode` (number)
   - `error` (string)
   - `message` (string | string[])
   - `timestamp` (ISO-8601)
   - `path` (string)
+  - `requestId` (string)
 - Common status codes:
   - `400` validation error
   - `401` unauthorized

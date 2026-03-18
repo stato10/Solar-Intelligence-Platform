@@ -1,7 +1,23 @@
 # Database Schema
 
+## Schema Freeze (Phase 0)
+- Baseline status: **Frozen for Phase 1 scaffold**
+- Change policy: schema changes require explicit approval and synchronized updates to `API_CONTRACTS.md`, `ARCHITECTURE.md`, and `PROJECT_BOOTSTRAP.md`
+- Rule: no destructive schema changes in `v1` without staged migration plan
+
 ## Database Engine
 - PostgreSQL (primary system of record)
+
+## Naming and Type Conventions (Strict)
+- Table names: `snake_case` plural.
+- Column names: `snake_case`.
+- Primary keys: `id` (`uuid` preferred).
+- Foreign keys: `<parent>_id` with explicit FK constraints.
+- Timestamps: UTC, ISO-8601 semantics at API boundary.
+- Monetary values: `numeric(12,4)` (not floating point).
+- Percent and score values:
+  - score fields constrained to `0..100`
+  - percent fields constrained to `0..100`
 
 ## Entities and Tables
 ### `users`
@@ -43,6 +59,20 @@
 ### `insight_summaries`
 - `id`, `site_id`, `summary_type`, `summary_text`, `generated_at`
 
+## Required Constraints (Freeze Baseline)
+- `users.email` unique and not null.
+- `users.role` check-constrained to allowed roles (`owner`, `admin` for MVP baseline).
+- `sites.user_id` not null FK -> `users.id` (delete cascade or restrict based on policy).
+- `solar_systems.site_id` unique FK -> `sites.id` (one system per site in MVP).
+- `user_devices.site_id` unique FK -> `sites.id` (one device profile per site in MVP).
+- `tariffs.site_id` not null FK -> `sites.id`.
+- `soiling_scores.score`, `heat_loss_scores.score` check `between 0 and 100`.
+- `estimated_loss_percent` fields check `between 0 and 100`.
+- `risk_alerts.severity` constrained enum (`low`, `medium`, `high`, `critical`).
+- `optimization_recommendations.priority` constrained enum (`low`, `medium`, `high`).
+- All `created_at` / `updated_at` fields default to `now()` where applicable.
+- `updated_at` auto-update trigger on mutable tables.
+
 ## Relationships
 - `users (1) -> (N) sites`
 - `sites (1) -> (1) solar_systems`
@@ -67,9 +97,22 @@
 - Query optimization indexes:
   - `risk_alerts(site_id, severity, expected_start)`
   - `optimization_recommendations(site_id, priority, valid_from)`
+  - `insight_summaries(site_id, generated_at desc)`
+  - `soiling_scores(site_id, created_at desc)`
+  - `heat_loss_scores(site_id, created_at desc)`
+
+## Seed Data Baseline (Phase 1 Ready)
+- Create one demo user with one site and one solar system.
+- Seed one device profile and one tariff row for demo site.
+- Seed minimum 7 days of weather and air quality snapshots for local demos.
+- Seed one forecast run, soiling score, heat score, risk alert list, and recommendation sample.
 
 ## Migration Notes
 - Use migration files only (no schema drift by manual DB edits).
 - Add backward-compatible migrations first; run destructive changes in controlled steps.
 - Seed local dev with baseline user/site/system/sample snapshots.
 - Version DB changes alongside API/engine contract updates.
+- Migration checklist:
+  - apply migration on clean DB
+  - apply migration on non-empty DB
+  - rollback path verified in staging

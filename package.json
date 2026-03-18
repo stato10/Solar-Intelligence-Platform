@@ -1,0 +1,27 @@
+{
+  "name": "solar-intelligence-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/types",
+    "packages/config"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api,engine -c cyan,magenta,yellow \"npm run dev:web\" \"npm run dev:api\" \"npm run dev:engine\"",
+    "dev:web": "npm --workspace web run dev",
+    "dev:api": "npm --workspace @sip/api run start:dev",
+    "dev:engine": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload --app-dir apps/engine",
+    "build": "npm run build:web && npm run build:api",
+    "build:web": "npm --workspace web run build",
+    "build:api": "npm --workspace @sip/api run build",
+    "lint": "npm run lint:web && npm run lint:api",
+    "lint:web": "npm --workspace web run lint",
+    "lint:api": "npm --workspace @sip/api run lint",
+    "engine:setup": "python -m pip install -r apps/engine/requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

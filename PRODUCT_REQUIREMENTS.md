@@ -29,7 +29,7 @@
 - As a solar owner, I want plain-language insights so I can act without reading raw metrics.
 
 ## Acceptance Criteria
-- User can onboard a site and solar system from the mobile app without manual DB edits.
+- User can onboard a site and solar system from the web app without manual DB edits.
 - Forecast/soiling/heat/risk/opportunity/financial endpoints return valid typed payloads.
 - AI summary never fabricates deterministic values and supports non-AI fallback.
 - End-to-end flow works locally using mock provider adapters.
@@ -39,4 +39,4 @@
 - V1 excludes direct hardware inverter/sensor integration.
 - External providers are abstracted; mocks are allowed until live adapters stabilize.
 - PostgreSQL is the system of record; Redis caching is optional in MVP.
-- Mobile app is the primary client in MVP (iOS/Android via Expo).
+- Web app is the primary client in MVP (Next.js).

@@ -1,5 +1,10 @@
 # MVP Scope
 
+## Scope Freeze (Phase 0)
+- Baseline status: **Frozen for Phase 1 start**
+- Change policy: scope changes require explicit approval and update to `EXECUTION_PLAN.md` + `TODO.md`
+- Rule: no "nice-to-have" additions before core outputs are complete
+
 ## Goal
 Deliver a working product that provides clear daily value to solar users.
 

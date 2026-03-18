@@ -9,7 +9,7 @@ The platform is a software-only AI-assisted application that helps residential s
 The system must NOT depend on hardware integration in V1.
 
 Primary delivery target:
-- mobile application (iOS and Android) in MVP
+- web application in MVP
 
 Engineering objective:
 - production-grade architecture
@@ -43,13 +43,15 @@ TECH STACK (PROFESSIONAL + EASY TO BUILD)
 
 Use the following stack:
 
-Client App (Mobile-first):
-- Expo (React Native)
-- React Native + TypeScript
-- Expo Router
-- NativeWind (Tailwind for React Native) optional
+Frontend (Web App):
+- Next.js (App Router)
+- React + TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Radix UI
+- Framer Motion
 - TanStack Query
-- Victory Native or React Native Chart Kit for charts
+- Recharts
 - React Hook Form + Zod for forms and validation
 
 Backend API:
@@ -92,7 +94,7 @@ MONOREPO STRUCTURE
 Create a monorepo with this structure:
 
 /apps
-  /mobile     -> Expo React Native app
+  /web        -> Next.js web app
   /api        -> NestJS backend
   /engine     -> FastAPI Python service
 
@@ -289,9 +291,13 @@ insight_summaries
 RUNTIME DECISION FLOW
 ==================================================
 
+Architecture freeze rule:
+- This runtime flow is locked for Phase 1.
+- Any change must be explicitly approved and documented in `ARCHITECTURE.md` and `EXECUTION_PLAN.md`.
+
 Use this runtime flow as the default architecture:
 
-Mobile/Web App
+Web App
       ->
 Node.js API
       ->
@@ -491,9 +497,9 @@ If real implementation is incomplete, create clean interfaces and mock responses
 APPLICATION CLIENT REQUIREMENTS
 ==================================================
 
-Build a polished MVP mobile app with:
+Build a polished MVP web app with:
 
-Screens:
+Pages:
 - Login
 - Register
 - Onboarding wizard
@@ -516,8 +522,8 @@ Main dashboard should display:
 
 Use reusable UI components.
 Keep the design clean and modern.
-Use a mobile-first responsive approach.
-Support safe area, offline state handling, and loading/error states.
+Use a desktop-first dashboard UX with full responsive support for tablet/mobile.
+Support loading/empty/error states and polished interaction feedback.
 
 ==================================================
 AI INSIGHT LAYER
@@ -578,7 +584,7 @@ DELIVERABLES
 Generate:
 1. Full monorepo folder structure
 2. Core backend modules
-3. Core client app screens/components
+3. Core web app pages/components
 4. Python engine with calculation endpoints
 5. Docker setup
 6. .env.example
@@ -593,10 +599,10 @@ Work in phases.
 
 Phase 1:
 - scaffold monorepo
-- setup mobile/api/engine
+- setup web/api/engine
 - auth + basic DB
 - site and solar system CRUD
-- basic mobile onboarding + dashboard shell
+- basic web onboarding + dashboard shell
 
 Phase 2:
 - forecast provider abstraction
@@ -610,11 +616,11 @@ Phase 3:
 - dashboard endpoints
 - financial summary
 - optimization opportunities
-- charts and actionable recommendation UX in mobile app
+- charts and actionable recommendation UX in web app
 
 Phase 4:
 - AI insight summaries
-- polish client app UX
+- polish web app UX
 - finalize README and docker
 - harden observability/logging/error reporting
 
