@@ -10,7 +10,7 @@
 - [x] 0.7 Mark Phase 0 complete and lock docs baseline
 
 ## In Progress
-- [ ] Phase 1.10 Finalize Phase 1 checklist and local run verification notes
+- [ ] Phase 2.3 Add temporary in-memory relation checks between entities
 
 ## Blocked
 - [ ] OpenAI production key not yet available (AI summary validation limited to fallback path)
@@ -29,6 +29,9 @@
 - [x] Phase 1.7 Add web design-system baseline (`shadcn/ui`, tokens, shell layout)
 - [x] Phase 1.8 Add web route skeleton (`/auth`, `/dashboard`, `/settings`) placeholder pages
 - [x] Phase 1.9 Add API-engine integration placeholders (internal client + stub service)
+- [x] Phase 1.10 Finalize Phase 1 checklist and local run verification notes
+- [x] Phase 2.1 Define domain entities in API modules (`users`, `sites`, `solar-systems`, `devices`, `tariffs`)
+- [x] Phase 2.2 Add CRUD route extensions (`:id`, update) for domain modules
 
 ## Next Phases (Queued)
 - [ ] Phase 1: Project scaffold (web/api/engine + docker + base auth)
