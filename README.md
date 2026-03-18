@@ -60,4 +60,5 @@ npm run build
 - Phase 1.5 API auth scaffold (register/login/me): completed
 - Phase 1.6 API config scaffold (`env`, `app`, `database`): completed
 - Phase 1.7 web design-system baseline (`shadcn/ui`, tokens, shell): completed
+- Phase 1.8 web route skeleton (`/auth`, `/dashboard`, `/settings`): completed
 - Business logic: not started

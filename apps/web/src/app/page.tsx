@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck, Sparkles, Sun } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -26,12 +27,14 @@ export default function Home() {
           interactions.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Button size="lg">
+          <Button asChild size="lg">
+            <Link href="/dashboard">
             Start Phase 2 Domain Work
             <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
-          <Button variant="outline" size="lg">
-            Review API Contracts
+          <Button asChild variant="outline" size="lg">
+            <Link href="/auth">Review Auth Flow</Link>
           </Button>
         </div>
       </motion.div>

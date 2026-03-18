@@ -1,4 +1,5 @@
 import { SunMedium } from "lucide-react";
+import Link from "next/link";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -19,6 +20,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             Phase 1 Scaffold
           </span>
+        </div>
+        <div className="mx-auto flex h-11 w-full max-w-7xl items-center gap-2 px-6">
+          {[
+            { href: "/", label: "Home" },
+            { href: "/auth", label: "Auth" },
+            { href: "/dashboard", label: "Dashboard" },
+            { href: "/settings", label: "Settings" }
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       </header>
       <main className="mx-auto w-full max-w-7xl px-6 py-8">{children}</main>
