@@ -10,8 +10,11 @@ export * from "./contracts/geolocation-provider.interface";
 
 export * from "./adapters/mock-pvgis-solar.provider";
 export * from "./adapters/mock-open-meteo-weather.provider";
-export * from "./adapters/mock-openweather-weather.provider";
+export * from "./adapters/open-meteo-weather.provider";
+export * from "./adapters/openweather-weather.provider";
 export * from "./adapters/mock-opencage-geolocation.provider";
+export * from "./adapters/opencage-geolocation.provider";
 
 export * from "./strategy/provider-selection.service";
 export * from "./strategy/weather-provider-orchestrator.service";
+export * from "./strategy/geolocation-provider-orchestrator.service";
