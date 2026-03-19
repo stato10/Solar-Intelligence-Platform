@@ -5,5 +5,28 @@ export default registerAs("app", () => ({
   port: Number(process.env.API_PORT ?? 3000),
   apiPrefix: "api/v1",
   engineBaseUrl: process.env.ENGINE_BASE_URL ?? "http://localhost:8000",
-  weatherPrimaryProvider: process.env.WEATHER_PRIMARY_PROVIDER ?? "open_meteo"
+  weatherPrimaryProvider: process.env.WEATHER_PRIMARY_PROVIDER ?? "open_meteo",
+  openMeteo: {
+    baseUrl: process.env.OPEN_METEO_BASE_URL ?? "https://api.open-meteo.com",
+    forecastDays: Number(process.env.OPEN_METEO_FORECAST_DAYS ?? 7),
+    timezone: process.env.OPEN_METEO_TIMEZONE ?? "auto"
+  },
+  openWeather: {
+    baseUrl: process.env.OPENWEATHER_BASE_URL ?? "https://api.openweathermap.org",
+    apiKey: process.env.OPENWEATHER_API_KEY ?? "",
+    units: process.env.OPENWEATHER_UNITS ?? "metric",
+    lang: process.env.OPENWEATHER_LANG ?? "en",
+    exclude: process.env.OPENWEATHER_EXCLUDE ?? "minutely",
+    oneCallPath: process.env.OPENWEATHER_ONECALL_PATH ?? "/data/3.0/onecall"
+  },
+  geolocationProviderMode: process.env.GEOLOCATION_PROVIDER_MODE ?? "auto",
+  openCage: {
+    baseUrl: process.env.OPENCAGE_BASE_URL ?? "https://api.opencagedata.com",
+    apiKey: process.env.OPENCAGE_API_KEY ?? "",
+    path: process.env.OPENCAGE_GEOCODE_PATH ?? "/geocode/v1/json",
+    defaultLanguage: process.env.OPENCAGE_DEFAULT_LANGUAGE ?? "native",
+    defaultLimit: Number(process.env.OPENCAGE_DEFAULT_LIMIT ?? 5),
+    noAnnotations: process.env.OPENCAGE_NO_ANNOTATIONS ?? "1",
+    noRecord: process.env.OPENCAGE_NO_RECORD ?? "1"
+  }
 }));

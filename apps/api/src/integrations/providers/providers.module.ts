@@ -1,14 +1,16 @@
 import { Module } from "@nestjs/common";
 import { MockOpenCageGeolocationProvider } from "./adapters/mock-opencage-geolocation.provider";
-import { MockOpenMeteoWeatherProvider } from "./adapters/mock-open-meteo-weather.provider";
-import { MockOpenWeatherWeatherProvider } from "./adapters/mock-openweather-weather.provider";
 import { MockPvgisSolarProvider } from "./adapters/mock-pvgis-solar.provider";
+import { OpenMeteoWeatherProvider } from "./adapters/open-meteo-weather.provider";
+import { OpenCageGeolocationProvider } from "./adapters/opencage-geolocation.provider";
+import { OpenWeatherWeatherProvider } from "./adapters/openweather-weather.provider";
 import {
   GEOLOCATION_PROVIDER_TOKEN,
   SOLAR_PROVIDER_TOKEN,
   WEATHER_PROVIDER_TOKEN
 } from "./common/provider.tokens";
 import { ProvidersController } from "./providers.controller";
+import { GeolocationProviderOrchestratorService } from "./strategy/geolocation-provider-orchestrator.service";
 import { ProviderSelectionService } from "./strategy/provider-selection.service";
 import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-orchestrator.service";
 
@@ -16,11 +18,13 @@ import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-
   controllers: [ProvidersController],
   providers: [
     MockPvgisSolarProvider,
-    MockOpenMeteoWeatherProvider,
-    MockOpenWeatherWeatherProvider,
+    OpenMeteoWeatherProvider,
+    OpenWeatherWeatherProvider,
     MockOpenCageGeolocationProvider,
+    OpenCageGeolocationProvider,
     ProviderSelectionService,
     WeatherProviderOrchestratorService,
+    GeolocationProviderOrchestratorService,
     {
       provide: SOLAR_PROVIDER_TOKEN,
       useExisting: MockPvgisSolarProvider
@@ -31,7 +35,7 @@ import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-
     },
     {
       provide: GEOLOCATION_PROVIDER_TOKEN,
-      useExisting: MockOpenCageGeolocationProvider
+      useExisting: GeolocationProviderOrchestratorService
     }
   ],
   exports: [
@@ -39,7 +43,8 @@ import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-
     WEATHER_PROVIDER_TOKEN,
     GEOLOCATION_PROVIDER_TOKEN,
     ProviderSelectionService,
-    WeatherProviderOrchestratorService
+    WeatherProviderOrchestratorService,
+    GeolocationProviderOrchestratorService
   ]
 })
 export class ProvidersModule {}

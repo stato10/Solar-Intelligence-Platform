@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Inject, Post, Query } from "@nestjs/common";
-import { MockOpenMeteoWeatherProvider } from "./adapters/mock-open-meteo-weather.provider";
-import { MockOpenWeatherWeatherProvider } from "./adapters/mock-openweather-weather.provider";
+import { OpenMeteoWeatherProvider } from "./adapters/open-meteo-weather.provider";
+import { OpenWeatherWeatherProvider } from "./adapters/openweather-weather.provider";
 import { GEOLOCATION_PROVIDER_TOKEN, SOLAR_PROVIDER_TOKEN, WEATHER_PROVIDER_TOKEN } from "./common/provider.tokens";
 import {
   GeolocationForwardInput,
@@ -18,8 +18,8 @@ export class ProvidersController {
     @Inject(WEATHER_PROVIDER_TOKEN) private readonly weatherProvider: WeatherProvider,
     @Inject(GEOLOCATION_PROVIDER_TOKEN)
     private readonly geolocationProvider: GeolocationProvider,
-    private readonly openWeatherProvider: MockOpenWeatherWeatherProvider,
-    private readonly openMeteoProvider: MockOpenMeteoWeatherProvider,
+    private readonly openWeatherProvider: OpenWeatherWeatherProvider,
+    private readonly openMeteoProvider: OpenMeteoWeatherProvider,
     private readonly providerSelectionService: ProviderSelectionService
   ) {}
 
@@ -54,13 +54,19 @@ export class ProvidersController {
   @Get("strategy")
   strategy() {
     const weatherChain = this.providerSelectionService.getWeatherProviderChain();
+    const geolocationChain = this.providerSelectionService.getGeolocationProviderChain();
     return {
       success: true,
       data: {
         weather: {
           primary: weatherChain[0],
-          fallback: weatherChain[1],
+          fallback: weatherChain[1] ?? null,
           chain: weatherChain
+        },
+        geolocation: {
+          primary: geolocationChain[0],
+          fallback: geolocationChain[1] ?? null,
+          chain: geolocationChain
         }
       },
       meta: {
