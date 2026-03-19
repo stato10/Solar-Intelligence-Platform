@@ -38,6 +38,10 @@
 - `GET /api/v1/sites/:id`
 - `PUT /api/v1/sites/:id`
 
+### Geolocation
+- `GET /api/v1/geolocation/forward?q={addressQuery}&language={lang?}&countrycode={iso2?}&limit={n?}`
+- `GET /api/v1/geolocation/reverse?lat={lat}&lon={lon}&language={lang?}`
+
 ### Solar System
 - `POST /api/v1/sites/:siteId/system`
 - `GET /api/v1/sites/:siteId/system`
@@ -75,6 +79,30 @@
   - `source` (provider/engine source metadata)
 - AI insight endpoints must include deterministic metric references used for summary generation.
 - Internal API-to-engine calls must use explicit schemas and timeout/retry policy.
+- Geolocation endpoints must support multilingual input/output and provider-backed address normalization.
+
+## Geolocation Data Contract
+- Forward geocoding (`/geolocation/forward`) minimum `data` payload:
+  - `query`
+  - `results[]` with:
+    - `formattedAddress`
+    - `lat`
+    - `lon`
+    - `countryCode`
+    - `confidence`
+    - `timezone` (if available)
+    - `components` (provider-normalized object)
+  - `source`
+  - `generatedAt`
+- Reverse geocoding (`/geolocation/reverse`) minimum `data` payload:
+  - `lat`
+  - `lon`
+  - `formattedAddress`
+  - `countryCode`
+  - `timezone` (if available)
+  - `components`
+  - `source`
+  - `generatedAt`
 
 ## Computed Endpoint Minimum Data Contract
 - Forecast endpoints:

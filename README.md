@@ -14,6 +14,10 @@ packages/
   config/     # Shared configuration
 ```
 
+## External Provider Docs
+
+- `EXTERNAL_APIS.md` - provider integration contracts (`PVGIS`, `Open-Meteo`, `OpenWeather One Call 3.0`, `OpenCage`)
+
 ## Workspace Commands
 
 From repository root:

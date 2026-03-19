@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { SitesService } from "../sites/sites.service";
 import { CreateTariffDto } from "./dto/create-tariff.dto";
 import { UpdateTariffDto } from "./dto/update-tariff.dto";
 import { TariffEntity } from "./entities/tariff.entity";
@@ -7,12 +8,17 @@ import { TariffEntity } from "./entities/tariff.entity";
 @Injectable()
 export class TariffsService {
   private readonly tariffs: TariffEntity[] = [];
+  constructor(private readonly sitesService: SitesService) {}
 
   findAll() {
     return this.tariffs;
   }
 
   create(payload: CreateTariffDto) {
+    this.sitesService.findOne(payload.siteId);
+    if (this.tariffs.some((item) => item.siteId === payload.siteId)) {
+      throw new ConflictException(`Tariff already exists for site ${payload.siteId}`);
+    }
     const tariff: TariffEntity = {
       id: randomUUID(),
       siteId: payload.siteId,
@@ -35,7 +41,16 @@ export class TariffsService {
 
   update(id: string, payload: UpdateTariffDto) {
     const tariff = this.findOne(id);
-    if (payload.siteId !== undefined) tariff.siteId = payload.siteId;
+    if (payload.siteId !== undefined) {
+      this.sitesService.findOne(payload.siteId);
+      const existingForSite = this.tariffs.find(
+        (item) => item.siteId === payload.siteId && item.id !== id
+      );
+      if (existingForSite) {
+        throw new ConflictException(`Tariff already exists for site ${payload.siteId}`);
+      }
+      tariff.siteId = payload.siteId;
+    }
     if (payload.selfConsumptionRate !== undefined) {
       tariff.selfConsumptionRate = payload.selfConsumptionRate;
     }

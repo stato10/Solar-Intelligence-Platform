@@ -10,7 +10,7 @@
 - [x] 0.7 Mark Phase 0 complete and lock docs baseline
 
 ## In Progress
-- [ ] Phase 2.3 Add temporary in-memory relation checks between entities
+- [ ] Phase 2.4 Add simple list filters and pagination placeholders per module
 
 ## Blocked
 - [ ] OpenAI production key not yet available (AI summary validation limited to fallback path)
@@ -32,6 +32,10 @@
 - [x] Phase 1.10 Finalize Phase 1 checklist and local run verification notes
 - [x] Phase 2.1 Define domain entities in API modules (`users`, `sites`, `solar-systems`, `devices`, `tariffs`)
 - [x] Phase 2.2 Add CRUD route extensions (`:id`, update) for domain modules
+- [x] Phase 2.3 Add temporary in-memory relation checks between entities
+- [x] External API docs baseline: PVGIS provider contract and env configuration
+- [x] External API docs extended: Open-Meteo and OpenWeather One Call 3.0
+- [x] External API docs extended: OpenCage geolocation provider (multilingual forward/reverse geocoding)
 
 ## Next Phases (Queued)
 - [ ] Phase 1: Project scaffold (web/api/engine + docker + base auth)
