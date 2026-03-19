@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { paginateArray } from "../common/pagination";
 import { UsersService } from "../users/users.service";
 import { CreateSiteDto } from "./dto/create-site.dto";
+import { SitesListQueryDto } from "./dto/sites-list-query.dto";
 import { UpdateSiteDto } from "./dto/update-site.dto";
 import { SiteEntity } from "./entities/site.entity";
 
@@ -10,8 +12,21 @@ export class SitesService {
   private readonly sites: SiteEntity[] = [];
   constructor(private readonly usersService: UsersService) {}
 
-  findAll() {
-    return this.sites;
+  findAll(query: SitesListQueryDto) {
+    const search = query.search?.trim().toLowerCase();
+    const filtered = this.sites.filter((site) => {
+      if (query.userId && site.userId !== query.userId) {
+        return false;
+      }
+      if (!search) {
+        return true;
+      }
+      return (
+        site.siteName.toLowerCase().includes(search) ||
+        site.address.toLowerCase().includes(search)
+      );
+    });
+    return paginateArray(filtered, query);
   }
 
   create(payload: CreateSiteDto) {

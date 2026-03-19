@@ -1,15 +1,30 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { paginateArray } from "../common/pagination";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
+import { UsersListQueryDto } from "./dto/users-list-query.dto";
 import { UserEntity } from "./entities/user.entity";
 
 @Injectable()
 export class UsersService {
   private readonly users: UserEntity[] = [];
 
-  findAll() {
-    return this.users;
+  findAll(query: UsersListQueryDto) {
+    const search = query.search?.trim().toLowerCase();
+    const filtered = this.users.filter((user) => {
+      if (query.role && user.role !== query.role) {
+        return false;
+      }
+      if (!search) {
+        return true;
+      }
+      return (
+        user.fullName.toLowerCase().includes(search) ||
+        user.email.toLowerCase().includes(search)
+      );
+    });
+    return paginateArray(filtered, query);
   }
 
   create(payload: CreateUserDto) {

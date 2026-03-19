@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { CreateSiteDto } from "./dto/create-site.dto";
+import { SitesListQueryDto } from "./dto/sites-list-query.dto";
 import { UpdateSiteDto } from "./dto/update-site.dto";
 import { SitesService } from "./sites.service";
 
@@ -8,11 +9,13 @@ export class SitesController {
   constructor(private readonly sitesService: SitesService) {}
 
   @Get()
-  findAll() {
+  findAll(@Query() query: SitesListQueryDto) {
+    const result = this.sitesService.findAll(query);
     return {
       success: true,
-      data: this.sitesService.findAll(),
+      data: result.items,
       meta: {
+        pagination: result.pagination,
         timestamp: new Date().toISOString(),
         version: "v1"
       }

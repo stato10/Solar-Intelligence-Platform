@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { paginateArray } from "../common/pagination";
 import { SitesService } from "../sites/sites.service";
 import { CreateTariffDto } from "./dto/create-tariff.dto";
+import { TariffsListQueryDto } from "./dto/tariffs-list-query.dto";
 import { UpdateTariffDto } from "./dto/update-tariff.dto";
 import { TariffEntity } from "./entities/tariff.entity";
 
@@ -10,8 +12,17 @@ export class TariffsService {
   private readonly tariffs: TariffEntity[] = [];
   constructor(private readonly sitesService: SitesService) {}
 
-  findAll() {
-    return this.tariffs;
+  findAll(query: TariffsListQueryDto) {
+    const filtered = this.tariffs.filter((tariff) => {
+      if (query.siteId && tariff.siteId !== query.siteId) {
+        return false;
+      }
+      if (query.currency && tariff.currency !== query.currency) {
+        return false;
+      }
+      return true;
+    });
+    return paginateArray(filtered, query);
   }
 
   create(payload: CreateTariffDto) {

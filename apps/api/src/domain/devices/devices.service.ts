@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { paginateArray } from "../common/pagination";
 import { SitesService } from "../sites/sites.service";
 import { CreateDeviceProfileDto } from "./dto/create-device-profile.dto";
+import { DevicesListQueryDto } from "./dto/devices-list-query.dto";
 import { UpdateDeviceProfileDto } from "./dto/update-device-profile.dto";
 import { DeviceProfileEntity } from "./entities/device-profile.entity";
 
@@ -10,8 +12,11 @@ export class DevicesService {
   private readonly deviceProfiles: DeviceProfileEntity[] = [];
   constructor(private readonly sitesService: SitesService) {}
 
-  findAll() {
-    return this.deviceProfiles;
+  findAll(query: DevicesListQueryDto) {
+    const filtered = query.siteId
+      ? this.deviceProfiles.filter((profile) => profile.siteId === query.siteId)
+      : this.deviceProfiles;
+    return paginateArray(filtered, query);
   }
 
   create(payload: CreateDeviceProfileDto) {

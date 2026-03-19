@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { CreateSolarSystemDto } from "./dto/create-solar-system.dto";
+import { SolarSystemsListQueryDto } from "./dto/solar-systems-list-query.dto";
 import { UpdateSolarSystemDto } from "./dto/update-solar-system.dto";
 import { SolarSystemsService } from "./solar-systems.service";
 
@@ -8,11 +9,13 @@ export class SolarSystemsController {
   constructor(private readonly solarSystemsService: SolarSystemsService) {}
 
   @Get()
-  findAll() {
+  findAll(@Query() query: SolarSystemsListQueryDto) {
+    const result = this.solarSystemsService.findAll(query);
     return {
       success: true,
-      data: this.solarSystemsService.findAll(),
+      data: result.items,
       meta: {
+        pagination: result.pagination,
         timestamp: new Date().toISOString(),
         version: "v1"
       }

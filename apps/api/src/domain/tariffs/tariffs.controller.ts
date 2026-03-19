@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { CreateTariffDto } from "./dto/create-tariff.dto";
+import { TariffsListQueryDto } from "./dto/tariffs-list-query.dto";
 import { UpdateTariffDto } from "./dto/update-tariff.dto";
 import { TariffsService } from "./tariffs.service";
 
@@ -8,11 +9,13 @@ export class TariffsController {
   constructor(private readonly tariffsService: TariffsService) {}
 
   @Get()
-  findAll() {
+  findAll(@Query() query: TariffsListQueryDto) {
+    const result = this.tariffsService.findAll(query);
     return {
       success: true,
-      data: this.tariffsService.findAll(),
+      data: result.items,
       meta: {
+        pagination: result.pagination,
         timestamp: new Date().toISOString(),
         version: "v1"
       }

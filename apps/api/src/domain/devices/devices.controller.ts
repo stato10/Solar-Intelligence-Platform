@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { CreateDeviceProfileDto } from "./dto/create-device-profile.dto";
+import { DevicesListQueryDto } from "./dto/devices-list-query.dto";
 import { UpdateDeviceProfileDto } from "./dto/update-device-profile.dto";
 import { DevicesService } from "./devices.service";
 
@@ -8,11 +9,13 @@ export class DevicesController {
   constructor(private readonly devicesService: DevicesService) {}
 
   @Get()
-  findAll() {
+  findAll(@Query() query: DevicesListQueryDto) {
+    const result = this.devicesService.findAll(query);
     return {
       success: true,
-      data: this.devicesService.findAll(),
+      data: result.items,
       meta: {
+        pagination: result.pagination,
         timestamp: new Date().toISOString(),
         version: "v1"
       }

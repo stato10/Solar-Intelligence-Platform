@@ -15,5 +15,13 @@ export function validateEnv(config: EnvInput) {
   ensureNumber("API_PORT", config.API_PORT);
   ensureNumber("DB_PORT", config.DB_PORT);
 
+  if (
+    config.WEATHER_PRIMARY_PROVIDER !== undefined &&
+    config.WEATHER_PRIMARY_PROVIDER !== "open_meteo" &&
+    config.WEATHER_PRIMARY_PROVIDER !== "openweather"
+  ) {
+    throw new Error("WEATHER_PRIMARY_PROVIDER must be open_meteo or openweather");
+  }
+
   return config;
 }

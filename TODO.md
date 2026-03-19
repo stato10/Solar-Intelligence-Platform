@@ -10,7 +10,7 @@
 - [x] 0.7 Mark Phase 0 complete and lock docs baseline
 
 ## In Progress
-- [ ] Phase 2.4 Add simple list filters and pagination placeholders per module
+- [ ] Phase 3.4 Add first real provider adapter behind strategy (OpenCage)
 
 ## Blocked
 - [ ] OpenAI production key not yet available (AI summary validation limited to fallback path)
@@ -33,6 +33,10 @@
 - [x] Phase 2.1 Define domain entities in API modules (`users`, `sites`, `solar-systems`, `devices`, `tariffs`)
 - [x] Phase 2.2 Add CRUD route extensions (`:id`, update) for domain modules
 - [x] Phase 2.3 Add temporary in-memory relation checks between entities
+- [x] Phase 2.4 Add simple list filters and pagination placeholders per module
+- [x] Phase 3.1 Define provider interfaces and base adapter contracts
+- [x] Phase 3.2 Add mock provider adapters for PVGIS/Open-Meteo/OpenWeather/OpenCage
+- [x] Phase 3.3 Add provider selection strategy and fallback wiring scaffold
 - [x] External API docs baseline: PVGIS provider contract and env configuration
 - [x] External API docs extended: Open-Meteo and OpenWeather One Call 3.0
 - [x] External API docs extended: OpenCage geolocation provider (multilingual forward/reverse geocoding)

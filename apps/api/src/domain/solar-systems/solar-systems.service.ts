@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
+import { paginateArray } from "../common/pagination";
 import { SitesService } from "../sites/sites.service";
 import { CreateSolarSystemDto } from "./dto/create-solar-system.dto";
+import { SolarSystemsListQueryDto } from "./dto/solar-systems-list-query.dto";
 import { UpdateSolarSystemDto } from "./dto/update-solar-system.dto";
 import { SolarSystemEntity } from "./entities/solar-system.entity";
 
@@ -10,8 +12,11 @@ export class SolarSystemsService {
   private readonly systems: SolarSystemEntity[] = [];
   constructor(private readonly sitesService: SitesService) {}
 
-  findAll() {
-    return this.systems;
+  findAll(query: SolarSystemsListQueryDto) {
+    const filtered = query.siteId
+      ? this.systems.filter((system) => system.siteId === query.siteId)
+      : this.systems;
+    return paginateArray(filtered, query);
   }
 
   create(payload: CreateSolarSystemDto) {

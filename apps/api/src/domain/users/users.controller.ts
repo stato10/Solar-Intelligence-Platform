@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
+import { UsersListQueryDto } from "./dto/users-list-query.dto";
 import { UsersService } from "./users.service";
 
 @Controller("users")
@@ -8,11 +9,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll() {
+  findAll(@Query() query: UsersListQueryDto) {
+    const result = this.usersService.findAll(query);
     return {
       success: true,
-      data: this.usersService.findAll(),
+      data: result.items,
       meta: {
+        pagination: result.pagination,
         timestamp: new Date().toISOString(),
         version: "v1"
       }
