@@ -5,6 +5,15 @@ export default registerAs("app", () => ({
   port: Number(process.env.API_PORT ?? 3000),
   apiPrefix: "api/v1",
   engineBaseUrl: process.env.ENGINE_BASE_URL ?? "http://localhost:8000",
+  solarProviderMode: process.env.SOLAR_PROVIDER_MODE ?? "auto",
+  pvgis: {
+    baseUrl: process.env.PVGIS_BASE_URL ?? "https://re.jrc.ec.europa.eu/api/v5_3",
+    fallbackBaseUrl: process.env.PVGIS_FALLBACK_BASE_URL ?? "https://re.jrc.ec.europa.eu/api/v5_2",
+    outputFormat: process.env.PVGIS_OUTPUT_FORMAT ?? "json",
+    pvcalcPath: process.env.PVGIS_PVCALC_PATH ?? "/PVcalc",
+    pvTechChoice: process.env.PVGIS_PVTECHCHOICE ?? "crystSi",
+    mountingPlace: process.env.PVGIS_MOUNTINGPLACE ?? "free"
+  },
   weatherPrimaryProvider: process.env.WEATHER_PRIMARY_PROVIDER ?? "open_meteo",
   openMeteo: {
     baseUrl: process.env.OPEN_METEO_BASE_URL ?? "https://api.open-meteo.com",

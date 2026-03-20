@@ -34,6 +34,8 @@ export class OpenWeatherWeatherProvider
   extends HttpProviderBase
   implements WeatherProvider
 {
+  private static readonly API_KEY_PATTERN = /^[a-f0-9]{32}$/i;
+
   constructor(private readonly configService: ConfigService) {
     super(
       "OPENWEATHER_ONECALL_3_0",
@@ -43,8 +45,9 @@ export class OpenWeatherWeatherProvider
   }
 
   private get config() {
+    const rawKey = this.configService.get<string>("app.openWeather.apiKey") ?? "";
     return {
-      apiKey: this.configService.get<string>("app.openWeather.apiKey") ?? "",
+      apiKey: rawKey.trim(),
       path:
         this.configService.get<string>("app.openWeather.oneCallPath") ??
         "/data/3.0/onecall",
@@ -55,14 +58,49 @@ export class OpenWeatherWeatherProvider
     };
   }
 
+  private resolveApiKey(rawKey: string) {
+    const trimmed = rawKey.trim().replace(/^"(.*)"$/, "$1");
+    if (OpenWeatherWeatherProvider.API_KEY_PATTERN.test(trimmed)) {
+      return {
+        key: trimmed,
+        normalized: false
+      };
+    }
+
+    // Some local env values may accidentally concatenate/pad keys; prefer the last
+    // valid 32-char hex window so runtime can still use the intended key.
+    const overlappingMatches = Array.from(
+      trimmed.matchAll(/(?=([a-f0-9]{32}))/gi),
+      (match) => match[1]
+    );
+    if (overlappingMatches.length > 0) {
+      return {
+        key: overlappingMatches[overlappingMatches.length - 1],
+        normalized: true
+      };
+    }
+
+    return {
+      key: trimmed,
+      normalized: false
+    };
+  }
+
   async getHealth(_meta?: ProviderRequestMeta): Promise<ProviderHealthStatus> {
+    const keyConfigured = Boolean(this.config.apiKey);
+    const resolved = this.resolveApiKey(this.config.apiKey);
+    const validApiKey =
+      keyConfigured && OpenWeatherWeatherProvider.API_KEY_PATTERN.test(resolved.key);
+
     return {
       provider: "OPENWEATHER_ONECALL_3_0",
-      available: Boolean(this.config.apiKey),
+      available: keyConfigured,
       checkedAt: new Date().toISOString(),
       details: {
         mode: "real",
-        configured: Boolean(this.config.apiKey),
+        configured: keyConfigured,
+        apiKeyFormatValid: validApiKey,
+        apiKeyNormalized: resolved.normalized,
         baseUrl: this.baseUrl
       }
     };
@@ -75,15 +113,26 @@ export class OpenWeatherWeatherProvider
     if (!this.config.apiKey) {
       throw new ServiceUnavailableException("OpenWeather API key is not configured");
     }
+    const resolved = this.resolveApiKey(this.config.apiKey);
+    if (!OpenWeatherWeatherProvider.API_KEY_PATTERN.test(resolved.key)) {
+      throw new ServiceUnavailableException(
+        "OpenWeather API key format is invalid. Expected 32 hexadecimal characters."
+      );
+    }
 
-    const searchParams = new URLSearchParams({
-      lat: String(input.latitude),
-      lon: String(input.longitude),
-      appid: this.config.apiKey,
-      units: this.config.units,
-      lang: this.config.lang,
-      exclude: this.config.exclude
-    });
+    const searchParams = new URLSearchParams();
+    searchParams.set("lat", String(input.latitude));
+    searchParams.set("lon", String(input.longitude));
+    searchParams.set("appid", resolved.key);
+    if (this.config.units) {
+      searchParams.set("units", this.config.units);
+    }
+    if (this.config.lang) {
+      searchParams.set("lang", this.config.lang);
+    }
+    if (this.config.exclude) {
+      searchParams.set("exclude", this.config.exclude);
+    }
 
     const response = await this.getJson<OpenWeatherResponse>(
       this.config.path,

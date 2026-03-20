@@ -17,6 +17,15 @@ export function validateEnv(config: EnvInput) {
   ensureNumber("OPENCAGE_DEFAULT_LIMIT", config.OPENCAGE_DEFAULT_LIMIT);
 
   if (
+    config.SOLAR_PROVIDER_MODE !== undefined &&
+    config.SOLAR_PROVIDER_MODE !== "auto" &&
+    config.SOLAR_PROVIDER_MODE !== "real" &&
+    config.SOLAR_PROVIDER_MODE !== "mock"
+  ) {
+    throw new Error("SOLAR_PROVIDER_MODE must be auto, real, or mock");
+  }
+
+  if (
     config.WEATHER_PRIMARY_PROVIDER !== undefined &&
     config.WEATHER_PRIMARY_PROVIDER !== "open_meteo" &&
     config.WEATHER_PRIMARY_PROVIDER !== "openweather"
