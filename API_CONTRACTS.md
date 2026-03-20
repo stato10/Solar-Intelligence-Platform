@@ -147,3 +147,83 @@
   - `422` semantic processing error
   - `500` internal server error
   - `503` dependency unavailable (provider/engine/AI)
+
+## Phase 4.1 - Deterministic Engine Contract (Frozen)
+
+This section freezes the first deterministic engine contract used by API-to-engine calls.
+
+### Internal Engine Endpoint (v1)
+- Method: `POST`
+- Path (engine service): `/calculate/v1`
+- Consumer: API integrations/engine layer
+- Producer: Python engine deterministic pipeline
+
+### Request Schema (`EngineCalculateV1Input`)
+- `siteId` (string, required)
+- `generatedAt` (ISO-8601 string, required)
+- `weather` (object, required)
+  - `temperature` (number, optional)
+  - `cloudCover` (number, optional)
+  - `windSpeed` (number, optional)
+  - `precipitation` (number, optional)
+- `solar` (object, required)
+  - `expectedDailyKwh` (number, required)
+  - `expectedWeeklyKwh` (number, required)
+  - `expectedMonthlyKwh` (number, required)
+- `tariff` (object, optional)
+  - `currency` (string, optional)
+  - `importRate` (number, optional)
+  - `exportRate` (number, optional)
+
+### Response Schema (`EngineCalculateV1Output`)
+- `siteId` (string, required)
+- `generatedAt` (ISO-8601 string, required)
+- `source` (string, required, value: `ENGINE_V1`)
+- `forecast` (object, required)
+  - `expectedDailyKwh` (number)
+  - `expectedWeeklyKwh` (number)
+  - `expectedMonthlyKwh` (number)
+- `soiling` (object, required)
+  - `score` (number, 0-100)
+  - `estimatedLossPercent` (number)
+  - `cleaningRecommended` (boolean)
+- `heat` (object, required)
+  - `score` (number, 0-100)
+  - `estimatedLossPercent` (number)
+- `risks` (object, required)
+  - `alerts` (array of `{ riskType, severity, message, expectedStart, expectedEnd }`)
+- `optimization` (object, required)
+  - `opportunityScore` (number, 0-100)
+  - `recommendations` (array of canonical recommendation objects)
+    - `id` (string)
+    - `type` (string)
+    - `title` (string)
+    - `message` (string)
+    - `severity` (`low` | `moderate` | `high`)
+    - `priority` (number)
+    - `estimated_value` (number)
+    - `valid_from` (ISO-8601 string)
+    - `valid_until` (ISO-8601 string)
+    - `source_module` (string)
+- `financial` (object, required)
+  - `dailyEstimatedSavings` (number)
+  - `monthlyEstimatedSavings` (number)
+  - `yearlyOptimizationPotential` (number)
+
+### Determinism Rules
+- Given identical input JSON, engine output JSON must be identical in values.
+- No randomization, no external network calls, no clock-dependent recomputation except explicit `generatedAt` pass-through.
+- Numeric outputs must be rounded to 2 decimal places.
+- Missing optional weather fields must be handled with stable defaults (documented in engine implementation).
+- Normalization and units must follow `NORMALIZATION_RULES.md` (UTC, C, m/s, ILS, percentage scale).
+
+### Acceptance Fixtures (Phase 4.1 Gate)
+- Add fixture set under engine tests:
+  - `fixtures/engine/v1/input-baseline.json`
+  - `fixtures/engine/v1/expected-baseline.json`
+  - `fixtures/engine/v1/input-high-risk.json`
+  - `fixtures/engine/v1/expected-high-risk.json`
+- Required checks:
+  - schema validation passes for all fixtures
+  - output equals expected fixture payloads
+  - repeat run equality (same input -> byte-equivalent normalized JSON)

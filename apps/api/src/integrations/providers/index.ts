@@ -7,6 +7,7 @@ export * from "./common/http-provider.base";
 export * from "./contracts/solar-provider.interface";
 export * from "./contracts/weather-provider.interface";
 export * from "./contracts/geolocation-provider.interface";
+export * from "./contracts/air-quality-provider.interface";
 
 export * from "./adapters/mock-pvgis-solar.provider";
 export * from "./adapters/pvgis-solar.provider";

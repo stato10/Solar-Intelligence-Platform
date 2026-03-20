@@ -1,0 +1,15 @@
+{
+  "siteId": "fx-weather-severe",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 28,
+    "cloudCover": 65,
+    "windSpeed": 48,
+    "precipitation": 5.4
+  },
+  "solar": {
+    "expectedDailyKwh": 18,
+    "expectedWeeklyKwh": 126,
+    "expectedMonthlyKwh": 540
+  }
+}

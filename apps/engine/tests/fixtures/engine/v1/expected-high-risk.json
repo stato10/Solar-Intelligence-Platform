@@ -1,0 +1,76 @@
+{
+  "siteId": "fx-high-risk",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 19.0,
+    "expectedWeeklyKwh": 133.0,
+    "expectedMonthlyKwh": 570.0
+  },
+  "soiling": {
+    "score": 86.03,
+    "estimatedLossPercent": 2.15,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 70.6,
+    "estimatedLossPercent": 7.0,
+    "peakHeatWindowStart": "12:00",
+    "peakHeatWindowEnd": "16:00"
+  },
+  "risks": {
+    "alerts": [
+      {
+        "riskType": "heat",
+        "severity": "moderate",
+        "message": "Estimated heat loss is elevated",
+        "expectedStart": "2026-03-20T00:00:00Z",
+        "expectedEnd": "2026-03-20T00:00:00Z"
+      },
+      {
+        "riskType": "weather",
+        "severity": "moderate",
+        "message": "Weather conditions may impact system performance and operations",
+        "expectedStart": "2026-03-20T00:00:00Z",
+        "expectedEnd": "2026-03-20T00:00:00Z"
+      }
+    ]
+  },
+  "optimization": {
+    "opportunityScore": 29.13,
+    "recommendations": [
+      {
+        "id": "rec-heat-fx-high-risk-2026-03-20",
+        "type": "optimization",
+        "title": "Mitigate thermal loss",
+        "message": "Panel thermal conditions indicate notable efficiency impact.",
+        "severity": "moderate",
+        "priority": 2,
+        "estimated_value": 84.0,
+        "valid_from": "2026-03-20T00:00:00Z",
+        "valid_until": "2026-03-20T00:00:00Z",
+        "source_module": "heat"
+      },
+      {
+        "id": "rec-weather-fx-high-risk-2026-03-20",
+        "type": "operational",
+        "title": "Adjust dispatch for weather risk",
+        "message": "Severe weather conditions can impact system operations.",
+        "severity": "moderate",
+        "priority": 2,
+        "estimated_value": 0.0,
+        "valid_from": "2026-03-20T00:00:00Z",
+        "valid_until": "2026-03-20T00:00:00Z",
+        "source_module": "risks"
+      }
+    ],
+    "estimatedValue": 109.8
+  },
+  "financial": {
+    "dailyEstimatedSavings": 3.48,
+    "monthlyEstimatedSavings": 104.4,
+    "yearlyOptimizationPotential": 364.94
+  }
+}

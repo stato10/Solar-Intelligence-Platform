@@ -1,0 +1,15 @@
+{
+  "siteId": "fx-high-risk",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 39,
+    "cloudCover": 92,
+    "windSpeed": 35,
+    "precipitation": 3.5
+  },
+  "solar": {
+    "expectedDailyKwh": 19,
+    "expectedWeeklyKwh": 133,
+    "expectedMonthlyKwh": 570
+  }
+}

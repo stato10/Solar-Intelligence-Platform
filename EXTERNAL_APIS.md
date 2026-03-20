@@ -351,6 +351,26 @@ Project rule:
 
 ---
 
+## Air Quality Abstraction Contract (Phase 4.3a)
+
+This phase freezes the platform-level contract for air quality inputs before selecting a production provider.
+
+Canonical output fields:
+
+- `pm10` (number, optional)
+- `pm25` (number, optional)
+- `dustIndex` (number, optional)
+
+Contract location:
+
+- `apps/api/src/integrations/providers/contracts/air-quality-provider.interface.ts`
+
+Rule:
+
+- Engine and API integrations must consume this abstraction contract, not provider-specific payload shapes.
+
+---
+
 ## Provider 4: OpenCage Geocoding (Global Address Intelligence)
 
 This section defines the integration contract for OpenCage geocoding and reverse geocoding.

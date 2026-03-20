@@ -1,0 +1,49 @@
+{
+  "siteId": "fx-low-risk",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 22.0,
+    "expectedWeeklyKwh": 154.0,
+    "expectedMonthlyKwh": 660.0
+  },
+  "soiling": {
+    "score": 100.0,
+    "estimatedLossPercent": 0.0,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 100.0,
+    "estimatedLossPercent": 0.0,
+    "peakHeatWindowStart": "12:00",
+    "peakHeatWindowEnd": "14:00"
+  },
+  "risks": {
+    "alerts": []
+  },
+  "optimization": {
+    "opportunityScore": 0.0,
+    "recommendations": [
+      {
+        "id": "rec-maintain-fx-low-risk-2026-03-20",
+        "type": "operational",
+        "title": "Maintain current profile",
+        "message": "No high-impact action required for current conditions.",
+        "severity": "low",
+        "priority": 5,
+        "estimated_value": 0.0,
+        "valid_from": "2026-03-20T00:00:00Z",
+        "valid_until": "2026-03-20T00:00:00Z",
+        "source_module": "opportunity"
+      }
+    ],
+    "estimatedValue": 0.0
+  },
+  "financial": {
+    "dailyEstimatedSavings": 4.4,
+    "monthlyEstimatedSavings": 132.0,
+    "yearlyOptimizationPotential": 0.0
+  }
+}

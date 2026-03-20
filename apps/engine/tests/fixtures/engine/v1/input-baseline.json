@@ -1,0 +1,15 @@
+{
+  "siteId": "fx-baseline",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 30,
+    "cloudCover": 40,
+    "windSpeed": 5,
+    "precipitation": 0.3
+  },
+  "solar": {
+    "expectedDailyKwh": 20,
+    "expectedWeeklyKwh": 140,
+    "expectedMonthlyKwh": 600
+  }
+}

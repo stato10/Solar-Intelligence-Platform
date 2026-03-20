@@ -77,8 +77,11 @@ export class PvgisSolarProvider extends HttpProviderBase implements SolarProvide
       mountingplace: this.config.mountingPlace
     });
 
-    const primaryPath = new URL(this.config.path, this.baseUrl).toString();
-    const fallbackPath = new URL(this.config.path, this.config.fallbackBaseUrl).toString();
+    const primaryPath = this.buildProviderUrl(this.baseUrl, this.config.path);
+    const fallbackPath = this.buildProviderUrl(
+      this.config.fallbackBaseUrl,
+      this.config.path
+    );
 
     let response: PvgisPvCalcResponse;
     let usedFallback = false;
@@ -169,5 +172,11 @@ export class PvgisSolarProvider extends HttpProviderBase implements SolarProvide
       return true;
     }
     return statusCode === 429 || statusCode >= 500;
+  }
+
+  private buildProviderUrl(base: string, path: string) {
+    const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+    const normalizedPath = path.replace(/^\/+/, "");
+    return new URL(normalizedPath, normalizedBase).toString();
   }
 }
