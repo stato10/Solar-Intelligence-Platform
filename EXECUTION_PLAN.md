@@ -40,14 +40,15 @@ DONE WHEN:
 
 DONE WHEN:
 - Full onboarding flow works
-- Data persists correctly
+- CRUD and validation flows are stable in scaffold mode (in-memory)
+- Persistent database wiring is tracked as a hardening step (post-MVP stabilization)
 
 ---
 
 ## Phase 3 - Provider Layer
 - Solar provider abstraction
 - Weather provider abstraction
-- Air quality provider abstraction
+- Air quality provider abstraction (deferred to post-MVP extension)
 - Mock implementations
 
 DONE WHEN:
@@ -62,9 +63,13 @@ DONE WHEN:
 - Risk detection
 - Opportunity scoring
 - Financial estimation
+- Fixture-based validation and golden output checks
+- Contract freeze gate before dashboard integration
 
 DONE WHEN:
 - Engine returns consistent JSON outputs
+- Golden fixtures pass repeatedly (deterministic outputs)
+- API <-> engine contract checks pass for valid and invalid payloads
 
 ---
 
@@ -72,9 +77,12 @@ DONE WHEN:
 - Aggregated backend endpoints
 - Main dashboard response model
 - Recommendation feed
+- Structured logging baseline
+- Contract and snapshot tests for dashboard payload
 
 DONE WHEN:
 - Dashboard receives full structured data
+- Data contracts validated against engine/API schemas
 
 ---
 

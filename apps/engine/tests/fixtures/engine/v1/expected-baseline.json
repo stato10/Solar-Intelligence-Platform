@@ -1,0 +1,49 @@
+{
+  "siteId": "fx-baseline",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 20.0,
+    "expectedWeeklyKwh": 140.0,
+    "expectedMonthlyKwh": 600.0
+  },
+  "soiling": {
+    "score": 88.36,
+    "estimatedLossPercent": 1.79,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 86.98,
+    "estimatedLossPercent": 3.1,
+    "peakHeatWindowStart": "10:00",
+    "peakHeatWindowEnd": "14:00"
+  },
+  "risks": {
+    "alerts": []
+  },
+  "optimization": {
+    "opportunityScore": 6.66,
+    "recommendations": [
+      {
+        "id": "rec-maintain-fx-baseline-2026-03-20",
+        "type": "operational",
+        "title": "Maintain current profile",
+        "message": "No high-impact action required for current conditions.",
+        "severity": "low",
+        "priority": 5,
+        "estimated_value": 0.0,
+        "valid_from": "2026-03-20T00:00:00Z",
+        "valid_until": "2026-03-20T00:00:00Z",
+        "source_module": "opportunity"
+      }
+    ],
+    "estimatedValue": 58.68
+  },
+  "financial": {
+    "dailyEstimatedSavings": 3.82,
+    "monthlyEstimatedSavings": 114.6,
+    "yearlyOptimizationPotential": 91.59
+  }
+}

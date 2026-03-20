@@ -1,0 +1,57 @@
+{
+  "siteId": "fx-tariff-sensitive",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 21.0,
+    "expectedWeeklyKwh": 147.0,
+    "expectedMonthlyKwh": 630.0
+  },
+  "soiling": {
+    "score": 79.53,
+    "estimatedLossPercent": 3.15,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 78.83,
+    "estimatedLossPercent": 5.04,
+    "peakHeatWindowStart": "11:00",
+    "peakHeatWindowEnd": "15:00"
+  },
+  "risks": {
+    "alerts": [
+      {
+        "riskType": "heat",
+        "severity": "moderate",
+        "message": "Estimated heat loss is elevated",
+        "expectedStart": "2026-03-20T00:00:00Z",
+        "expectedEnd": "2026-03-20T00:00:00Z"
+      }
+    ]
+  },
+  "optimization": {
+    "opportunityScore": 19.7,
+    "recommendations": [
+      {
+        "id": "rec-heat-fx-tariff-sensitive-2026-03-20",
+        "type": "optimization",
+        "title": "Mitigate thermal loss",
+        "message": "Panel thermal conditions indicate notable efficiency impact.",
+        "severity": "moderate",
+        "priority": 3,
+        "estimated_value": 60.48,
+        "valid_from": "2026-03-20T00:00:00Z",
+        "valid_until": "2026-03-20T00:00:00Z",
+        "source_module": "heat"
+      }
+    ],
+    "estimatedValue": 98.28
+  },
+  "financial": {
+    "dailyEstimatedSavings": 5.09,
+    "monthlyEstimatedSavings": 152.7,
+    "yearlyOptimizationPotential": 360.98
+  }
+}

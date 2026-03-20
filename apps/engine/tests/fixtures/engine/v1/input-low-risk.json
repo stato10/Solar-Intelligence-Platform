@@ -1,0 +1,15 @@
+{
+  "siteId": "fx-low-risk",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 24,
+    "cloudCover": 10,
+    "windSpeed": 6,
+    "precipitation": 0.8
+  },
+  "solar": {
+    "expectedDailyKwh": 22,
+    "expectedWeeklyKwh": 154,
+    "expectedMonthlyKwh": 660
+  }
+}
