@@ -10,7 +10,7 @@
 - [x] 0.7 Mark Phase 0 complete and lock docs baseline
 
 ## In Progress
-- [ ] Phase 3.7 Add first real solar provider adapter behind strategy (PVGIS)
+- [ ] Phase 4.1 Define first engine-side deterministic calculation module contract
 
 ## Blocked
 - [ ] OpenAI production key not yet available (AI summary validation limited to fallback path)
@@ -40,6 +40,7 @@
 - [x] Phase 3.4 Add first real provider adapter behind strategy (OpenCage)
 - [x] Phase 3.5 Add first real weather adapter behind strategy (Open-Meteo)
 - [x] Phase 3.6 Add first real alert-capable weather fallback adapter (OpenWeather)
+- [x] Phase 3.7 Add first real solar provider adapter behind strategy (PVGIS)
 - [x] External API docs baseline: PVGIS provider contract and env configuration
 - [x] External API docs extended: Open-Meteo and OpenWeather One Call 3.0
 - [x] External API docs extended: OpenCage geolocation provider (multilingual forward/reverse geocoding)

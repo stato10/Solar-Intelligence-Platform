@@ -36,11 +36,14 @@ export abstract class HttpProviderBase {
       });
 
       if (!response.ok) {
-        let raw: unknown;
-        try {
-          raw = await response.json();
-        } catch {
-          raw = await response.text();
+        const rawText = await response.text();
+        let raw: unknown = rawText;
+        if (rawText) {
+          try {
+            raw = JSON.parse(rawText);
+          } catch {
+            raw = rawText;
+          }
         }
         throw this.createAdapterError(
           response.status,

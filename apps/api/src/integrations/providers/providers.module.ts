@@ -4,6 +4,7 @@ import { MockPvgisSolarProvider } from "./adapters/mock-pvgis-solar.provider";
 import { OpenMeteoWeatherProvider } from "./adapters/open-meteo-weather.provider";
 import { OpenCageGeolocationProvider } from "./adapters/opencage-geolocation.provider";
 import { OpenWeatherWeatherProvider } from "./adapters/openweather-weather.provider";
+import { PvgisSolarProvider } from "./adapters/pvgis-solar.provider";
 import {
   GEOLOCATION_PROVIDER_TOKEN,
   SOLAR_PROVIDER_TOKEN,
@@ -12,22 +13,25 @@ import {
 import { ProvidersController } from "./providers.controller";
 import { GeolocationProviderOrchestratorService } from "./strategy/geolocation-provider-orchestrator.service";
 import { ProviderSelectionService } from "./strategy/provider-selection.service";
+import { SolarProviderOrchestratorService } from "./strategy/solar-provider-orchestrator.service";
 import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-orchestrator.service";
 
 @Module({
   controllers: [ProvidersController],
   providers: [
     MockPvgisSolarProvider,
+    PvgisSolarProvider,
     OpenMeteoWeatherProvider,
     OpenWeatherWeatherProvider,
     MockOpenCageGeolocationProvider,
     OpenCageGeolocationProvider,
     ProviderSelectionService,
+    SolarProviderOrchestratorService,
     WeatherProviderOrchestratorService,
     GeolocationProviderOrchestratorService,
     {
       provide: SOLAR_PROVIDER_TOKEN,
-      useExisting: MockPvgisSolarProvider
+      useExisting: SolarProviderOrchestratorService
     },
     {
       provide: WEATHER_PROVIDER_TOKEN,
@@ -43,6 +47,7 @@ import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-
     WEATHER_PROVIDER_TOKEN,
     GEOLOCATION_PROVIDER_TOKEN,
     ProviderSelectionService,
+    SolarProviderOrchestratorService,
     WeatherProviderOrchestratorService,
     GeolocationProviderOrchestratorService
   ]

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Inject, Post, Query } from "@nestjs/common";
 import { OpenMeteoWeatherProvider } from "./adapters/open-meteo-weather.provider";
 import { OpenWeatherWeatherProvider } from "./adapters/openweather-weather.provider";
+import { PvgisSolarProvider } from "./adapters/pvgis-solar.provider";
 import { GEOLOCATION_PROVIDER_TOKEN, SOLAR_PROVIDER_TOKEN, WEATHER_PROVIDER_TOKEN } from "./common/provider.tokens";
 import {
   GeolocationForwardInput,
@@ -18,6 +19,7 @@ export class ProvidersController {
     @Inject(WEATHER_PROVIDER_TOKEN) private readonly weatherProvider: WeatherProvider,
     @Inject(GEOLOCATION_PROVIDER_TOKEN)
     private readonly geolocationProvider: GeolocationProvider,
+    private readonly pvgisSolarProvider: PvgisSolarProvider,
     private readonly openWeatherProvider: OpenWeatherWeatherProvider,
     private readonly openMeteoProvider: OpenMeteoWeatherProvider,
     private readonly providerSelectionService: ProviderSelectionService
@@ -25,8 +27,9 @@ export class ProvidersController {
 
   @Get("health")
   async health() {
-    const [solar, weatherDefault, openMeteo, openWeather, geolocation] = await Promise.all([
+    const [solar, pvgis, weatherDefault, openMeteo, openWeather, geolocation] = await Promise.all([
       this.solarProvider.getHealth(),
+      this.pvgisSolarProvider.getHealth(),
       this.weatherProvider.getHealth(),
       this.openMeteoProvider.getHealth(),
       this.openWeatherProvider.getHealth(),
@@ -37,6 +40,9 @@ export class ProvidersController {
       success: true,
       data: {
         solar,
+        solarProviders: {
+          pvgis
+        },
         weather: {
           default: weatherDefault,
           openMeteo,
@@ -53,11 +59,17 @@ export class ProvidersController {
 
   @Get("strategy")
   strategy() {
+    const solarChain = this.providerSelectionService.getSolarProviderChain();
     const weatherChain = this.providerSelectionService.getWeatherProviderChain();
     const geolocationChain = this.providerSelectionService.getGeolocationProviderChain();
     return {
       success: true,
       data: {
+        solar: {
+          primary: solarChain[0],
+          fallback: solarChain[1] ?? null,
+          chain: solarChain
+        },
         weather: {
           primary: weatherChain[0],
           fallback: weatherChain[1] ?? null,
@@ -79,6 +91,19 @@ export class ProvidersController {
   @Post("solar/forecast")
   async mockSolarForecast(@Body() payload: SolarForecastInput) {
     const data = await this.solarProvider.getForecast(payload);
+    return {
+      success: true,
+      data,
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: "v1"
+      }
+    };
+  }
+
+  @Post("solar/forecast/pvgis")
+  async pvgisSolarForecast(@Body() payload: SolarForecastInput) {
+    const data = await this.pvgisSolarProvider.getForecast(payload);
     return {
       success: true,
       data,
