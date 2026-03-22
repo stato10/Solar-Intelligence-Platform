@@ -1,0 +1,37 @@
+{
+  "siteId": "fx-value-edge-zero",
+  "generatedAt": "2026-03-21T00:00:00Z",
+  "weather": {
+    "temperature": 25,
+    "cloudCover": 10,
+    "windSpeed": 4,
+    "precipitation": 1.2
+  },
+  "solar": {
+    "expectedDailyKwh": 18,
+    "expectedWeeklyKwh": 126,
+    "expectedMonthlyKwh": 540
+  },
+  "benchmark": {
+    "expected_production_kwh": 0,
+    "actual_production_kwh": 3.1,
+    "expected_export_kwh": 0,
+    "actual_export_kwh": 0
+  },
+  "self_consumption": {
+    "expected_production_kwh": 18,
+    "peak_window": {
+      "start": "12:00",
+      "end": "14:00"
+    },
+    "device_profile": {
+      "actions": [
+        "Run boiler"
+      ]
+    },
+    "tariffs": {
+      "buy_rate": 0.6,
+      "sell_rate": 0.2
+    }
+  }
+}

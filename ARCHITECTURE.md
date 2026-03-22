@@ -14,6 +14,11 @@ Web-first, service-oriented monorepo:
 
 The API orchestrates provider data and engine results, persists outputs, then returns typed responses to the web app.
 
+## Runtime Persistence Truth (Phase 4.9)
+- Active runtime persistence for current scaffold scope is in-memory in API modules.
+- PostgreSQL remains the target persistence architecture and schema source of truth for future persistence hardening phases.
+- No architecture change is implied by this note; it clarifies current runtime behavior vs target-state design.
+
 ## Tech Stack
 - Client: Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui, Radix UI, Framer Motion, TanStack Query, Zod.
 - Backend: Node.js, NestJS, REST, OpenAPI docs.
@@ -52,7 +57,7 @@ The API orchestrates provider data and engine results, persists outputs, then re
 
 ## Data Flow
 1. Web app sends authenticated request to API.
-2. API loads site/system/device/tariff context from PostgreSQL.
+2. API loads site/system/device/tariff context from active in-memory services (Phase 4.9 runtime truth).
 3. Solar Orchestrator Agent triggers provider fetch and normalization flow.
 4. API/provider layer fetches solar/weather/air-quality data from abstractions.
 5. API calls engine calculators for deterministic scoring outputs.

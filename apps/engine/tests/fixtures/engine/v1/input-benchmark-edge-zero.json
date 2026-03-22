@@ -1,0 +1,15 @@
+{
+  "siteId": "fx-benchmark-edge-zero",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 29,
+    "cloudCover": 40,
+    "windSpeed": 4,
+    "precipitation": 0.5
+  },
+  "solar": {
+    "expectedDailyKwh": 0,
+    "expectedWeeklyKwh": 0,
+    "expectedMonthlyKwh": 0
+  }
+}

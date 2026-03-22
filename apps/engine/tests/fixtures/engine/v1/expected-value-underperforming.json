@@ -1,0 +1,98 @@
+{
+  "siteId": "fx-value-underperforming",
+  "generatedAt": "2026-03-21T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 24.0,
+    "expectedWeeklyKwh": 168.0,
+    "expectedMonthlyKwh": 720.0
+  },
+  "soiling": {
+    "score": 61.0,
+    "estimatedLossPercent": 6.0,
+    "cleaningRecommended": true,
+    "recommendedCleaningDate": "2026-03-21",
+    "explanation": "Moderate soiling risk; preventive cleaning is recommended"
+  },
+  "heat": {
+    "score": 74.21,
+    "estimatedLossPercent": 6.14,
+    "peakHeatWindowStart": "11:00",
+    "peakHeatWindowEnd": "15:00"
+  },
+  "risks": {
+    "alerts": [
+      {
+        "riskType": "soiling",
+        "severity": "moderate",
+        "message": "Estimated soiling loss is elevated",
+        "expectedStart": "2026-03-21T00:00:00Z",
+        "expectedEnd": "2026-03-21T00:00:00Z"
+      },
+      {
+        "riskType": "heat",
+        "severity": "moderate",
+        "message": "Estimated heat loss is elevated",
+        "expectedStart": "2026-03-21T00:00:00Z",
+        "expectedEnd": "2026-03-21T00:00:00Z"
+      }
+    ]
+  },
+  "optimization": {
+    "opportunityScore": 33.98,
+    "recommendations": [
+      {
+        "id": "rec-soiling-fx-value-underperforming-2026-03-21",
+        "type": "maintenance",
+        "title": "Schedule panel cleaning",
+        "message": "Moderate to high soiling impact is expected.",
+        "severity": "moderate",
+        "priority": 2,
+        "estimated_value": 72.0,
+        "valid_from": "2026-03-21T00:00:00Z",
+        "valid_until": "2026-03-21T00:00:00Z",
+        "source_module": "soiling"
+      },
+      {
+        "id": "rec-heat-fx-value-underperforming-2026-03-21",
+        "type": "optimization",
+        "title": "Mitigate thermal loss",
+        "message": "Panel thermal conditions indicate notable efficiency impact.",
+        "severity": "moderate",
+        "priority": 3,
+        "estimated_value": 73.68,
+        "valid_from": "2026-03-21T00:00:00Z",
+        "valid_until": "2026-03-21T00:00:00Z",
+        "source_module": "heat"
+      }
+    ],
+    "estimatedValue": 145.68
+  },
+  "financial": {
+    "dailyEstimatedSavings": 4.27,
+    "monthlyEstimatedSavings": 128.1,
+    "yearlyOptimizationPotential": 522.34
+  },
+  "benchmark": {
+    "expected_production_kwh": 24.0,
+    "actual_production_kwh": 18.4,
+    "expected_export_kwh": 7.5,
+    "actual_export_kwh": 6.9,
+    "production_deviation_percent": -23.33,
+    "export_deviation_percent": -8.0,
+    "performance_status": "underperforming",
+    "insight": "Production is materially below expected baseline; inspect performance and maintenance drivers."
+  },
+  "self_consumption": {
+    "recommended_usage_window": {
+      "start": "10:30",
+      "end": "14:30"
+    },
+    "self_consumption_score": 66.03,
+    "estimated_savings_ils": 4.04,
+    "actions": [
+      "Run boiler",
+      "Run dishwasher"
+    ]
+  }
+}

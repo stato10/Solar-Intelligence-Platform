@@ -1,0 +1,80 @@
+{
+  "siteId": "fx-self-consumption-window",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 24.0,
+    "expectedWeeklyKwh": 168.0,
+    "expectedMonthlyKwh": 720.0
+  },
+  "soiling": {
+    "score": 94.67,
+    "estimatedLossPercent": 0.82,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 79.5,
+    "estimatedLossPercent": 4.88,
+    "peakHeatWindowStart": "11:00",
+    "peakHeatWindowEnd": "15:00"
+  },
+  "risks": {
+    "alerts": [
+      {
+        "riskType": "heat",
+        "severity": "moderate",
+        "message": "Estimated heat loss is elevated",
+        "expectedStart": "2026-03-20T00:00:00Z",
+        "expectedEnd": "2026-03-20T00:00:00Z"
+      }
+    ]
+  },
+  "optimization": {
+    "opportunityScore": 15.91,
+    "recommendations": [
+      {
+        "id": "rec-heat-fx-self-consumption-window-2026-03-20",
+        "type": "optimization",
+        "title": "Mitigate thermal loss",
+        "message": "Panel thermal conditions indicate notable efficiency impact.",
+        "severity": "moderate",
+        "priority": 3,
+        "estimated_value": 58.56,
+        "valid_from": "2026-03-20T00:00:00Z",
+        "valid_until": "2026-03-20T00:00:00Z",
+        "source_module": "heat"
+      }
+    ],
+    "estimatedValue": 68.4
+  },
+  "financial": {
+    "dailyEstimatedSavings": 22.46,
+    "monthlyEstimatedSavings": 673.8,
+    "yearlyOptimizationPotential": 1286.42
+  },
+  "benchmark": {
+    "expected_production_kwh": 24.0,
+    "actual_production_kwh": 22.63,
+    "expected_export_kwh": 5.28,
+    "actual_export_kwh": 5.18,
+    "production_deviation_percent": -5.71,
+    "export_deviation_percent": -1.89,
+    "performance_status": "good",
+    "insight": "Production and export are within the expected operating range."
+  },
+  "self_consumption": {
+    "recommended_usage_window": {
+      "start": "11:00",
+      "end": "15:00"
+    },
+    "self_consumption_score": 66.25,
+    "estimated_savings_ils": 5.35,
+    "actions": [
+      "Run boiler",
+      "Run dishwasher",
+      "Run laundry"
+    ]
+  }
+}

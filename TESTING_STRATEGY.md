@@ -3,6 +3,11 @@
 ## Purpose
 Define a phase-aware testing system that keeps contracts stable, prevents regressions, and supports deterministic outputs for engine-driven modules.
 
+## Execution Control Alignment
+- This file is the executable verification source for task/phase closure.
+- Use with: `WORKFLOW_RULES.md`, `SYNC_PROTOCOL.md`, `PHASE_GATE_CHECKLIST.md`.
+- A task is not `done` without running the relevant checks listed here.
+
 ## Quality Gates by Layer
 
 Engine (`apps/engine`):
@@ -81,12 +86,21 @@ Required checks before merge:
 - Engine syntax checks succeed.
 - Fixture runner passes.
 - API-engine contract smoke passes.
+- Dashboard contract smoke passes when aggregate payload logic changes.
+- Dashboard snapshot passes when dashboard data shape changes.
 
 Recommended commands:
+- `npm run lint`
 - `npm --workspace @sip/api run build`
 - `python -m py_compile apps/engine/src/main.py`
 - `python apps/engine/tests/run_golden.py`
 - `python apps/api/tests/run_engine_contract_smoke.py`
+- `python apps/api/tests/run_dashboard_contract_smoke.py`
+- `python apps/api/tests/run_dashboard_snapshot.py`
+
+HTTP smoke prerequisites:
+- API service must be running on the expected local URL configured in each runner script.
+- Use seeded fixture data and baseline contracts before comparing shape snapshots.
 
 ## Runtime Smoke Policy
 

@@ -1,5 +1,11 @@
 # Execution Plan
 
+## Controlled Execution Gate (Applies to All Phases)
+- Execute work one task at a time using `TASK_TEMPLATE.md`.
+- Follow `Command -> Implement -> Report -> Audit -> Close` for every task.
+- Use `PHASE_GATE_CHECKLIST.md` before marking any phase complete.
+- Run sync checks defined in `SYNC_PROTOCOL.md` to prevent doc/code drift.
+
 ## Phase 0 - Documentation Freeze
 - Finalize product definition
 - Finalize MVP scope
@@ -121,3 +127,4 @@ DONE WHEN:
 
 DONE WHEN:
 - App stable and usable
+- Phase gate checklist is fully satisfied and documented

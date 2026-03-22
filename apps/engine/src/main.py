@@ -24,6 +24,24 @@ def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(maximum, value))
 
 
+def _safe_float(value: object, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _deviation_percent(expected: float, actual: float) -> float:
+    safe_expected = max(0.0, _safe_float(expected, 0.0))
+    safe_actual = max(0.0, _safe_float(actual, 0.0))
+    if safe_expected <= 0.01:
+        # Deterministic baseline when expected values are absent/near-zero.
+        # Near-zero guard keeps large percentage spikes stable in fixtures.
+        # 0 -> 0 stays 0, and 0 -> positive snaps to 100%.
+        return 0.0 if safe_actual <= 0.01 else 100.0
+    return ((safe_actual - safe_expected) / safe_expected) * 100.0
+
+
 def _heat_peak_window(temperature: float) -> tuple[str, str]:
     if temperature >= 36:
         return "12:00", "16:00"
@@ -268,6 +286,118 @@ def compute_financial_module(
     }
 
 
+def _extract_rate(tariffs: dict[str, object], keys: tuple[str, ...], default: float) -> float:
+    for key in keys:
+        if key in tariffs:
+            return max(0.0, _safe_float(tariffs.get(key), default))
+    return default
+
+
+def _extract_shiftable_actions(device_profile: dict[str, object]) -> list[str]:
+    raw_actions = device_profile.get("actions")
+    if isinstance(raw_actions, list):
+        action_list = [str(item).strip() for item in raw_actions if str(item).strip()]
+        if action_list:
+            return action_list[:4]
+
+    devices = device_profile.get("devices")
+    if isinstance(devices, list):
+        normalized: list[str] = []
+        for device in devices:
+            if not isinstance(device, dict):
+                continue
+            is_shiftable = bool(device.get("shiftable", True))
+            if not is_shiftable:
+                continue
+            name = str(device.get("name", "")).strip()
+            if name:
+                normalized.append(f"Run {name}")
+        if normalized:
+            return normalized[:4]
+
+    return ["Run boiler", "Run dishwasher"]
+
+
+def compute_benchmark_module(payload: "BenchmarkInput") -> dict:
+    expected_production = max(0.0, _safe_float(payload.expected_production_kwh, 0.0))
+    actual_production = max(0.0, _safe_float(payload.actual_production_kwh, 0.0))
+    expected_export = max(0.0, _safe_float(payload.expected_export_kwh, 0.0))
+    actual_export = max(0.0, _safe_float(payload.actual_export_kwh, 0.0))
+
+    production_deviation = _round2(
+        _deviation_percent(
+            expected=expected_production,
+            actual=actual_production,
+        )
+    )
+    export_deviation = _round2(
+        _deviation_percent(
+            expected=expected_export,
+            actual=actual_export,
+        )
+    )
+
+    status: Literal["good", "underperforming", "overexporting"]
+    if production_deviation <= -10.0:
+        status = "underperforming"
+        insight = "Production is materially below expected baseline; inspect performance and maintenance drivers."
+    elif export_deviation >= 15.0:
+        status = "overexporting"
+        insight = "Export is high versus plan; shift controllable loads into peak solar hours to improve self-consumption."
+    else:
+        status = "good"
+        insight = "Production and export are within the expected operating range."
+
+    return {
+        "expected_production_kwh": _round2(expected_production),
+        "actual_production_kwh": _round2(actual_production),
+        "expected_export_kwh": _round2(expected_export),
+        "actual_export_kwh": _round2(actual_export),
+        "production_deviation_percent": production_deviation,
+        "export_deviation_percent": export_deviation,
+        "performance_status": status,
+        "insight": insight,
+    }
+
+
+def compute_self_consumption_module(payload: "SelfConsumptionInput") -> dict:
+    actions = _extract_shiftable_actions(payload.device_profile)
+    start = payload.peak_window.start
+    end = payload.peak_window.end
+
+    import_rate = _extract_rate(
+        payload.tariffs,
+        keys=("import_rate_ils", "import_rate", "grid_import_rate", "buy_rate"),
+        default=0.62,
+    )
+    export_rate = _extract_rate(
+        payload.tariffs,
+        keys=("export_rate_ils", "export_rate", "feed_in_rate", "sell_rate"),
+        default=0.24,
+    )
+    spread = _clamp(import_rate - export_rate, 0.0, 2.0)
+
+    explicit_ratio = _safe_float(payload.device_profile.get("shiftable_load_ratio"), -1.0)
+    if explicit_ratio >= 0:
+        shiftable_ratio = _clamp(explicit_ratio, 0.0, 1.0)
+    else:
+        shiftable_ratio = _clamp(0.25 + (len(actions) * 0.1), 0.0, 0.8)
+
+    self_consumption_score = _round2(
+        _clamp(45.0 + (shiftable_ratio * 35.0) + (spread * 12.0), 0.0, 100.0)
+    )
+    estimated_savings = _round2(
+        payload.expected_production_kwh * shiftable_ratio * spread * 0.85
+    )
+
+    return {
+        "recommended_usage_window": {"start": start, "end": end},
+        "self_consumption_score": self_consumption_score,
+        "estimated_savings_ils": estimated_savings,
+        "actions": actions,
+    }
+
+
 class WeatherInput(BaseModel):
     temperature: float | None = None
     cloudCover: float | None = Field(default=None, ge=0, le=100)
@@ -287,6 +417,31 @@ class TariffInput(BaseModel):
     exportRate: float | None = Field(default=None, ge=0)
 
 
+class BenchmarkInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_production_kwh: float = Field(ge=0)
+    actual_production_kwh: float = Field(ge=0)
+    expected_export_kwh: float = Field(ge=0)
+    actual_export_kwh: float = Field(ge=0)
+
+
+class PeakWindowInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    start: str
+    end: str
+
+
+class SelfConsumptionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_production_kwh: float = Field(ge=0)
+    peak_window: PeakWindowInput
+    device_profile: dict[str, object] = Field(default_factory=dict)
+    tariffs: dict[str, object] = Field(default_factory=dict)
+
+
 class EngineCalculateV1Input(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -295,6 +450,8 @@ class EngineCalculateV1Input(BaseModel):
     weather: WeatherInput
     solar: SolarInput
     tariff: TariffInput | None = None
+    benchmark: BenchmarkInput | None = None
+    self_consumption: SelfConsumptionInput | None = None
 
 
 class RiskAlert(BaseModel):
@@ -318,6 +475,24 @@ class RecommendationItem(BaseModel):
     source_module: str
 
 
+class BenchmarkOutput(BaseModel):
+    expected_production_kwh: float
+    actual_production_kwh: float
+    expected_export_kwh: float
+    actual_export_kwh: float
+    production_deviation_percent: float
+    export_deviation_percent: float
+    performance_status: Literal["good", "underperforming", "overexporting"]
+    insight: str
+
+
+class SelfConsumptionOutput(BaseModel):
+    recommended_usage_window: PeakWindowInput
+    self_consumption_score: float
+    estimated_savings_ils: float
+    actions: list[str]
+
+
 class EngineCalculateV1Output(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -330,6 +505,8 @@ class EngineCalculateV1Output(BaseModel):
     risks: dict
     optimization: dict
     financial: dict
+    benchmark: BenchmarkOutput
+    self_consumption: SelfConsumptionOutput
 
 
 @app.post("/calculate/v1")
@@ -379,6 +556,50 @@ def calculate_v1(payload: EngineCalculateV1Input) -> EngineCalculateV1Output:
         import_rate=import_rate,
         export_rate=export_rate,
     )
+    benchmark_input = payload.benchmark
+    if benchmark_input is None:
+        expected_export = _round2(daily * 0.22)
+        export_bias = _clamp(
+            (wind_speed / 120.0) - (precipitation / 16.0) - (cloud_cover / 320.0),
+            -0.6,
+            0.7,
+        )
+        benchmark_input = BenchmarkInput(
+            expected_production_kwh=daily,
+            actual_production_kwh=_round2(
+                daily * _clamp(1 - ((soiling_loss + heat_loss) / 100.0), 0.0, 1.2)
+            ),
+            expected_export_kwh=expected_export,
+            actual_export_kwh=_round2(
+                _clamp(
+                    expected_export * (1 + export_bias),
+                    0.0,
+                    expected_export * 1.8 if expected_export > 0 else 0.0,
+                )
+            ),
+        )
+    benchmark = BenchmarkOutput(**compute_benchmark_module(benchmark_input))
+
+    self_consumption_input = payload.self_consumption
+    if self_consumption_input is None:
+        self_consumption_input = SelfConsumptionInput(
+            expected_production_kwh=daily,
+            peak_window=PeakWindowInput(
+                start=heat["peakHeatWindowStart"],
+                end=heat["peakHeatWindowEnd"],
+            ),
+            device_profile={
+                "actions": ["Run boiler", "Run dishwasher", "Run laundry"],
+                "shiftable_load_ratio": _round2(_clamp(0.3 + (cloud_cover / 400.0), 0.2, 0.75)),
+            },
+            tariffs={
+                "import_rate_ils": import_rate,
+                "export_rate_ils": export_rate if export_rate > 0 else import_rate * 0.55,
+            },
+        )
+    self_consumption = SelfConsumptionOutput(
+        **compute_self_consumption_module(self_consumption_input)
+    )
 
     return EngineCalculateV1Output(
         siteId=payload.siteId,
@@ -398,4 +619,6 @@ def calculate_v1(payload: EngineCalculateV1Input) -> EngineCalculateV1Output:
         risks={"alerts": [alert.model_dump() for alert in alerts]},
         optimization=opportunity,
         financial=financial,
+        benchmark=benchmark,
+        self_consumption=self_consumption,
     )

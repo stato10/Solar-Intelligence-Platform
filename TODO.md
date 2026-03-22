@@ -1,5 +1,29 @@
 # TODO
 
+## Task Status Model (Controlled Execution)
+Use one of the following tags on task lines:
+- `planned`
+- `active`
+- `needs-audit`
+- `blocked`
+- `done`
+
+Rules:
+- Keep exactly one `active` implementation task at a time.
+- Do not move to the next task before current task reaches `done`.
+- If a code TODO is added, track it here explicitly.
+
+## Task Closure Protocol
+Each task follows:
+
+`Command -> Implement -> Report -> Audit -> Close`
+
+Before marking task `done`, verify `PHASE_GATE_CHECKLIST.md` and `SYNC_PROTOCOL.md`.
+
+## Runtime Truth Note (Phase 4.9)
+- Active runtime persistence remains in-memory for current scaffold scope.
+- `DB_SCHEMA.md` is treated as the target persistence model for future PostgreSQL hardening tasks.
+
 ## Phase 0 - Documentation Freeze (In Order)
 - [x] 0.1 Final consistency pass across all `.md` files (single source of truth = web-first)
 - [x] 0.2 Freeze MVP scope boundaries (`MVP_SCOPE.md`)
@@ -15,6 +39,13 @@ Definition of Done:
 - Any future doc changes require versioned updates
 
 ## In Progress
+- [x] Phase 4.9a Sync API contracts with implemented routes [done]
+- [x] Phase 4.9b Freeze canonical dashboard aggregate contract [done]
+- [x] Phase 4.9c Align engine schema with API DTOs/tests [done]
+- [ ] Phase 4.9d Document DB truth (in-memory runtime, PostgreSQL target) [done]
+- [x] Phase 4.9e Normalize payload naming to camelCase in public contracts [done]
+- [x] Phase 4.9f Provider->engine mapping policy freeze (mapped vs ignored fields) [done]
+- [x] Phase 4.9g Final sync audit and phase gate check [done]
 - [x] Phase 4.1 Freeze deterministic engine contract (input/output + fixtures)
 - [x] Phase 4.2 Implement forecast normalization module in engine
 - [x] Phase 4.3 Implement soiling and heat-loss deterministic modules
@@ -29,9 +60,14 @@ Definition of Done:
 - [x] 4.7a Add fixture-based validation tests in CI-friendly runner
 - [x] 4.8 Freeze engine output contract before dashboard integration
 - [x] 5.1 Build aggregated dashboard endpoint
+- [x] 5.2 Merge dashboard response model (forecast, soiling, heat, risks, opportunities, financials)
+- [x] 5.3 Add structured logging baseline
+- [x] 5.4 Add dashboard contract smoke tests
+- [x] 5.5 Add dashboard response snapshot test
+- [x] 5.6 Create demo seed (demo user/site/system + seeded dashboard payload)
 
 ## Blocked
-- [ ] OpenAI production key not yet available (AI summary validation limited to fallback path)
+- [ ] OpenAI production key not yet available (AI summary validation limited to fallback path) [blocked]
 
 ## Done
 - [x] Bootstrap brief defined and aligned to web-first application direction
@@ -69,14 +105,14 @@ Definition of Done:
 - [x] Phase 3 completion gate (real+mock providers interchangeable with strategy fallback) satisfied
 
 ## Next Phases (Queued)
-- [x] Phase 1: Project scaffold (web/api/engine + docker + base auth)
-- [x] Phase 2: Core domain CRUD scaffolding (users/sites/systems/devices/tariffs)
-- [x] Phase 3: Provider abstraction + mocks/real adapters (weather/geolocation/solar)
-- [x] Phase 4: Calculation engine modules
-- [ ] Phase 5: Dashboard integration endpoints
-- [ ] Phase 6: Frontend MVP pages and states
-- [ ] Phase 7: AI insights + fallback
-- [ ] Phase 8: QA, polish, release readiness
+- [x] Phase 1: Project scaffold (web/api/engine + docker + base auth) [done]
+- [x] Phase 2: Core domain CRUD scaffolding (users/sites/systems/devices/tariffs) [done]
+- [x] Phase 3: Provider abstraction + mocks/real adapters (weather/geolocation/solar) [done]
+- [x] Phase 4: Calculation engine modules [done]
+- [x] Phase 5: Dashboard integration endpoints [done]
+- [ ] Phase 6: Frontend MVP pages and states [planned]
+- [ ] Phase 7: AI insights + fallback [planned]
+- [ ] Phase 8: QA, polish, release readiness [planned]
 
 ## Phase 5 Definition of Done
 - Aggregated dashboard endpoint returns complete, contract-valid data
@@ -105,7 +141,7 @@ Testing:
 - [ ] Unit tests for engine modules
 - [x] API <-> engine contract tests
 - [ ] Provider adapter tests (mock/real behavior)
-- [ ] Dashboard response snapshot tests
+- [x] Dashboard response snapshot tests
 
 Risk Management:
 - [x] Create `RISK_REGISTER.md`
@@ -132,10 +168,10 @@ Recommendation System:
   - source_module
 
 Observability:
-- [ ] Request logging baseline
-- [ ] Provider error logging
-- [ ] Engine execution logging
-- [ ] Correlation ID propagation support
+- [x] Request logging baseline
+- [x] Provider error logging
+- [x] Engine execution logging
+- [x] Correlation ID propagation support
 
 ## Strategic Risks
 - Provider schema drift

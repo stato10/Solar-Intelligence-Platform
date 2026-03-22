@@ -27,3 +27,12 @@ This document freezes canonical normalization and units rules for deterministic 
 ## Numeric Precision
 - Engine output numeric values are rounded to 2 decimal places.
 - Deterministic fixture checks compare normalized JSON payloads.
+
+## Payload Naming (Phase 4.9 Canonical Rule)
+- Canonical external/public payload naming is `camelCase`.
+- This applies to:
+  - API response payloads
+  - dashboard response contracts
+  - frontend-facing DTOs
+- Internal provider and engine payloads may use source-native naming (including `snake_case`) only inside mapping layers.
+- API integration services must normalize internal/raw fields to canonical camelCase before returning public responses.

@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsBoolean,
   IsArray,
   IsDateString,
   IsNumber,
@@ -60,6 +61,107 @@ export class EngineTariffInputDto {
   exportRate?: number;
 }
 
+export class EngineBenchmarkInputDto {
+  @IsNumber()
+  @Min(0)
+  expected_production_kwh!: number;
+
+  @IsNumber()
+  @Min(0)
+  actual_production_kwh!: number;
+
+  @IsNumber()
+  @Min(0)
+  expected_export_kwh!: number;
+
+  @IsNumber()
+  @Min(0)
+  actual_export_kwh!: number;
+}
+
+export class EnginePeakWindowInputDto {
+  @IsString()
+  start!: string;
+
+  @IsString()
+  end!: string;
+}
+
+export class EngineDeviceItemInputDto {
+  @IsString()
+  name!: string;
+
+  @IsBoolean()
+  shiftable!: boolean;
+}
+
+export class EngineDeviceProfileInputDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  actions?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EngineDeviceItemInputDto)
+  devices?: EngineDeviceItemInputDto[];
+
+  @IsOptional()
+  @IsNumber()
+  shiftable_load_ratio!: number;
+}
+
+export class EngineSelfConsumptionTariffsInputDto {
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  import_rate_ils?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  export_rate_ils?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  buy_rate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  sell_rate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  import_rate?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  export_rate?: number;
+}
+
+export class EngineSelfConsumptionInputDto {
+  @IsNumber()
+  @Min(0)
+  expected_production_kwh!: number;
+
+  @ValidateNested()
+  @Type(() => EnginePeakWindowInputDto)
+  peak_window!: EnginePeakWindowInputDto;
+
+  @ValidateNested()
+  @Type(() => EngineDeviceProfileInputDto)
+  device_profile!: EngineDeviceProfileInputDto;
+
+  @ValidateNested()
+  @Type(() => EngineSelfConsumptionTariffsInputDto)
+  tariffs!: EngineSelfConsumptionTariffsInputDto;
+}
+
 export class EngineCalculateV1RequestDto {
   @IsString()
   siteId!: string;
@@ -79,6 +181,29 @@ export class EngineCalculateV1RequestDto {
   @ValidateNested()
   @Type(() => EngineTariffInputDto)
   tariff?: EngineTariffInputDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => EngineBenchmarkInputDto)
+  benchmark?: EngineBenchmarkInputDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => EngineSelfConsumptionInputDto)
+  self_consumption?: EngineSelfConsumptionInputDto;
+}
+
+export interface CanonicalRecommendation {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  severity: "low" | "moderate" | "high";
+  priority: number;
+  estimatedValue: number;
+  validFrom: string;
+  validUntil: string;
+  sourceModule: string;
 }
 
 export interface EngineCalculateV1Response {
@@ -114,18 +239,7 @@ export interface EngineCalculateV1Response {
   };
   optimization: {
     opportunityScore: number;
-    recommendations: Array<{
-      id: string;
-      type: string;
-      title: string;
-      message: string;
-      severity: "low" | "moderate" | "high";
-      priority: number;
-      estimated_value: number;
-      valid_from: string;
-      valid_until: string;
-      source_module: string;
-    }>;
+    recommendations: CanonicalRecommendation[];
     estimatedValue?: number;
   };
   financial: {
@@ -133,11 +247,80 @@ export interface EngineCalculateV1Response {
     monthlyEstimatedSavings: number;
     yearlyOptimizationPotential: number;
   };
+  benchmark: {
+    expectedProductionKwh: number;
+    actualProductionKwh: number;
+    expectedExportKwh: number;
+    actualExportKwh: number;
+    productionDeviationPercent: number;
+    exportDeviationPercent: number;
+    performanceStatus: "good" | "underperforming" | "overexporting";
+    insight: string;
+  };
+  selfConsumption: {
+    recommendedUsageWindow: {
+      start: string;
+      end: string;
+    };
+    selfConsumptionScore: number;
+    estimatedSavingsIls: number;
+    actions: string[];
+  };
+}
+
+interface RawRecommendation {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  severity: "low" | "moderate" | "high";
+  priority: number;
+  estimated_value: number;
+  valid_from: string;
+  valid_until: string;
+  source_module: string;
+}
+
+export interface RawEngineCalculateV1Response {
+  siteId: string;
+  generatedAt: string;
+  source: "ENGINE_V1";
+  forecast: Record<string, unknown>;
+  soiling: Record<string, unknown>;
+  heat: Record<string, unknown>;
+  risks: {
+    alerts: unknown[];
+  };
+  optimization: {
+    opportunityScore: number;
+    recommendations: RawRecommendation[] | string[];
+    estimatedValue?: number;
+  };
+  financial: Record<string, unknown>;
+  benchmark: {
+    expected_production_kwh: number;
+    actual_production_kwh: number;
+    expected_export_kwh: number;
+    actual_export_kwh: number;
+    production_deviation_percent: number;
+    export_deviation_percent: number;
+    performance_status: "good" | "underperforming" | "overexporting";
+    insight: string;
+  };
+  self_consumption: {
+    recommended_usage_window: {
+      start: string;
+      end: string;
+    };
+    self_consumption_score: number;
+    estimated_savings_ils: number;
+    actions: string[];
+  };
 }
 
 export function isEngineCalculateV1Response(
   value: unknown
-): value is EngineCalculateV1Response {
+): value is RawEngineCalculateV1Response {
   if (!value || typeof value !== "object") {
     return false;
   }
@@ -153,6 +336,8 @@ export function isEngineCalculateV1Response(
     isObject(payload.risks) &&
     isObject(payload.optimization) &&
     isObject(payload.financial) &&
+    isObject(payload.benchmark) &&
+    isObject(payload.self_consumption) &&
     isArray((payload.risks as Record<string, unknown>).alerts) &&
     isRecommendationArray((payload.optimization as Record<string, unknown>).recommendations)
   );
@@ -166,7 +351,7 @@ function isArray(value: unknown): value is unknown[] {
   return Array.isArray(value);
 }
 
-function isRecommendationArray(value: unknown): value is EngineCalculateV1Response["optimization"]["recommendations"] {
+function isRecommendationArray(value: unknown): value is RawRecommendation[] | string[] {
   if (!Array.isArray(value)) {
     return false;
   }

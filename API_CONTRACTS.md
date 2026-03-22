@@ -28,48 +28,61 @@
   - `version` (`v1`)
 
 ## Endpoints
+### App
+- `GET /api/v1/health`
+
 ### Auth
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/me`
 
 ### Sites
+- `GET /api/v1/sites`
 - `POST /api/v1/sites`
 - `GET /api/v1/sites/:id`
-- `PUT /api/v1/sites/:id`
+- `PATCH /api/v1/sites/:id`
 
-### Geolocation
-- `GET /api/v1/geolocation/forward?q={addressQuery}&language={lang?}&countrycode={iso2?}&limit={n?}`
-- `GET /api/v1/geolocation/reverse?lat={lat}&lon={lon}&language={lang?}`
+### Users
+- `GET /api/v1/users`
+- `POST /api/v1/users`
+- `GET /api/v1/users/:id`
+- `PATCH /api/v1/users/:id`
 
-### Solar System
-- `POST /api/v1/sites/:siteId/system`
-- `GET /api/v1/sites/:siteId/system`
-- `PUT /api/v1/sites/:siteId/system`
+### Devices
+- `GET /api/v1/devices`
+- `POST /api/v1/devices`
+- `GET /api/v1/devices/:id`
+- `PATCH /api/v1/devices/:id`
 
-### Forecast
-- `GET /api/v1/sites/:siteId/forecast/today`
-- `GET /api/v1/sites/:siteId/forecast/week`
-- `GET /api/v1/sites/:siteId/forecast/month`
+### Tariffs
+- `GET /api/v1/tariffs`
+- `POST /api/v1/tariffs`
+- `GET /api/v1/tariffs/:id`
+- `PATCH /api/v1/tariffs/:id`
 
-### Soiling
-- `GET /api/v1/sites/:siteId/soiling`
+### Solar Systems
+- `GET /api/v1/solar-systems`
+- `POST /api/v1/solar-systems`
+- `GET /api/v1/solar-systems/:id`
+- `PATCH /api/v1/solar-systems/:id`
 
-### Heat
-- `GET /api/v1/sites/:siteId/heat`
+### Provider Integrations
+- `GET /api/v1/integrations/providers/health`
+- `GET /api/v1/integrations/providers/strategy`
+- `POST /api/v1/integrations/providers/solar/forecast`
+- `POST /api/v1/integrations/providers/solar/forecast/pvgis`
+- `POST /api/v1/integrations/providers/weather/snapshot`
+- `POST /api/v1/integrations/providers/weather/snapshot/openweather`
+- `GET /api/v1/integrations/providers/geolocation/forward?query={address}&language={lang?}&countryCode={iso2?}&limit={n?}`
+- `GET /api/v1/integrations/providers/geolocation/reverse?latitude={lat}&longitude={lon}&language={lang?}`
 
-### Risks
-- `GET /api/v1/sites/:siteId/risks`
+### Engine Integration
+- `GET /api/v1/integrations/engine/health`
+- `POST /api/v1/integrations/engine/calculate/v1`
 
-### Optimization
-- `GET /api/v1/sites/:siteId/opportunities`
-
-### Financial
-- `GET /api/v1/sites/:siteId/financial-summary`
-
-### Insights
-- `GET /api/v1/sites/:siteId/insights/daily`
-- `GET /api/v1/sites/:siteId/insights/weekly`
+### Dashboard
+- `POST /api/v1/dashboard/aggregate`
+- `POST /api/v1/dashboard/demo/seed`
 
 ## Contract Notes
 - API responses should be typed DTOs with stable keys.
@@ -80,9 +93,10 @@
 - AI insight endpoints must include deterministic metric references used for summary generation.
 - Internal API-to-engine calls must use explicit schemas and timeout/retry policy.
 - Geolocation endpoints must support multilingual input/output and provider-backed address normalization.
+- Site-scoped computed `GET /sites/:siteId/*` endpoints are not part of the active runtime surface in v1; dashboard aggregation is the canonical external computed contract in the current phase.
 
 ## Geolocation Data Contract
-- Forward geocoding (`/geolocation/forward`) minimum `data` payload:
+- Forward geocoding (`/integrations/providers/geolocation/forward`) minimum `data` payload:
   - `query`
   - `results[]` with:
     - `formattedAddress`
@@ -94,7 +108,7 @@
     - `components` (provider-normalized object)
   - `source`
   - `generatedAt`
-- Reverse geocoding (`/geolocation/reverse`) minimum `data` payload:
+- Reverse geocoding (`/integrations/providers/geolocation/reverse`) minimum `data` payload:
   - `lat`
   - `lon`
   - `formattedAddress`
@@ -104,30 +118,88 @@
   - `source`
   - `generatedAt`
 
-## Computed Endpoint Minimum Data Contract
-- Forecast endpoints:
-  - `siteId`, `generatedAt`, `source`
-  - `expectedDailyKwh`, `expectedWeeklyKwh`, `expectedMonthlyKwh`
-  - `peakWindowStart`, `peakWindowEnd`
-- Soiling endpoint:
-  - `siteId`, `generatedAt`, `source`
-  - `score`, `estimatedLossPercent`, `cleaningRecommended`, `recommendedCleaningDate`, `explanation`
-- Heat endpoint:
-  - `siteId`, `generatedAt`, `source`
-  - `score`, `estimatedLossPercent`, `peakHeatWindowStart`, `peakHeatWindowEnd`
-- Risks endpoint:
-  - `siteId`, `generatedAt`, `source`
+## Dashboard Aggregate Canonical Contract (Frozen for Phase 4.9)
+
+Endpoint:
+- `POST /api/v1/dashboard/aggregate`
+
+Request (`AggregateDashboardRequestDto`):
+- `siteId` (string, required)
+- `latitude` (number, required)
+- `longitude` (number, required)
+- `systemSizeKw` (number, required)
+- `lossPercent` (number, optional)
+- `timezone` (string, optional)
+- `generatedAt` (ISO-8601 string, optional)
+- `tariff` (object, optional)
+  - `currency` (string, optional)
+  - `importRate` (number, optional)
+  - `exportRate` (number, optional)
+
+Success envelope:
+- `success` (`true`)
+- `data` (object)
+- `meta`:
+  - `timestamp` (ISO-8601 string)
+  - `version` (`v1`)
+
+Canonical `data` shape (camelCase for public payload):
+- `siteId` (string)
+- `generatedAt` (ISO-8601 string)
+- `source` (`DASHBOARD_AGGREGATED_V1`)
+- `forecast`:
+  - `expectedDailyKwh` (number)
+  - `expectedWeeklyKwh` (number)
+  - `expectedMonthlyKwh` (number)
+- `soiling`:
+  - `score` (number)
+  - `estimatedLossPercent` (number)
+  - `cleaningRecommended` (boolean)
+  - `recommendedCleaningDate` (ISO-8601 string | null)
+  - `explanation` (string)
+- `heat`:
+  - `score` (number)
+  - `estimatedLossPercent` (number)
+  - `peakHeatWindowStart` (ISO-8601 string)
+  - `peakHeatWindowEnd` (ISO-8601 string)
+- `risks`:
   - `alerts` (array of `{ riskType, severity, message, expectedStart, expectedEnd }`)
-- Optimization endpoint:
-  - `siteId`, `generatedAt`, `source`
-  - `recommendations`, `opportunityScore`, `estimatedValue`
-- Financial endpoint:
-  - `siteId`, `generatedAt`, `source`
-  - `dailyEstimatedSavings`, `monthlyEstimatedSavings`, `yearlyOptimizationPotential`
-- Insights endpoints:
-  - `siteId`, `generatedAt`
-  - `summaryType`, `summaryText`, `recommendations`
-  - `deterministicReferences` (IDs/keys to forecast/score/financial metrics used)
+- `optimization`:
+  - `opportunityScore` (number)
+  - `estimatedValue` (number)
+  - `recommendations` (array of canonical recommendation objects in camelCase)
+    - `id` (string)
+    - `type` (string)
+    - `title` (string)
+    - `message` (string)
+    - `severity` (`low` | `moderate` | `high`)
+    - `priority` (number)
+    - `estimatedValue` (number)
+    - `validFrom` (ISO-8601 string)
+    - `validUntil` (ISO-8601 string)
+    - `sourceModule` (string)
+- `financial`:
+  - `dailyEstimatedSavings` (number)
+  - `monthlyEstimatedSavings` (number)
+  - `yearlyOptimizationPotential` (number)
+- `benchmark`:
+  - `expectedProductionKwh` (number)
+  - `actualProductionKwh` (number)
+  - `expectedExportKwh` (number)
+  - `actualExportKwh` (number)
+  - `productionDeviationPercent` (number)
+  - `exportDeviationPercent` (number)
+  - `performanceStatus` (`good` | `underperforming` | `overexporting`)
+  - `insight` (string)
+- `selfConsumption`:
+  - `recommendedUsageWindow` (`{ start, end }`)
+  - `selfConsumptionScore` (number)
+  - `estimatedSavingsIls` (number)
+  - `actions` (array of strings)
+- `providers`:
+  - `weather` (string)
+  - `solar` (string)
+  - `engine` (string)
 
 ## Error Model
 - Standard error payload:
@@ -194,7 +266,7 @@ This section freezes the first deterministic engine contract used by API-to-engi
   - `alerts` (array of `{ riskType, severity, message, expectedStart, expectedEnd }`)
 - `optimization` (object, required)
   - `opportunityScore` (number, 0-100)
-  - `recommendations` (array of canonical recommendation objects)
+  - `recommendations` (array of internal engine recommendation objects)
     - `id` (string)
     - `type` (string)
     - `title` (string)
@@ -209,6 +281,25 @@ This section freezes the first deterministic engine contract used by API-to-engi
   - `dailyEstimatedSavings` (number)
   - `monthlyEstimatedSavings` (number)
   - `yearlyOptimizationPotential` (number)
+- `benchmark` (object, required, internal snake_case)
+  - `expected_production_kwh` (number)
+  - `actual_production_kwh` (number)
+  - `expected_export_kwh` (number)
+  - `actual_export_kwh` (number)
+  - `production_deviation_percent` (number)
+  - `export_deviation_percent` (number)
+  - `performance_status` (`good` | `underperforming` | `overexporting`)
+  - `insight` (string)
+- `self_consumption` (object, required, internal snake_case)
+  - `recommended_usage_window` (`{ start, end }`)
+  - `self_consumption_score` (number)
+  - `estimated_savings_ils` (number)
+  - `actions` (array of strings)
+
+### API Normalization Rule (Phase 4.9)
+- Engine output may contain internal snake_case fields (`estimated_value`, `self_consumption`, etc.).
+- API public responses (`/api/v1/*`) must expose canonical camelCase fields.
+- Mapping from provider/engine internal payloads to canonical API payloads is handled in API integration services.
 
 ### Determinism Rules
 - Given identical input JSON, engine output JSON must be identical in values.

@@ -1,0 +1,73 @@
+{
+  "siteId": "fx-value-overexporting",
+  "generatedAt": "2026-03-21T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 28.0,
+    "expectedWeeklyKwh": 196.0,
+    "expectedMonthlyKwh": 840.0
+  },
+  "soiling": {
+    "score": 77.7,
+    "estimatedLossPercent": 3.43,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 94.54,
+    "estimatedLossPercent": 1.3,
+    "peakHeatWindowStart": "10:00",
+    "peakHeatWindowEnd": "14:00"
+  },
+  "risks": {
+    "alerts": []
+  },
+  "optimization": {
+    "opportunityScore": 6.92,
+    "recommendations": [
+      {
+        "id": "rec-maintain-fx-value-overexporting-2026-03-21",
+        "type": "operational",
+        "title": "Maintain current profile",
+        "message": "No high-impact action required for current conditions.",
+        "severity": "low",
+        "priority": 5,
+        "estimated_value": 0.0,
+        "valid_from": "2026-03-21T00:00:00Z",
+        "valid_until": "2026-03-21T00:00:00Z",
+        "source_module": "opportunity"
+      }
+    ],
+    "estimatedValue": 56.76
+  },
+  "financial": {
+    "dailyEstimatedSavings": 5.36,
+    "monthlyEstimatedSavings": 160.8,
+    "yearlyOptimizationPotential": 133.53
+  },
+  "benchmark": {
+    "expected_production_kwh": 28.0,
+    "actual_production_kwh": 28.5,
+    "expected_export_kwh": 6.0,
+    "actual_export_kwh": 8.5,
+    "production_deviation_percent": 1.79,
+    "export_deviation_percent": 41.67,
+    "performance_status": "overexporting",
+    "insight": "Export is high versus plan; shift controllable loads into peak solar hours to improve self-consumption."
+  },
+  "self_consumption": {
+    "recommended_usage_window": {
+      "start": "11:30",
+      "end": "15:30"
+    },
+    "self_consumption_score": 72.7,
+    "estimated_savings_ils": 7.38,
+    "actions": [
+      "Run boiler",
+      "Charge EV",
+      "Run dishwasher",
+      "Run dryer"
+    ]
+  }
+}

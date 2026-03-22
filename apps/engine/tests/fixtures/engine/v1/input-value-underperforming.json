@@ -1,0 +1,39 @@
+{
+  "siteId": "fx-value-underperforming",
+  "generatedAt": "2026-03-21T00:00:00Z",
+  "weather": {
+    "temperature": 34,
+    "cloudCover": 70,
+    "windSpeed": 2,
+    "precipitation": 0.0
+  },
+  "solar": {
+    "expectedDailyKwh": 24,
+    "expectedWeeklyKwh": 168,
+    "expectedMonthlyKwh": 720
+  },
+  "benchmark": {
+    "expected_production_kwh": 24,
+    "actual_production_kwh": 18.4,
+    "expected_export_kwh": 7.5,
+    "actual_export_kwh": 6.9
+  },
+  "self_consumption": {
+    "expected_production_kwh": 24,
+    "peak_window": {
+      "start": "10:30",
+      "end": "14:30"
+    },
+    "device_profile": {
+      "devices": [
+        { "name": "boiler", "shiftable": true },
+        { "name": "dishwasher", "shiftable": true },
+        { "name": "pool pump", "shiftable": false }
+      ]
+    },
+    "tariffs": {
+      "import_rate": 0.66,
+      "export_rate": 0.22
+    }
+  }
+}
