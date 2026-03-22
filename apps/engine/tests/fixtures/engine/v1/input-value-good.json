@@ -1,0 +1,45 @@
+{
+  "siteId": "fx-value-good",
+  "generatedAt": "2026-03-21T00:00:00Z",
+  "weather": {
+    "temperature": 29,
+    "cloudCover": 35,
+    "windSpeed": 6,
+    "precipitation": 0.5
+  },
+  "solar": {
+    "expectedDailyKwh": 26,
+    "expectedWeeklyKwh": 182,
+    "expectedMonthlyKwh": 780
+  },
+  "tariff": {
+    "currency": "ILS",
+    "importRate": 0.63,
+    "exportRate": 0.24
+  },
+  "benchmark": {
+    "expected_production_kwh": 26,
+    "actual_production_kwh": 24.7,
+    "expected_export_kwh": 8,
+    "actual_export_kwh": 8.6
+  },
+  "self_consumption": {
+    "expected_production_kwh": 26,
+    "peak_window": {
+      "start": "11:00",
+      "end": "15:00"
+    },
+    "device_profile": {
+      "actions": [
+        "Run boiler",
+        "Run dishwasher",
+        "Run washing machine"
+      ],
+      "shiftable_load_ratio": 0.54
+    },
+    "tariffs": {
+      "import_rate_ils": 0.63,
+      "export_rate_ils": 0.24
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "siteId": "fx-benchmark-overexporting",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 26,
+    "cloudCover": 5,
+    "windSpeed": 52,
+    "precipitation": 0
+  },
+  "solar": {
+    "expectedDailyKwh": 21,
+    "expectedWeeklyKwh": 147,
+    "expectedMonthlyKwh": 630
+  }
+}

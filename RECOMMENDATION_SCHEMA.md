@@ -13,10 +13,10 @@ Define a canonical recommendation payload used across engine, API aggregation, a
   "message": "High thermal loss detected; adjust ventilation and operating schedule.",
   "severity": "moderate",
   "priority": 2,
-  "estimated_value": 125.4,
-  "valid_from": "2026-03-20T00:00:00Z",
-  "valid_until": "2026-03-27T00:00:00Z",
-  "source_module": "heat"
+  "estimatedValue": 125.4,
+  "validFrom": "2026-03-20T00:00:00Z",
+  "validUntil": "2026-03-27T00:00:00Z",
+  "sourceModule": "heat"
 }
 ```
 
@@ -28,15 +28,15 @@ Define a canonical recommendation payload used across engine, API aggregation, a
 - `message` (string, required): full context and what action to take.
 - `severity` (enum, required): `low | moderate | high`.
 - `priority` (integer, required): `1` highest urgency -> `5` lowest urgency.
-- `estimated_value` (number, optional): estimated value impact in configured currency.
-- `valid_from` (ISO-8601 string, required): recommendation start timestamp.
-- `valid_until` (ISO-8601 string, required): recommendation expiry timestamp.
-- `source_module` (string, required): originating module (`soiling`, `heat`, `risks`, `opportunity`, `financial`, `ai_fallback`).
+- `estimatedValue` (number, optional): estimated value impact in configured currency.
+- `validFrom` (ISO-8601 string, required): recommendation start timestamp.
+- `validUntil` (ISO-8601 string, required): recommendation expiry timestamp.
+- `sourceModule` (string, required): originating module (`soiling`, `heat`, `risks`, `opportunity`, `financial`, `ai_fallback`).
 
 ## Validation Rules
 
 - `priority` must be integer in range `1..5`.
-- `valid_until` must be greater than `valid_from`.
+- `validUntil` must be greater than `validFrom`.
 - `severity` must map to priority bands:
   - `high` -> priority `1..2`
   - `moderate` -> priority `2..4`
@@ -58,10 +58,10 @@ Recommended usage under endpoint payloads:
       "message": "Moderate soiling risk detected.",
       "severity": "moderate",
       "priority": 2,
-      "estimated_value": 98.3,
-      "valid_from": "2026-03-20T00:00:00Z",
-      "valid_until": "2026-03-27T00:00:00Z",
-      "source_module": "soiling"
+      "estimatedValue": 98.3,
+      "validFrom": "2026-03-20T00:00:00Z",
+      "validUntil": "2026-03-27T00:00:00Z",
+      "sourceModule": "soiling"
     }
   ]
 }
@@ -69,3 +69,7 @@ Recommended usage under endpoint payloads:
 
 ## Determinism Requirement
 - Given identical deterministic inputs, recommendation list ordering and field values must remain stable.
+
+## Internal Mapping Note
+- Engine internal payloads may still emit snake_case recommendation fields.
+- API integration layers must normalize them to this canonical camelCase schema before returning public responses.

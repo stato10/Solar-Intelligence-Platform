@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ProviderRequestMeta } from "../common/provider.types";
 import {
   WeatherProvider,
@@ -9,6 +9,8 @@ import { ProviderSelectionService } from "./provider-selection.service";
 
 @Injectable()
 export class WeatherProviderOrchestratorService implements WeatherProvider {
+  private readonly logger = new Logger(WeatherProviderOrchestratorService.name);
+
   constructor(private readonly providerSelectionService: ProviderSelectionService) {}
 
   async getHealth(meta?: ProviderRequestMeta) {
@@ -45,8 +47,25 @@ export class WeatherProviderOrchestratorService implements WeatherProvider {
       } catch (error) {
         const message = error instanceof Error ? error.message : "unknown error";
         failures.push(`${key}:${message}`);
+        this.logger.warn(
+          JSON.stringify({
+            event: "provider.weather.failure",
+            provider: key,
+            requestId: meta?.requestId,
+            message
+          })
+        );
       }
     }
+
+    this.logger.error(
+      JSON.stringify({
+        event: "provider.weather.exhausted",
+        requestId: meta?.requestId,
+        chain,
+        failures
+      })
+    );
 
     throw new ServiceUnavailableException({
       message: "All weather providers failed",

@@ -1,0 +1,13 @@
+{
+  "siteId": "site-demo-001",
+  "latitude": 32.0853,
+  "longitude": 34.7818,
+  "systemSizeKw": 8.5,
+  "lossPercent": 14,
+  "generatedAt": "2026-03-20T10:00:00Z",
+  "tariff": {
+    "currency": "ILS",
+    "importRate": 0.62,
+    "exportRate": 0.28
+  }
+}

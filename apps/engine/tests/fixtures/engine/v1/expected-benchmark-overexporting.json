@@ -1,0 +1,80 @@
+{
+  "siteId": "fx-benchmark-overexporting",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 21.0,
+    "expectedWeeklyKwh": 147.0,
+    "expectedMonthlyKwh": 630.0
+  },
+  "soiling": {
+    "score": 82.12,
+    "estimatedLossPercent": 2.75,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 100.0,
+    "estimatedLossPercent": 0.0,
+    "peakHeatWindowStart": "10:00",
+    "peakHeatWindowEnd": "14:00"
+  },
+  "risks": {
+    "alerts": [
+      {
+        "riskType": "weather",
+        "severity": "high",
+        "message": "Weather conditions may impact system performance and operations",
+        "expectedStart": "2026-03-20T00:00:00Z",
+        "expectedEnd": "2026-03-20T00:00:00Z"
+      }
+    ]
+  },
+  "optimization": {
+    "opportunityScore": 12.73,
+    "recommendations": [
+      {
+        "id": "rec-weather-fx-benchmark-overexporting-2026-03-20",
+        "type": "operational",
+        "title": "Adjust dispatch for weather risk",
+        "message": "Severe weather conditions can impact system operations.",
+        "severity": "high",
+        "priority": 1,
+        "estimated_value": 0.0,
+        "valid_from": "2026-03-20T00:00:00Z",
+        "valid_until": "2026-03-20T00:00:00Z",
+        "source_module": "risks"
+      }
+    ],
+    "estimatedValue": 33.0
+  },
+  "financial": {
+    "dailyEstimatedSavings": 4.09,
+    "monthlyEstimatedSavings": 122.7,
+    "yearlyOptimizationPotential": 187.44
+  },
+  "benchmark": {
+    "expected_production_kwh": 21.0,
+    "actual_production_kwh": 20.42,
+    "expected_export_kwh": 4.62,
+    "actual_export_kwh": 6.55,
+    "production_deviation_percent": -2.76,
+    "export_deviation_percent": 41.77,
+    "performance_status": "overexporting",
+    "insight": "Export is high versus plan; shift controllable loads into peak solar hours to improve self-consumption."
+  },
+  "self_consumption": {
+    "recommended_usage_window": {
+      "start": "10:00",
+      "end": "14:00"
+    },
+    "self_consumption_score": 56.82,
+    "estimated_savings_ils": 0.45,
+    "actions": [
+      "Run boiler",
+      "Run dishwasher",
+      "Run laundry"
+    ]
+  }
+}

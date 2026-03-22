@@ -41,7 +41,19 @@ def assert_contract_shape(envelope: dict):
     engine_data = payload.get("data")
     if not isinstance(engine_data, dict):
         return "Engine data payload is missing."
-    required_top = ["siteId", "generatedAt", "source", "forecast", "soiling", "heat", "risks", "optimization", "financial"]
+    required_top = [
+        "siteId",
+        "generatedAt",
+        "source",
+        "forecast",
+        "soiling",
+        "heat",
+        "risks",
+        "optimization",
+        "financial",
+        "benchmark",
+        "selfConsumption",
+    ]
     for key in required_top:
         if key not in engine_data:
             return f"Missing engine data field: {key}"

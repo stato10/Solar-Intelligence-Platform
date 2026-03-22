@@ -1,0 +1,83 @@
+{
+  "siteId": "string",
+  "generatedAt": "string",
+  "source": "string",
+  "forecast": {
+    "expectedDailyKwh": "number",
+    "expectedWeeklyKwh": "number",
+    "expectedMonthlyKwh": "number"
+  },
+  "soiling": {
+    "score": "number",
+    "estimatedLossPercent": "number",
+    "cleaningRecommended": "boolean",
+    "recommendedCleaningDate": "null",
+    "explanation": "string"
+  },
+  "heat": {
+    "score": "number",
+    "estimatedLossPercent": "number",
+    "peakHeatWindowStart": "string",
+    "peakHeatWindowEnd": "string"
+  },
+  "risks": {
+    "alerts": [
+      {
+        "riskType": "string",
+        "severity": "string",
+        "message": "string",
+        "expectedStart": "string",
+        "expectedEnd": "string"
+      }
+    ]
+  },
+  "optimization": {
+    "opportunityScore": "number",
+    "recommendations": [
+      {
+        "id": "string",
+        "type": "string",
+        "title": "string",
+        "message": "string",
+        "severity": "string",
+        "priority": "number",
+        "estimatedValue": "number",
+        "validFrom": "string",
+        "validUntil": "string",
+        "sourceModule": "string"
+      }
+    ],
+    "estimatedValue": "number"
+  },
+  "financial": {
+    "dailyEstimatedSavings": "number",
+    "monthlyEstimatedSavings": "number",
+    "yearlyOptimizationPotential": "number"
+  },
+  "benchmark": {
+    "expectedProductionKwh": "number",
+    "actualProductionKwh": "number",
+    "expectedExportKwh": "number",
+    "actualExportKwh": "number",
+    "productionDeviationPercent": "number",
+    "exportDeviationPercent": "number",
+    "performanceStatus": "string",
+    "insight": "string"
+  },
+  "selfConsumption": {
+    "recommendedUsageWindow": {
+      "start": "string",
+      "end": "string"
+    },
+    "selfConsumptionScore": "number",
+    "estimatedSavingsIls": "number",
+    "actions": [
+      "string"
+    ]
+  },
+  "providers": {
+    "weather": "string",
+    "solar": "string",
+    "engine": "string"
+  }
+}

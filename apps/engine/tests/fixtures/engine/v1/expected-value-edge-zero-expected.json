@@ -1,0 +1,70 @@
+{
+  "siteId": "fx-value-edge-zero",
+  "generatedAt": "2026-03-21T00:00:00Z",
+  "source": "ENGINE_V1",
+  "forecast": {
+    "expectedDailyKwh": 18.0,
+    "expectedWeeklyKwh": 126.0,
+    "expectedMonthlyKwh": 540.0
+  },
+  "soiling": {
+    "score": 100.0,
+    "estimatedLossPercent": 0.0,
+    "cleaningRecommended": false,
+    "recommendedCleaningDate": null,
+    "explanation": "Soiling risk is within acceptable range"
+  },
+  "heat": {
+    "score": 100.0,
+    "estimatedLossPercent": 0.0,
+    "peakHeatWindowStart": "12:00",
+    "peakHeatWindowEnd": "14:00"
+  },
+  "risks": {
+    "alerts": []
+  },
+  "optimization": {
+    "opportunityScore": 0.0,
+    "recommendations": [
+      {
+        "id": "rec-maintain-fx-value-edge-zero-2026-03-21",
+        "type": "operational",
+        "title": "Maintain current profile",
+        "message": "No high-impact action required for current conditions.",
+        "severity": "low",
+        "priority": 5,
+        "estimated_value": 0.0,
+        "valid_from": "2026-03-21T00:00:00Z",
+        "valid_until": "2026-03-21T00:00:00Z",
+        "source_module": "opportunity"
+      }
+    ],
+    "estimatedValue": 0.0
+  },
+  "financial": {
+    "dailyEstimatedSavings": 3.6,
+    "monthlyEstimatedSavings": 108.0,
+    "yearlyOptimizationPotential": 0.0
+  },
+  "benchmark": {
+    "expected_production_kwh": 0.0,
+    "actual_production_kwh": 3.1,
+    "expected_export_kwh": 0.0,
+    "actual_export_kwh": 0.0,
+    "production_deviation_percent": 100.0,
+    "export_deviation_percent": 0.0,
+    "performance_status": "good",
+    "insight": "Production and export are within the expected operating range."
+  },
+  "self_consumption": {
+    "recommended_usage_window": {
+      "start": "12:00",
+      "end": "14:00"
+    },
+    "self_consumption_score": 62.05,
+    "estimated_savings_ils": 2.14,
+    "actions": [
+      "Run boiler"
+    ]
+  }
+}

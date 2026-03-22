@@ -5,8 +5,20 @@
 - Rule priority:
   1. `EXECUTION_PLAN.md` phase boundaries
   2. `API_CONTRACTS.md` and `DB_SCHEMA.md` contracts
-  3. coding and design rules in this file
+  3. `WORKFLOW_RULES.md`, `SYNC_PROTOCOL.md`, `PHASE_GATE_CHECKLIST.md`
+  4. coding and design rules in this file
 - Change policy: rule changes require explicit approval and must be reflected in `TODO.md`
+
+## Mandatory Session Start Sequence
+1. Read `TODO.md`, `CURSOR_RULES.md`, `WORKFLOW_RULES.md`, `SYNC_PROTOCOL.md`.
+2. Confirm active phase and active task.
+3. Work only inside active task scope.
+4. Keep the project runnable at the end of the task.
+
+## Mandatory Task Lifecycle
+Every task must follow:
+
+`Command -> Implement -> Report -> Audit -> Close`
 
 ## General Rules
 1. Work strictly phase by phase.
@@ -53,6 +65,8 @@
 18. Keep architecture simple and scalable.
 19. For each phase task, update `TODO.md` status immediately (`In Progress` -> `Done`).
 20. Do not start next task before current task has explicit "done criteria" check.
+21. Use `TASK_TEMPLATE.md` for every new implementation task brief.
+22. Before phase closure, satisfy `PHASE_GATE_CHECKLIST.md`.
 
 ---
 
@@ -80,3 +94,10 @@
 33. Keep naming consistent.
 34. Maintain folder structure discipline.
 35. No merge-ready task without passing lint/typecheck/test for touched modules.
+36. Treat `TESTING_STRATEGY.md` as the authoritative command list for verification.
+37. For deterministic and integration changes, include:
+   - `python -m py_compile apps/engine/src/main.py`
+   - `python apps/engine/tests/run_golden.py`
+   - `python apps/api/tests/run_engine_contract_smoke.py`
+   - `python apps/api/tests/run_dashboard_contract_smoke.py` (if dashboard/integration touched)
+   - `python apps/api/tests/run_dashboard_snapshot.py` (if dashboard payload touched)

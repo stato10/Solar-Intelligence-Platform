@@ -1,0 +1,15 @@
+{
+  "siteId": "fx-benchmark-underperforming",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 46,
+    "cloudCover": 90,
+    "windSpeed": 0,
+    "precipitation": 0.1
+  },
+  "solar": {
+    "expectedDailyKwh": 20,
+    "expectedWeeklyKwh": 140,
+    "expectedMonthlyKwh": 600
+  }
+}

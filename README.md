@@ -25,6 +25,24 @@ packages/
 - `RISK_REGISTER.md` - active technical/product risks and mitigations
 - `RECOMMENDATION_SCHEMA.md` - canonical recommendation payload contract
 - `NORMALIZATION_RULES.md` - frozen units and normalization standards
+- `WORKFLOW_RULES.md` - mandatory task execution lifecycle
+- `PHASE_GATE_CHECKLIST.md` - phase closure gate checklist
+- `TASK_TEMPLATE.md` - standard task brief format
+- `SYNC_PROTOCOL.md` - anti-drift synchronization protocol
+
+## Execution Control System
+
+Use this project workflow for all implementation tasks:
+
+`Command -> Implement -> Report -> Audit -> Close`
+
+Minimum session start sequence:
+1. Read `TODO.md`, `CURSOR_RULES.md`, `WORKFLOW_RULES.md`, `SYNC_PROTOCOL.md`.
+2. Confirm active phase and active task.
+3. Implement only active task scope.
+4. Keep touched services runnable.
+
+Before closing a phase, satisfy `PHASE_GATE_CHECKLIST.md`.
 
 ## Workspace Commands
 
@@ -60,6 +78,11 @@ Quality/build:
 ```bash
 npm run lint
 npm run build
+python -m py_compile apps/engine/src/main.py
+python apps/engine/tests/run_golden.py
+python apps/api/tests/run_engine_contract_smoke.py
+python apps/api/tests/run_dashboard_contract_smoke.py
+python apps/api/tests/run_dashboard_snapshot.py
 ```
 
 ## Current Status
@@ -71,11 +94,9 @@ npm run build
   - Real adapters live: Open-Meteo, OpenWeather One Call 3.0, OpenCage, PVGIS
   - Strategy/orchestration + fallback chains live for weather/geolocation/solar
 - Phase 2 closure mode: scaffold-complete (currently in-memory domain storage)
-- Phase 4 deterministic calculation engine: in progress (`4.1`-`4.6` complete, `4.7` fixtures/golden checks pending)
-- Governance-first gate enabled before dashboard integration:
-  - testing strategy defined
-  - risk register defined
-  - recommendation schema defined
+- Phase 4 deterministic calculation engine: completed
+- Phase 5 dashboard integration: completed
+- Governance-first gate is active with executable checks and phase closure protocol
 
 ## Phase 1 Verification Notes
 

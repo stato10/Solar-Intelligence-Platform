@@ -8,6 +8,11 @@
 ## Database Engine
 - PostgreSQL (primary system of record)
 
+## Runtime Truth (Phase 4.9 Decision)
+- Active runtime persistence in the current scaffold is in-memory in API domain services.
+- This document defines the target PostgreSQL persistence model, not the active runtime source yet.
+- Any implementation that introduces PostgreSQL as active runtime persistence must be tracked as explicit phase tasks and synchronized with `ARCHITECTURE.md`, `API_CONTRACTS.md`, and `TODO.md`.
+
 ## Naming and Type Conventions (Strict)
 - Table names: `snake_case` plural.
 - Column names: `snake_case`.

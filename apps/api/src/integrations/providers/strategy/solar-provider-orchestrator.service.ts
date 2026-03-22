@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ProviderRequestMeta } from "../common/provider.types";
 import {
   SolarForecastInput,
@@ -9,6 +9,8 @@ import { ProviderSelectionService } from "./provider-selection.service";
 
 @Injectable()
 export class SolarProviderOrchestratorService implements SolarProvider {
+  private readonly logger = new Logger(SolarProviderOrchestratorService.name);
+
   constructor(private readonly providerSelectionService: ProviderSelectionService) {}
 
   async getHealth(meta?: ProviderRequestMeta) {
@@ -40,9 +42,27 @@ export class SolarProviderOrchestratorService implements SolarProvider {
       try {
         return await provider.getForecast(input, meta);
       } catch (error) {
-        failures.push(`${key}:${error instanceof Error ? error.message : "unknown error"}`);
+        const message = error instanceof Error ? error.message : "unknown error";
+        failures.push(`${key}:${message}`);
+        this.logger.warn(
+          JSON.stringify({
+            event: "provider.solar.failure",
+            provider: key,
+            requestId: meta?.requestId,
+            message
+          })
+        );
       }
     }
+
+    this.logger.error(
+      JSON.stringify({
+        event: "provider.solar.exhausted",
+        requestId: meta?.requestId,
+        chain,
+        failures
+      })
+    );
 
     throw new ServiceUnavailableException({
       message: "All solar providers failed",

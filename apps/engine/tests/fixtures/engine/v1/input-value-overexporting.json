@@ -1,0 +1,41 @@
+{
+  "siteId": "fx-value-overexporting",
+  "generatedAt": "2026-03-21T00:00:00Z",
+  "weather": {
+    "temperature": 28,
+    "cloudCover": 20,
+    "windSpeed": 10,
+    "precipitation": 0.1
+  },
+  "solar": {
+    "expectedDailyKwh": 28,
+    "expectedWeeklyKwh": 196,
+    "expectedMonthlyKwh": 840
+  },
+  "benchmark": {
+    "expected_production_kwh": 28,
+    "actual_production_kwh": 28.5,
+    "expected_export_kwh": 6,
+    "actual_export_kwh": 8.5
+  },
+  "self_consumption": {
+    "expected_production_kwh": 28,
+    "peak_window": {
+      "start": "11:30",
+      "end": "15:30"
+    },
+    "device_profile": {
+      "actions": [
+        "Run boiler",
+        "Charge EV",
+        "Run dishwasher",
+        "Run dryer"
+      ],
+      "shiftable_load_ratio": 0.62
+    },
+    "tariffs": {
+      "import_rate_ils": 0.7,
+      "export_rate_ils": 0.2
+    }
+  }
+}

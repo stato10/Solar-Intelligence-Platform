@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Post } from "@nestjs/common";
 import { EngineClientService } from "./engine-client.service";
 import { EngineCalculateV1RequestDto } from "./dto/engine-calculate-v1.dto";
 
@@ -20,8 +20,11 @@ export class EngineController {
   }
 
   @Post("calculate/v1")
-  async calculateV1(@Body() payload: EngineCalculateV1RequestDto) {
-    const data = await this.engineClientService.calculateV1(payload);
+  async calculateV1(
+    @Body() payload: EngineCalculateV1RequestDto,
+    @Headers("x-correlation-id") correlationId?: string
+  ) {
+    const data = await this.engineClientService.calculateV1(payload, { correlationId });
     return {
       success: true,
       data,

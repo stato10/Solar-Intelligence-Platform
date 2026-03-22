@@ -1,0 +1,20 @@
+{
+  "siteId": "fx-self-consumption-window",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "weather": {
+    "temperature": 33,
+    "cloudCover": 22,
+    "windSpeed": 9,
+    "precipitation": 0.4
+  },
+  "solar": {
+    "expectedDailyKwh": 24,
+    "expectedWeeklyKwh": 168,
+    "expectedMonthlyKwh": 720
+  },
+  "tariff": {
+    "currency": "ILS",
+    "importRate": 0.95,
+    "exportRate": 0.2
+  }
+}

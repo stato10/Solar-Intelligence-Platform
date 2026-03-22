@@ -53,5 +53,28 @@
     "dailyEstimatedSavings": 3.6,
     "monthlyEstimatedSavings": 108.0,
     "yearlyOptimizationPotential": 110.16
+  },
+  "benchmark": {
+    "expected_production_kwh": 18.0,
+    "actual_production_kwh": 18.0,
+    "expected_export_kwh": 3.96,
+    "actual_export_kwh": 3.4,
+    "production_deviation_percent": 0.0,
+    "export_deviation_percent": -14.14,
+    "performance_status": "good",
+    "insight": "Production and export are within the expected operating range."
+  },
+  "self_consumption": {
+    "recommended_usage_window": {
+      "start": "10:00",
+      "end": "14:00"
+    },
+    "self_consumption_score": 62.07,
+    "estimated_savings_ils": 0.57,
+    "actions": [
+      "Run boiler",
+      "Run dishwasher",
+      "Run laundry"
+    ]
   }
 }
