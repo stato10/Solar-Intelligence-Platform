@@ -137,29 +137,29 @@ Definition of Done:
   - no calculations in frontend
   - presentation-only transformations
 
-- [ ] 6.4 Shared frontend data layer baseline [active]
+- [x] 6.4 Shared frontend data layer baseline [done]
   - establish client data-fetching pattern
   - choose and wire canonical client layer (TanStack Query preferred if already planned)
   - standardize API calling + error handling
 
-- [ ] 6.5 UX states hardening [planned]
+- [x] 6.5 UX states hardening [done]
   - loading states
   - empty states
   - error states
   - shared patterns for core pages
 
-- [ ] 6.6 Auth screen implementation [planned]
+- [x] 6.6 Auth screen implementation [done]
   - login/register forms
   - token/session handling
   - redirect flow
   - auth error handling
 
-- [ ] 6.7 Onboarding step 1 (site/system) [planned]
+- [x] 6.7 Onboarding step 1 (site/system) [done]
   - site form
   - solar system form
   - validation + submit flow
 
-- [ ] 6.8 Onboarding step 2 (tariff/devices) [planned]
+- [ ] 6.8 Onboarding step 2 (tariff/devices) [active]
   - tariff form
   - device profile form
   - validation + submit flow
