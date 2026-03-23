@@ -1,91 +1,33 @@
 import { BarChart3, TriangleAlert, Zap } from "lucide-react";
-
-interface RecommendationItem {
-  id: string;
-  title: string;
-  message: string;
-  severity: string;
-}
-
-interface DashboardPayload {
-  soiling: { score: number };
-  risks: { alerts: unknown[] };
-  optimization: {
-    estimatedValue: number;
-    recommendations: RecommendationItem[];
-  };
-  financial: {
-    dailyEstimatedSavings: number;
-    monthlyEstimatedSavings: number;
-  };
-  providers: {
-    weather: string;
-    solar: string;
-  };
-}
-
-async function loadDashboard() {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3002/api/v1";
-  const response = await fetch(`${apiBase}/dashboard/demo/seed`, {
-    method: "POST",
-    cache: "no-store"
-  });
-
-  if (!response.ok) {
-    throw new Error(`Dashboard request failed with status ${response.status}`);
-  }
-
-  const envelope = (await response.json()) as {
-    success: boolean;
-    data?: {
-      dashboard: DashboardPayload;
-    };
-  };
-
-  if (!envelope.success || !envelope.data?.dashboard) {
-    throw new Error("Dashboard response payload is invalid");
-  }
-
-  return envelope.data.dashboard;
-}
+import type { DashboardAggregateData } from "@/lib/contracts";
+import { fetchDashboardAggregate } from "@/lib/api/dashboard";
+import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
 
 export default async function DashboardPage() {
-  let dashboard: DashboardPayload | null = null;
+  let dashboard: DashboardAggregateData | null = null;
+  let dashboardVm: ReturnType<typeof toDashboardPageViewModel> | null = null;
   let errorMessage: string | null = null;
 
   try {
-    dashboard = await loadDashboard();
+    dashboard = await fetchDashboardAggregate();
+    dashboardVm = toDashboardPageViewModel(dashboard);
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown dashboard error";
   }
-
-  const cards = [
-    {
-      title: "Solar Health Score",
-      value: dashboard ? `${dashboard.soiling.score.toFixed(2)} / 100` : "--",
-      hint: "Deterministic soiling score from engine.",
-      icon: Zap
-    },
-    {
-      title: "Risk Alerts",
-      value: dashboard ? String(dashboard.risks.alerts.length) : "--",
-      hint: "Weather, heat, and soiling alerts from risk module.",
-      icon: TriangleAlert
-    },
-    {
-      title: "Opportunity Value",
-      value: dashboard ? `${dashboard.optimization.estimatedValue.toFixed(2)} ILS` : "--",
-      hint: "Estimated optimization value from opportunity module.",
-      icon: BarChart3
-    }
-  ];
+  const iconByKey = {
+    zap: Zap,
+    "triangle-alert": TriangleAlert,
+    "bar-chart-3": BarChart3
+  } as const;
 
   return (
     <section className="space-y-6">
       <div className="rounded-xl border border-border bg-card p-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Solar Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {dashboardVm?.header.title ?? "Solar Dashboard"}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Live data is pulled from the aggregated backend endpoint.
+          {dashboardVm?.header.subtitle ?? "Live data is pulled from the aggregated backend endpoint."}
         </p>
         {errorMessage ? (
           <p className="mt-3 text-sm text-red-500">Failed to load dashboard: {errorMessage}</p>
@@ -93,19 +35,22 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {cards.map((card) => (
+        {(dashboardVm?.cards ?? []).map((card) => {
+          const CardIcon = iconByKey[card.icon];
+          return (
           <article
-            key={card.title}
+            key={card.id}
             className="rounded-xl border border-border bg-card p-5"
           >
-            <card.icon className="mb-3 h-5 w-5 text-primary" />
+            <CardIcon className="mb-3 h-5 w-5 text-primary" />
             <p className="text-xs text-muted-foreground">{card.title}</p>
             <p className="mt-1 text-2xl font-semibold tracking-tight">
-              {card.value}
+              {card.valueText}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">{card.hint}</p>
           </article>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -114,13 +59,13 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm">
             Daily savings:{" "}
             <span className="font-semibold">
-              {dashboard ? `${dashboard.financial.dailyEstimatedSavings.toFixed(2)} ILS` : "--"}
+              {dashboardVm?.financial.dailySavingsText ?? "--"}
             </span>
           </p>
           <p className="mt-1 text-sm">
             Monthly savings:{" "}
             <span className="font-semibold">
-              {dashboard ? `${dashboard.financial.monthlyEstimatedSavings.toFixed(2)} ILS` : "--"}
+              {dashboardVm?.financial.monthlySavingsText ?? "--"}
             </span>
           </p>
         </article>
@@ -128,8 +73,8 @@ export default async function DashboardPage() {
         <article className="rounded-xl border border-border bg-card p-5">
           <p className="text-xs text-muted-foreground">Recommendations</p>
           <ul className="mt-2 space-y-2 text-sm">
-            {dashboard?.optimization.recommendations?.length ? (
-              dashboard.optimization.recommendations.map((item) => (
+            {dashboardVm?.recommendations.items?.length ? (
+              dashboardVm.recommendations.items.map((item) => (
                 <li key={item.id} className="rounded-md border border-border px-3 py-2">
                   <p className="font-medium">{item.title}</p>
                   <p className="text-xs text-muted-foreground">{item.message}</p>
@@ -143,8 +88,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground">
-        Data providers: weather={dashboard?.providers.weather ?? "--"}, solar=
-        {dashboard?.providers.solar ?? "--"}
+        Data providers: weather={dashboardVm?.providers.weather ?? "--"}, solar=
+        {dashboardVm?.providers.solar ?? "--"}
       </div>
     </section>
   );

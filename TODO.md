@@ -39,32 +39,35 @@ Definition of Done:
 - Any future doc changes require versioned updates
 
 ## In Progress
+- [x] 6.1 Frontend API contract alignment [done]
+
+## Recently Closed
+- [x] Phase 4.1 Freeze deterministic engine contract (input/output + fixtures) [done]
+- [x] Phase 4.2 Implement forecast normalization module in engine [done]
+- [x] Phase 4.3 Implement soiling and heat-loss deterministic modules [done]
+- [x] Phase 4.4 Implement risk detection and opportunity scoring modules [done]
+- [x] Phase 4.5 Implement deterministic financial estimation module [done]
+- [x] Phase 4.6 Wire API <-> engine deterministic contract integration [done]
+- [x] Phase 4.7 Add fixture-based validation and golden-output checks [done]
+- [x] 4.3a Add AIR QUALITY abstraction contract (pm10/pm25/dust) [done]
+- [x] 4.4a Define unified recommendation schema and enforce it in outputs [done]
+- [x] 4.5a Define normalization + units rules (UTC, C, m/s, ILS, percent) [done]
+- [x] 4.6a Add stronger runtime contract validation (API-engine payload guards) [done]
+- [x] 4.7a Add fixture-based validation tests in CI-friendly runner [done]
+- [x] 4.8 Freeze engine output contract before dashboard integration [done]
+- [x] 5.1 Build aggregated dashboard endpoint [done]
+- [x] 5.2 Merge dashboard response model (forecast, soiling, heat, risks, opportunities, financials) [done]
+- [x] 5.3 Add structured logging baseline [done]
+- [x] 5.4 Add dashboard contract smoke tests [done]
+- [x] 5.5 Add dashboard response snapshot test [done]
+- [x] 5.6 Create demo seed (demo user/site/system + seeded dashboard payload) [done]
 - [x] Phase 4.9a Sync API contracts with implemented routes [done]
 - [x] Phase 4.9b Freeze canonical dashboard aggregate contract [done]
 - [x] Phase 4.9c Align engine schema with API DTOs/tests [done]
-- [ ] Phase 4.9d Document DB truth (in-memory runtime, PostgreSQL target) [done]
+- [x] Phase 4.9d Document DB truth (in-memory runtime, PostgreSQL target) [done]
 - [x] Phase 4.9e Normalize payload naming to camelCase in public contracts [done]
 - [x] Phase 4.9f Provider->engine mapping policy freeze (mapped vs ignored fields) [done]
 - [x] Phase 4.9g Final sync audit and phase gate check [done]
-- [x] Phase 4.1 Freeze deterministic engine contract (input/output + fixtures)
-- [x] Phase 4.2 Implement forecast normalization module in engine
-- [x] Phase 4.3 Implement soiling and heat-loss deterministic modules
-- [x] Phase 4.4 Implement risk detection and opportunity scoring modules
-- [x] Phase 4.5 Implement deterministic financial estimation module
-- [x] Phase 4.6 Wire API <-> engine deterministic contract integration
-- [x] Phase 4.7 Add fixture-based validation and golden-output checks
-- [x] 4.3a Add AIR QUALITY abstraction contract (pm10/pm25/dust)
-- [x] 4.4a Define unified recommendation schema and enforce it in outputs
-- [x] 4.5a Define normalization + units rules (UTC, C, m/s, ILS, percent)
-- [x] 4.6a Add stronger runtime contract validation (API-engine payload guards)
-- [x] 4.7a Add fixture-based validation tests in CI-friendly runner
-- [x] 4.8 Freeze engine output contract before dashboard integration
-- [x] 5.1 Build aggregated dashboard endpoint
-- [x] 5.2 Merge dashboard response model (forecast, soiling, heat, risks, opportunities, financials)
-- [x] 5.3 Add structured logging baseline
-- [x] 5.4 Add dashboard contract smoke tests
-- [x] 5.5 Add dashboard response snapshot test
-- [x] 5.6 Create demo seed (demo user/site/system + seeded dashboard payload)
 
 ## Blocked
 - [ ] OpenAI production key not yet available (AI summary validation limited to fallback path) [blocked]
@@ -110,9 +113,69 @@ Definition of Done:
 - [x] Phase 3: Provider abstraction + mocks/real adapters (weather/geolocation/solar) [done]
 - [x] Phase 4: Calculation engine modules [done]
 - [x] Phase 5: Dashboard integration endpoints [done]
-- [ ] Phase 6: Frontend MVP pages and states [planned]
+- [ ] Phase 6: Frontend MVP pages and states [active]
 - [ ] Phase 7: AI insights + fallback [planned]
 - [ ] Phase 8: QA, polish, release readiness [planned]
+
+## Phase 6 - Frontend MVP Pages and States
+
+- [x] 6.1 Frontend API contract alignment [done]
+  - define exact frontend-facing shapes for:
+    - auth
+    - onboarding
+    - dashboard aggregate
+  - align with `API_CONTRACTS.md` only
+  - no UI rewrite yet
+
+- [x] 6.2 Dashboard source switch [done]
+  - replace demo/seed dependency
+  - consume canonical `POST /api/v1/dashboard/aggregate`
+  - handle `success`/`data`/`meta` envelope correctly
+
+- [x] 6.3 Dashboard view model [done]
+  - add thin frontend mapping layer from aggregate payload to UI sections/cards
+  - no calculations in frontend
+  - presentation-only transformations
+
+- [ ] 6.4 Shared frontend data layer baseline [active]
+  - establish client data-fetching pattern
+  - choose and wire canonical client layer (TanStack Query preferred if already planned)
+  - standardize API calling + error handling
+
+- [ ] 6.5 UX states hardening [planned]
+  - loading states
+  - empty states
+  - error states
+  - shared patterns for core pages
+
+- [ ] 6.6 Auth screen implementation [planned]
+  - login/register forms
+  - token/session handling
+  - redirect flow
+  - auth error handling
+
+- [ ] 6.7 Onboarding step 1 (site/system) [planned]
+  - site form
+  - solar system form
+  - validation + submit flow
+
+- [ ] 6.8 Onboarding step 2 (tariff/devices) [planned]
+  - tariff form
+  - device profile form
+  - validation + submit flow
+
+- [ ] 6.9 Maintenance screen [planned]
+  - render deterministic maintenance signals from dashboard/aggregate data
+  - no new logic
+
+- [ ] 6.10 Savings screen [planned]
+  - render financial and optimization sections from canonical data
+  - no new calculations
+
+- [ ] 6.11 End-to-end MVP flow validation [planned]
+  - auth -> onboarding -> dashboard
+  - validate fallback/error paths
+  - verify frontend uses canonical contracts only
 
 ## Phase 5 Definition of Done
 - Aggregated dashboard endpoint returns complete, contract-valid data
