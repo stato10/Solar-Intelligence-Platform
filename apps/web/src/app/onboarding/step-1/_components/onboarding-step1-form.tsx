@@ -171,7 +171,9 @@ export function OnboardingStep1Form() {
         createdAt: new Date().toISOString()
       };
       localStorage.setItem(STEP1_SNAPSHOT_KEY, JSON.stringify(snapshot));
-      setSuccessMessage("Step 1 completed. Site and solar system were created successfully.");
+      setSuccessMessage(
+        "Step 1 completed. Site and solar system were created successfully. Continue to step 2. If the backend was restarted, you may need to recreate step 1 before step 2."
+      );
     } catch (error) {
       if (error instanceof OnboardingApiError) {
         setErrorMessage(error.message);
@@ -412,6 +414,16 @@ export function OnboardingStep1Form() {
         ) : null}
 
         <div className="flex flex-wrap gap-3">
+          {successMessage ? (
+            <Button
+              type="button"
+              size="lg"
+              disabled={pending}
+              onClick={() => router.push("/onboarding/step-2")}
+            >
+              Continue to Step 2
+            </Button>
+          ) : null}
           <Button type="submit" size="lg" disabled={pending}>
             {pending ? "Saving..." : "Save Step 1"}
           </Button>

@@ -113,7 +113,7 @@ Definition of Done:
 - [x] Phase 3: Provider abstraction + mocks/real adapters (weather/geolocation/solar) [done]
 - [x] Phase 4: Calculation engine modules [done]
 - [x] Phase 5: Dashboard integration endpoints [done]
-- [ ] Phase 6: Frontend MVP pages and states [active]
+- [x] Phase 6: Frontend MVP pages and states [done]
 - [ ] Phase 7: AI insights + fallback [planned]
 - [ ] Phase 8: QA, polish, release readiness [planned]
 
@@ -159,20 +159,20 @@ Definition of Done:
   - solar system form
   - validation + submit flow
 
-- [ ] 6.8 Onboarding step 2 (tariff/devices) [active]
+- [x] 6.8 Onboarding step 2 (tariff/devices) [done]
   - tariff form
   - device profile form
   - validation + submit flow
 
-- [ ] 6.9 Maintenance screen [planned]
+- [x] 6.9 Maintenance screen [done]
   - render deterministic maintenance signals from dashboard/aggregate data
   - no new logic
 
-- [ ] 6.10 Savings screen [planned]
+- [x] 6.10 Savings screen [done]
   - render financial and optimization sections from canonical data
   - no new calculations
 
-- [ ] 6.11 End-to-end MVP flow validation [planned]
+- [x] 6.11 End-to-end MVP flow validation [done]
   - auth -> onboarding -> dashboard
   - validate fallback/error paths
   - verify frontend uses canonical contracts only

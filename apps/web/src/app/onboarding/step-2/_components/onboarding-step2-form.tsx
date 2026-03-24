@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import type { OnboardingStep1Snapshot } from "@/lib/contracts/onboarding-step1";
@@ -68,12 +68,12 @@ export function OnboardingStep2Form() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const todayDateValue = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
   useEffect(() => {
     const snapshot = parseStep1Snapshot(localStorage.getItem(STEP1_SNAPSHOT_KEY));
     if (!snapshot?.siteId) {
-      setSnapshotError("Step 1 data missing. Please complete step 1 again.");
+      setSnapshotError(
+        "Step 1 data missing or stale. Please complete step 1 again. This can happen after a backend restart."
+      );
       setSiteId(null);
       return;
     }
@@ -92,7 +92,7 @@ export function OnboardingStep2Form() {
 
   function validateFields(): string | null {
     if (!siteId) {
-      return "Step 1 data missing. Please complete step 1 again.";
+      return "Step 1 data missing or stale. Please complete step 1 again.";
     }
     const selfRate = toNumber(selfConsumptionRate);
     if (!Number.isFinite(selfRate) || selfRate < 0) {
@@ -131,7 +131,7 @@ export function OnboardingStep2Form() {
     }
 
     if (!siteId) {
-      setErrorMessage("Step 1 data missing. Please complete step 1 again.");
+      setErrorMessage("Step 1 data missing or stale. Please complete step 1 again.");
       return;
     }
 
@@ -177,12 +177,16 @@ export function OnboardingStep2Form() {
       router.push("/dashboard");
     } catch (error) {
       if (error instanceof OnboardingApiError) {
+        const staleSnapshotHint =
+          error.status === 404
+            ? " If this happened after a backend restart, repeat step 1 to refresh the site snapshot."
+            : "";
         if (createdTariffId) {
           setErrorMessage(
-            `Tariff was created successfully, but device profile creation failed: ${error.message}. Retry may require updating existing data if a conflict is returned.`
+            `Tariff was created successfully, but device profile creation failed: ${error.message}. Retry may require updating existing data if a conflict is returned.${staleSnapshotHint}`
           );
         } else {
-          setErrorMessage(error.message);
+          setErrorMessage(`${error.message}${staleSnapshotHint}`);
         }
       } else if (error instanceof Error) {
         setErrorMessage(error.message);
@@ -275,7 +279,6 @@ export function OnboardingStep2Form() {
                   clearMessages();
                   setEffectiveFrom(event.target.value);
                 }}
-                max={todayDateValue}
                 disabled={pending}
               />
             </label>

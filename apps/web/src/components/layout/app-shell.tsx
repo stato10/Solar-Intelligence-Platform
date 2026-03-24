@@ -26,6 +26,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             { href: "/", label: "Home" },
             { href: "/auth", label: "Auth" },
             { href: "/dashboard", label: "Dashboard" },
+            { href: "/maintenance", label: "Maintenance" },
+            { href: "/savings", label: "Savings" },
             { href: "/settings", label: "Settings" }
           ].map((item) => (
             <Link

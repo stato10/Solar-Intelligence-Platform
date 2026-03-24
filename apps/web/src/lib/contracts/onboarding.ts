@@ -42,7 +42,7 @@ export interface DeviceProfile {
   hasDishwasher: boolean;
   hasWashingMachine: boolean;
   hasAc: boolean;
-  usageFlexibilityLevel: string;
+  usageFlexibilityLevel: number;
   createdAt: string;
 }
 
