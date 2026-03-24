@@ -13,5 +13,8 @@ export const API_ENDPOINTS = {
   dashboard: {
     aggregate: "/dashboard/aggregate",
     demoSeed: "/dashboard/demo/seed"
+  },
+  ai: {
+    insights: "/ai/insights"
   }
 } as const;

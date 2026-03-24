@@ -1,16 +1,25 @@
-import type { DashboardAggregateData } from "@/lib/contracts";
+import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
+import { fetchAiInsights } from "@/lib/api/ai-insights";
 import { fetchDashboardAggregate } from "@/lib/api/dashboard";
 import { toSavingsPageViewModel } from "@/lib/view-models/savings";
+import { SavingsAiInsightsSection } from "./_components/savings-ai-insights-section";
 import { SavingsEmptyState, SavingsErrorState } from "./_components/savings-state";
 
 export default async function SavingsPage() {
   let aggregate: DashboardAggregateData | null = null;
   let savingsVm: ReturnType<typeof toSavingsPageViewModel> | null = null;
   let errorMessage: string | null = null;
+  let aiInsights: AiInsightContractOutput | null = null;
+  let aiInsightsError: string | null = null;
 
   try {
     aggregate = await fetchDashboardAggregate();
     savingsVm = toSavingsPageViewModel(aggregate);
+    try {
+      aiInsights = await fetchAiInsights(aggregate);
+    } catch (aiError) {
+      aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
+    }
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown savings error";
   }
@@ -127,6 +136,8 @@ export default async function SavingsPage() {
               </ul>
             </article>
           </div>
+
+          <SavingsAiInsightsSection data={aiInsights} errorMessage={aiInsightsError} />
 
           <div className="grid gap-4 md:grid-cols-2">
             <article className="rounded-xl border border-border bg-card p-5">

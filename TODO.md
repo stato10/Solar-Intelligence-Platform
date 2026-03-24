@@ -39,9 +39,11 @@ Definition of Done:
 - Any future doc changes require versioned updates
 
 ## In Progress
-- [ ] 7.5 Product recommendation engine [active]
 
 ## Recently Closed
+- [x] 7.7 Frontend AI insights integration [done]
+- [x] 7.6 Savings explanation with and without upgrades [done]
+- [x] 7.5 Product recommendation engine [done]
 - [x] 7.4 Smart product recommendation catalog [done]
 - [x] 7.3 Current-state transparency insights [done]
 - [x] 7.2 AI service baseline + fallback [done]
