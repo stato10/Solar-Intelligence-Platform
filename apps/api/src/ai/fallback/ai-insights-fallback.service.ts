@@ -350,61 +350,144 @@ export class AiInsightsFallbackService {
     input: AiInsightContractInput,
     productRecommendations: ProductRecommendationItem[]
   ): AiInsightContractOutput["savingsExplanation"] {
+    const { financial, selfConsumption, optimization, soiling, heat, risks, benchmark } = input.aggregate;
+    const withoutUpgradeItems: AiInsightContractOutput["savingsExplanation"]["withoutUpgrades"]["items"] =
+      [];
+
+    // Baseline now: always include current daily/monthly deterministic baseline.
+    withoutUpgradeItems.push({
+      id: "savings-without-upgrade-baseline",
+      title: "Current savings baseline (available now)",
+      message: `Current deterministic baseline is ${financial.monthlyEstimatedSavings.toFixed(2)} ILS monthly and ${financial.dailyEstimatedSavings.toFixed(2)} ILS daily.`,
+      severity: "low",
+      confidence: "high",
+      actionability: "informational",
+      reason: this.reason(
+        "Baseline values come directly from canonical financial outputs.",
+        ["financial.dailyEstimatedSavings", "financial.monthlyEstimatedSavings"]
+      ),
+      expectedBenefitRangeIlsMonthly: this.benefit(
+        financial.monthlyEstimatedSavings,
+        financial.monthlyEstimatedSavings,
+        ["financial.monthlyEstimatedSavings"]
+      )
+    });
+
+    // Self-consumption opportunity: always include behavior window + actions.
+    withoutUpgradeItems.push({
+      id: "savings-without-upgrade-self-consumption",
+      title: "Behavioral self-consumption opportunity",
+      message: `Use the window ${selfConsumption.recommendedUsageWindow.start} - ${selfConsumption.recommendedUsageWindow.end}. Suggested actions: ${selfConsumption.actions.join(", ")}.`,
+      severity: this.severityFromLowScore(selfConsumption.selfConsumptionScore),
+      confidence: "high",
+      actionability: "immediate",
+      reason: this.reason(
+        "Opportunity is based on self-consumption score, usage window, and deterministic actions.",
+        [
+          "selfConsumption.selfConsumptionScore",
+          "selfConsumption.recommendedUsageWindow.start",
+          "selfConsumption.recommendedUsageWindow.end",
+          "selfConsumption.actions[]",
+          "selfConsumption.estimatedSavingsIls"
+        ]
+      ),
+      expectedBenefitRangeIlsMonthly: this.benefit(
+        selfConsumption.estimatedSavingsIls,
+        selfConsumption.estimatedSavingsIls,
+        ["selfConsumption.estimatedSavingsIls"]
+      )
+    });
+
+    // Avoidable loss without purchases: include only for moderate/high opportunity.
+    if (this.severityFromOpportunityScore(optimization.opportunityScore) !== "low") {
+      withoutUpgradeItems.push({
+        id: "savings-without-upgrade-avoidable-loss",
+        title: "Avoidable loss without upgrades",
+        message: `Opportunity score is ${optimization.opportunityScore.toFixed(2)} with yearly optimization potential ${financial.yearlyOptimizationPotential.toFixed(2)} ILS.`,
+        severity: this.severityFromOpportunityScore(optimization.opportunityScore),
+        confidence: "high",
+        actionability: "scheduled",
+        reason: this.reason(
+          "Avoidable loss is based on optimization score and yearly potential from canonical outputs.",
+          ["optimization.opportunityScore", "financial.yearlyOptimizationPotential"]
+        ),
+        expectedBenefitRangeIlsMonthly: this.benefit(
+          financial.monthlyEstimatedSavings,
+          financial.monthlyEstimatedSavings,
+          ["financial.monthlyEstimatedSavings"]
+        )
+      });
+    }
+
+    // Maintenance leakage: include when deterministic soiling/heat thresholds are crossed.
+    const hasSoilingLeakage = this.severityFromLossPercent(soiling.estimatedLossPercent) !== "low";
+    const hasHeatLeakage = this.severityFromLossPercent(heat.estimatedLossPercent) !== "low";
+    if (hasSoilingLeakage || hasHeatLeakage) {
+      withoutUpgradeItems.push({
+        id: "savings-without-upgrade-maintenance-leakage",
+        title: "Maintenance-related leakage",
+        message: `Soiling loss is ${soiling.estimatedLossPercent.toFixed(2)}% and heat loss is ${heat.estimatedLossPercent.toFixed(2)}%. Maintenance actions can recover part of current losses without upgrades.`,
+        severity:
+          hasSoilingLeakage && hasHeatLeakage
+            ? "high"
+            : this.severityFromLossPercent(
+                Math.max(soiling.estimatedLossPercent, heat.estimatedLossPercent)
+              ),
+        confidence: "high",
+        actionability: "scheduled",
+        reason: this.reason(
+          "Leakage signal comes directly from deterministic soiling and heat loss metrics.",
+          ["soiling.estimatedLossPercent", "heat.estimatedLossPercent", "soiling.cleaningRecommended"]
+        )
+      });
+    }
+
+    // Risk-linked caution: include if alerts exist.
+    if (risks.alerts.length > 0) {
+      const topRisk = risks.alerts[0];
+      withoutUpgradeItems.push({
+        id: "savings-without-upgrade-risk-caution",
+        title: "Risk-linked savings caution",
+        message: `Active risk (${topRisk.riskType}): ${topRisk.message}. This may temporarily affect expected savings until risk conditions pass.`,
+        severity: topRisk.severity,
+        confidence: "moderate",
+        actionability: "immediate",
+        reason: this.reason(
+          "Risk caution is based on canonical risk alerts and benchmark context.",
+          [
+            "risks.alerts[].riskType",
+            "risks.alerts[].severity",
+            "risks.alerts[].message",
+            "benchmark.performanceStatus",
+            "benchmark.insight"
+          ]
+        )
+      });
+    }
+
+    const withUpgradeItems = productRecommendations.map((item) => ({
+      id: `savings-with-upgrade-${item.productId}`,
+      title: item.name,
+      message: `Potential additional value with upgrade: ${item.useCase}`,
+      severity: item.severity,
+      confidence: item.confidence,
+      actionability: item.actionability,
+      reason: item.whyRelevant,
+      expectedBenefitRangeIlsMonthly: item.expectedBenefitRangeIlsMonthly
+    }));
+
     return {
       withoutUpgrades: {
         summary:
-          "Behavior-based savings opportunities from deterministic aggregate data, without purchasing new products.",
-        items: [
-          {
-            id: "savings-without-upgrade-baseline",
-            title: "Current monthly savings baseline",
-            message: `Current monthly estimated savings is ${input.aggregate.financial.monthlyEstimatedSavings.toFixed(2)} ILS.`,
-            severity: "low",
-            confidence: "high",
-            actionability: "informational",
-            reason: this.reason("Baseline is provided directly by financial section.", [
-              "financial.monthlyEstimatedSavings"
-            ]),
-            expectedBenefitRangeIlsMonthly: this.benefit(
-              input.aggregate.financial.monthlyEstimatedSavings,
-              input.aggregate.financial.monthlyEstimatedSavings,
-              ["financial.monthlyEstimatedSavings"]
-            )
-          },
-          {
-            id: "savings-without-upgrade-self-consumption",
-            title: "Self-consumption behavioral window",
-            message: `Use the recommended window ${input.aggregate.selfConsumption.recommendedUsageWindow.start} - ${input.aggregate.selfConsumption.recommendedUsageWindow.end} to improve savings behaviorally.`,
-            severity: "moderate",
-            confidence: "moderate",
-            actionability: "immediate",
-            reason: this.reason("Window and self-consumption score come from canonical selfConsumption output.", [
-              "selfConsumption.recommendedUsageWindow.start",
-              "selfConsumption.recommendedUsageWindow.end",
-              "selfConsumption.selfConsumptionScore",
-              "selfConsumption.actions[]"
-            ]),
-            expectedBenefitRangeIlsMonthly: this.benefit(
-              input.aggregate.selfConsumption.estimatedSavingsIls,
-              input.aggregate.selfConsumption.estimatedSavingsIls,
-              ["selfConsumption.estimatedSavingsIls"]
-            )
-          }
-        ]
+          "Available now (without upgrades): behavior, process, and maintenance opportunities from deterministic current-state signals.",
+        items: withoutUpgradeItems
       },
       withUpgrades: {
         summary:
-          "Additional savings opportunities when adopting smart products that match deterministic site signals.",
-        items: productRecommendations.map((item) => ({
-          id: `savings-with-upgrade-${item.productId}`,
-          title: item.name,
-          message: item.useCase,
-          severity: item.severity,
-          confidence: item.confidence,
-          actionability: item.actionability,
-          reason: item.whyRelevant,
-          expectedBenefitRangeIlsMonthly: item.expectedBenefitRangeIlsMonthly
-        }))
+          withUpgradeItems.length > 0
+            ? "Additional value with upgrades: product-dependent opportunities derived only from selected smart product recommendations."
+            : "No upgrade recommendation met conservative suitability gates for additional product-dependent value.",
+        items: withUpgradeItems
       }
     };
   }

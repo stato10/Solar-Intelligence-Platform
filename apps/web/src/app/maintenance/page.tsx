@@ -1,16 +1,25 @@
-import type { DashboardAggregateData } from "@/lib/contracts";
+import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
+import { fetchAiInsights } from "@/lib/api/ai-insights";
 import { fetchDashboardAggregate } from "@/lib/api/dashboard";
 import { toMaintenancePageViewModel } from "@/lib/view-models/maintenance";
+import { MaintenanceAiInsightsSection } from "./_components/maintenance-ai-insights-section";
 import { MaintenanceEmptyState, MaintenanceErrorState } from "./_components/maintenance-state";
 
 export default async function MaintenancePage() {
   let aggregate: DashboardAggregateData | null = null;
   let maintenanceVm: ReturnType<typeof toMaintenancePageViewModel> | null = null;
   let errorMessage: string | null = null;
+  let aiInsights: AiInsightContractOutput | null = null;
+  let aiInsightsError: string | null = null;
 
   try {
     aggregate = await fetchDashboardAggregate();
     maintenanceVm = toMaintenancePageViewModel(aggregate);
+    try {
+      aiInsights = await fetchAiInsights(aggregate);
+    } catch (aiError) {
+      aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
+    }
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown maintenance error";
   }
@@ -95,6 +104,8 @@ export default async function MaintenancePage() {
               )}
             </ul>
           </article>
+
+          <MaintenanceAiInsightsSection data={aiInsights} errorMessage={aiInsightsError} />
 
           <div className="grid gap-4 md:grid-cols-2">
             <article className="rounded-xl border border-border bg-card p-5">
