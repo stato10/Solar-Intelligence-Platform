@@ -39,9 +39,12 @@ Definition of Done:
 - Any future doc changes require versioned updates
 
 ## In Progress
-- [x] 6.1 Frontend API contract alignment [done]
+- [ ] 7.5 Product recommendation engine [active]
 
 ## Recently Closed
+- [x] 7.4 Smart product recommendation catalog [done]
+- [x] 7.3 Current-state transparency insights [done]
+- [x] 7.2 AI service baseline + fallback [done]
 - [x] Phase 4.1 Freeze deterministic engine contract (input/output + fixtures) [done]
 - [x] Phase 4.2 Implement forecast normalization module in engine [done]
 - [x] Phase 4.3 Implement soiling and heat-loss deterministic modules [done]
