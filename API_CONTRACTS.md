@@ -84,6 +84,14 @@
 - `POST /api/v1/dashboard/aggregate`
 - `POST /api/v1/dashboard/demo/seed`
 
+### AI Insights
+- `POST /api/v1/ai/insights`
+  - Auth: `Bearer <token>` required
+  - Request body: `CanonicalAggregateAiSource` (same shape as `DashboardAggregateData` — see Dashboard Aggregate Canonical Contract)
+  - Response: standard `{ success, data: AiInsightContractOutput, meta }` envelope
+  - Contract version: `ai-insight-v2`
+  - Fallback: deterministic when `OPENAI_API_KEY` is absent; OpenAI wiring deferred
+
 ## Contract Notes
 - API responses should be typed DTOs with stable keys.
 - All computed endpoints MUST include in `data`:

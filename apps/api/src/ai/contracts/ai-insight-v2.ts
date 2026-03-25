@@ -451,3 +451,133 @@ export function isCanonicalAggregateAiSource(value: unknown): value is Canonical
   const providers = value.providers;
   return isString(providers.weather) && isString(providers.solar) && isString(providers.engine);
 }
+
+// ---------------------------------------------------------------------------
+// Output validator (Change A — task 7.8)
+// Validates that the value produced by the fallback or any future OpenAI
+// provider fully satisfies AiInsightContractOutput before it is returned.
+// Rules: shape-only, no semantic checks, no arithmetic, lightweight.
+// ---------------------------------------------------------------------------
+
+const VALID_INSIGHT_TYPES: InsightType[] = ["behavior", "maintenance", "product"];
+const VALID_ACTIONABILITY: Actionability[] = ["immediate", "scheduled", "informational"];
+const CANONICAL_SOURCE_REF_SET = new Set<string>(CANONICAL_SOURCE_REFS);
+
+function isInsightType(value: unknown): value is InsightType {
+  return VALID_INSIGHT_TYPES.includes(value as InsightType);
+}
+
+function isActionability(value: unknown): value is Actionability {
+  return VALID_ACTIONABILITY.includes(value as Actionability);
+}
+
+function isConfidence(value: unknown): value is Confidence {
+  return value === "low" || value === "moderate" || value === "high";
+}
+
+function isValidSourceRef(value: unknown): boolean {
+  return isString(value) && CANONICAL_SOURCE_REF_SET.has(value);
+}
+
+function isValidTraceableReason(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (!isString(value.text)) return false;
+  if (!Array.isArray(value.sourceRefs)) return false;
+  return value.sourceRefs.every(isValidSourceRef);
+}
+
+function isValidBenefitRange(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (!isNumber(value.min) || !isNumber(value.max)) return false;
+  if (!Array.isArray(value.basedOn)) return false;
+  return value.basedOn.every(isValidSourceRef);
+}
+
+function isValidInsightItem(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (!isString(value.id) || !isString(value.title) || !isString(value.message)) return false;
+  if (!isInsightType(value.insightType)) return false;
+  // Change C — enforce severity and confidence enums
+  if (!isSeverity(value.severity)) return false;
+  if (!isConfidence(value.confidence)) return false;
+  if (!isActionability(value.actionability)) return false;
+  if (!isValidTraceableReason(value.reason)) return false;
+  if (typeof value.requiresPurchase !== "boolean") return false;
+  if (value.expectedBenefitRangeIlsMonthly !== undefined && !isValidBenefitRange(value.expectedBenefitRangeIlsMonthly)) {
+    return false;
+  }
+  return true;
+}
+
+function isValidProductRecommendationItem(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (!isString(value.id) || !isString(value.productId) || !isString(value.name) || !isString(value.useCase)) return false;
+  if (value.insightType !== "product") return false;
+  if (!isSeverity(value.severity)) return false;
+  if (!isConfidence(value.confidence)) return false;
+  if (!isActionability(value.actionability)) return false;
+  if (!isValidTraceableReason(value.reason)) return false;
+  if (!isValidTraceableReason(value.whyRelevant)) return false;
+  if (!isValidBenefitRange(value.expectedBenefitRangeIlsMonthly)) return false;
+  if (value.requiresPurchase !== true) return false;
+  return true;
+}
+
+function isValidSavingsSection(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (!isString(value.summary)) return false;
+  if (!Array.isArray(value.items)) return false;
+  return value.items.every((item) => {
+    if (!isRecord(item)) return false;
+    if (!isString(item.id) || !isString(item.title) || !isString(item.message)) return false;
+    if (!isSeverity(item.severity)) return false;
+    if (!isConfidence(item.confidence)) return false;
+    if (!isActionability(item.actionability)) return false;
+    if (!isValidTraceableReason(item.reason)) return false;
+    if (item.expectedBenefitRangeIlsMonthly !== undefined && !isValidBenefitRange(item.expectedBenefitRangeIlsMonthly)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Runtime output validator for AiInsightContractOutput (task 7.8 — Change A+C).
+ *
+ * Called by AiService after any insight generator (fallback or future OpenAI)
+ * produces a result. Returns false if the output is malformed so that the
+ * service can throw InternalServerErrorException rather than propagate bad data.
+ *
+ * Validates:
+ * - contractVersion literal
+ * - all four insight section arrays and each item's required fields
+ * - severity + confidence enum membership (guardrail enforcement)
+ * - reason.sourceRefs membership in CANONICAL_SOURCE_REFS
+ * - savingsExplanation section structure
+ * - meta required fields
+ */
+export function isValidAiInsightOutput(value: unknown): value is AiInsightContractOutput {
+  if (!isRecord(value)) return false;
+
+  if (value.contractVersion !== "ai-insight-v2") return false;
+
+  if (!Array.isArray(value.currentStateInsights) || !value.currentStateInsights.every(isValidInsightItem)) return false;
+  if (!Array.isArray(value.maintenanceInsights) || !value.maintenanceInsights.every(isValidInsightItem)) return false;
+  if (!Array.isArray(value.optimizationInsights) || !value.optimizationInsights.every(isValidInsightItem)) return false;
+  if (!Array.isArray(value.productRecommendations) || !value.productRecommendations.every(isValidProductRecommendationItem)) return false;
+
+  if (!isRecord(value.savingsExplanation)) return false;
+  if (!isValidSavingsSection(value.savingsExplanation.withoutUpgrades)) return false;
+  if (!isValidSavingsSection(value.savingsExplanation.withUpgrades)) return false;
+
+  if (!isRecord(value.meta)) return false;
+  if (!isString(value.meta.generatedAt)) return false;
+  if (value.meta.basedOnSource !== "DASHBOARD_AGGREGATED_V1") return false;
+  // Validate the declared meta enum arrays match the contract literal tuples.
+  const sev = value.meta.severityEnum;
+  if (!Array.isArray(sev) || sev[0] !== "low" || sev[1] !== "moderate" || sev[2] !== "high" || sev.length !== 3) return false;
+  const conf = value.meta.confidenceEnum;
+  if (!Array.isArray(conf) || conf[0] !== "low" || conf[1] !== "moderate" || conf[2] !== "high" || conf.length !== 3) return false;
+
+  return true;
+}

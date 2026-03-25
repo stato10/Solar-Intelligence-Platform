@@ -39,8 +39,10 @@ Definition of Done:
 - Any future doc changes require versioned updates
 
 ## In Progress
+- [ ] 7.9 End-to-end AI flow validation [needs-audit] — OpenAI production wiring deferred until key is available; output validator (7.8) is in place and will gate this path
 
 ## Recently Closed
+- [x] 7.8 AI output validation + guardrails [done]
 - [x] 7.7 Frontend AI insights integration [done]
 - [x] 7.6 Savings explanation with and without upgrades [done]
 - [x] 7.5 Product recommendation engine [done]
@@ -119,7 +121,7 @@ Definition of Done:
 - [x] Phase 4: Calculation engine modules [done]
 - [x] Phase 5: Dashboard integration endpoints [done]
 - [x] Phase 6: Frontend MVP pages and states [done]
-- [ ] Phase 7: AI insights + fallback [planned]
+- [x] Phase 7: AI insights + fallback [done]
 - [ ] Phase 8: QA, polish, release readiness [planned]
 
 ## Phase 6 - Frontend MVP Pages and States
