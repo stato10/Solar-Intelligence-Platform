@@ -629,14 +629,50 @@ export class AiInsightsFallbackService {
   }
 
   private getValueByRef(input: AiInsightContractInput, ref: AggregateSourceRef): unknown {
+    // Change D (task 7.8) — expanded to cover all scalar AggregateSourceRef
+    // values used by catalog suitability rules, including likely future refs.
+    // Any ref not present here increments unresolvedCount in the evaluator,
+    // so keeping this list complete prevents silent product eligibility drift.
     const pathMap: Partial<Record<AggregateSourceRef, unknown>> = {
+      // Soiling
+      "soiling.score": input.aggregate.soiling.score,
+      "soiling.estimatedLossPercent": input.aggregate.soiling.estimatedLossPercent,
+      "soiling.cleaningRecommended": input.aggregate.soiling.cleaningRecommended,
+      "soiling.recommendedCleaningDate": input.aggregate.soiling.recommendedCleaningDate,
+      "soiling.explanation": input.aggregate.soiling.explanation,
+      // Heat
+      "heat.score": input.aggregate.heat.score,
+      "heat.estimatedLossPercent": input.aggregate.heat.estimatedLossPercent,
+      "heat.peakHeatWindowStart": input.aggregate.heat.peakHeatWindowStart,
+      "heat.peakHeatWindowEnd": input.aggregate.heat.peakHeatWindowEnd,
+      // Optimization
       "optimization.opportunityScore": input.aggregate.optimization.opportunityScore,
       "optimization.estimatedValue": input.aggregate.optimization.estimatedValue,
-      "benchmark.exportDeviationPercent": input.aggregate.benchmark.exportDeviationPercent,
+      // Financial
+      "financial.dailyEstimatedSavings": input.aggregate.financial.dailyEstimatedSavings,
+      "financial.monthlyEstimatedSavings": input.aggregate.financial.monthlyEstimatedSavings,
+      "financial.yearlyOptimizationPotential": input.aggregate.financial.yearlyOptimizationPotential,
+      // Benchmark
+      "benchmark.expectedProductionKwh": input.aggregate.benchmark.expectedProductionKwh,
+      "benchmark.actualProductionKwh": input.aggregate.benchmark.actualProductionKwh,
       "benchmark.expectedExportKwh": input.aggregate.benchmark.expectedExportKwh,
       "benchmark.actualExportKwh": input.aggregate.benchmark.actualExportKwh,
+      "benchmark.productionDeviationPercent": input.aggregate.benchmark.productionDeviationPercent,
+      "benchmark.exportDeviationPercent": input.aggregate.benchmark.exportDeviationPercent,
+      "benchmark.performanceStatus": input.aggregate.benchmark.performanceStatus,
+      "benchmark.insight": input.aggregate.benchmark.insight,
+      // Self-consumption
       "selfConsumption.selfConsumptionScore": input.aggregate.selfConsumption.selfConsumptionScore,
-      "heat.estimatedLossPercent": input.aggregate.heat.estimatedLossPercent
+      "selfConsumption.estimatedSavingsIls": input.aggregate.selfConsumption.estimatedSavingsIls,
+      "selfConsumption.recommendedUsageWindow.start": input.aggregate.selfConsumption.recommendedUsageWindow.start,
+      "selfConsumption.recommendedUsageWindow.end": input.aggregate.selfConsumption.recommendedUsageWindow.end,
+      // Context
+      "siteId": input.context.siteId,
+      "generatedAt": input.context.generatedAt,
+      "source": input.context.source,
+      "providers.weather": input.context.providers?.weather,
+      "providers.solar": input.context.providers?.solar,
+      "providers.engine": input.context.providers?.engine
     };
 
     return pathMap[ref];

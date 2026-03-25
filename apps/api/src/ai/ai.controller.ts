@@ -1,16 +1,18 @@
-import { Body, Controller, Headers, Post } from "@nestjs/common";
+import { Body, Controller, Headers, Post, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AiService } from "./ai.service";
 
 @Controller("ai")
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post("insights")
-  generateInsights(
+  async generateInsights(
     @Body() payload: unknown,
     @Headers("x-correlation-id") correlationId?: string
   ) {
-    const data = this.aiService.generateInsights(payload);
+    const data = await this.aiService.generateInsights(payload);
     return {
       success: true,
       data,
