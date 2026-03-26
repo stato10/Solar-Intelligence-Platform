@@ -13,6 +13,11 @@ import {
   SmartProductCatalogItem,
   TraceableReason
 } from "../contracts/ai-insight-v2";
+import {
+  AiInsightContractInputV3,
+  AiInsightContractOutputV3,
+  EnergyDecisionItem
+} from "../contracts/ai-insight-v3";
 
 const MIN_MATCHED_RULES = 2;
 const MIN_WEIGHTED_SCORE = 0.5;
@@ -74,7 +79,64 @@ export class AiInsightsFallbackService {
     };
   }
 
-  private buildCurrentStateInsights(input: AiInsightContractInput): InsightItem[] {
+  generateV3(input: AiInsightContractInputV3): AiInsightContractOutputV3 {
+    const currentStateInsights = this.buildCurrentStateInsights(input);
+    const maintenanceInsights = this.buildMaintenanceInsights(input);
+    const optimizationInsights = this.buildOptimizationInsights(input);
+    const productRecommendations = this.buildProductRecommendations(input);
+    const energyDecisions = this.buildEnergyDecisions(input);
+    const savingsExplanation = this.buildSavingsExplanation(input, productRecommendations);
+
+    return {
+      contractVersion: "ai-insight-v3",
+      currentStateInsights,
+      maintenanceInsights,
+      optimizationInsights,
+      productRecommendations,
+      energyDecisions,
+      savingsExplanation,
+      meta: {
+        generatedAt: new Date().toISOString(),
+        basedOnSource: "DASHBOARD_AGGREGATED_V1",
+        severityEnum: ["low", "moderate", "high"],
+        confidenceEnum: ["low", "moderate", "high"]
+      }
+    };
+  }
+
+  private buildEnergyDecisions(input: AiInsightContractInputV3): EnergyDecisionItem[] {
+    const decisions: EnergyDecisionItem[] = [];
+    
+    // Deterministic stub for battery worthiness
+    decisions.push({
+      id: "fallback-decision-battery",
+      topic: "battery-worthiness",
+      title: "Battery Worthiness Estimate",
+      recommendation: input.aggregate.benchmark.exportDeviationPercent < 0 && input.apiData.tariffs.exportRateIlsPerKwh < input.apiData.tariffs.importRateIlsPerKwh ? "consider" : "not-worth-it-now",
+      message: "Deterministic fallback cannot fully evaluate complex battery logic without OpenAI. Review export data and evening usage manually.",
+      severity: "low",
+      confidence: "low",
+      requiresPurchase: true,
+      reason: this.reason("Fallback generator provides basic battery rule based on simple export deviation.", ["benchmark.exportDeviationPercent"])
+    });
+
+    // Deterministic stub for self-consumption vs export
+    decisions.push({
+      id: "fallback-decision-sc",
+      topic: "self-consumption-vs-export",
+      title: "Self-Consumption vs Export",
+      recommendation: "recommended",
+      message: "Consume more locally when the import rate is higher than your export rate.",
+      severity: "moderate",
+      confidence: "high",
+      requiresPurchase: false,
+      reason: this.reason("Standard deterministic advice when export compensation is low.", ["selfConsumption.selfConsumptionScore"])
+    });
+
+    return decisions;
+  }
+
+  private buildCurrentStateInsights(input: AiInsightContractInput | AiInsightContractInputV3): InsightItem[] {
     const insights: InsightItem[] = [];
     const { benchmark, financial, selfConsumption } = input.aggregate;
 
@@ -172,7 +234,7 @@ export class AiInsightsFallbackService {
     return insights;
   }
 
-  private buildMaintenanceInsights(input: AiInsightContractInput): InsightItem[] {
+  private buildMaintenanceInsights(input: AiInsightContractInput | AiInsightContractInputV3): InsightItem[] {
     const insights: InsightItem[] = [];
     const { soiling, heat, risks } = input.aggregate;
 
@@ -239,7 +301,7 @@ export class AiInsightsFallbackService {
     return insights;
   }
 
-  private buildOptimizationInsights(input: AiInsightContractInput): InsightItem[] {
+  private buildOptimizationInsights(input: AiInsightContractInput | AiInsightContractInputV3): InsightItem[] {
     const insights: InsightItem[] = [];
     const { optimization, financial } = input.aggregate;
 
@@ -312,7 +374,7 @@ export class AiInsightsFallbackService {
   }
 
   private buildProductRecommendations(
-    input: AiInsightContractInput
+    input: AiInsightContractInput | AiInsightContractInputV3
   ): ProductRecommendationItem[] {
     const candidates = input.productCatalog
       .map((item) => this.evaluateProductCandidate(input, item))
@@ -347,7 +409,7 @@ export class AiInsightsFallbackService {
   }
 
   private buildSavingsExplanation(
-    input: AiInsightContractInput,
+    input: AiInsightContractInput | AiInsightContractInputV3,
     productRecommendations: ProductRecommendationItem[]
   ): AiInsightContractOutput["savingsExplanation"] {
     const { financial, selfConsumption, optimization, soiling, heat, risks, benchmark } = input.aggregate;
@@ -505,7 +567,7 @@ export class AiInsightsFallbackService {
   }
 
   private evaluateProductCandidate(
-    input: AiInsightContractInput,
+    input: AiInsightContractInput | AiInsightContractInputV3,
     item: SmartProductCatalogItem
   ): ProductCandidate | null {
     const matchedRuleFields: AggregateSourceRef[] = [];
@@ -615,7 +677,7 @@ export class AiInsightsFallbackService {
     return "low";
   }
 
-  private productBenefitRange(input: AiInsightContractInput): BenefitRange {
+  private productBenefitRange(input: AiInsightContractInput | AiInsightContractInputV3): BenefitRange {
     const optimizationValue = Math.max(0, input.aggregate.optimization.estimatedValue);
     const cap = Math.max(0, input.aggregate.financial.monthlyEstimatedSavings);
     const min = Math.min(cap, optimizationValue * 0.1);
@@ -628,7 +690,7 @@ export class AiInsightsFallbackService {
     };
   }
 
-  private getValueByRef(input: AiInsightContractInput, ref: AggregateSourceRef): unknown {
+  private getValueByRef(input: AiInsightContractInput | AiInsightContractInputV3, ref: AggregateSourceRef): unknown {
     // Change D (task 7.8) — expanded to cover all scalar AggregateSourceRef
     // values used by catalog suitability rules, including likely future refs.
     // Any ref not present here increments unresolvedCount in the evaluator,

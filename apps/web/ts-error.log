@@ -1,0 +1,17 @@
+.next/dev/types/validator.ts(5,56): error TS2306: File 'C:/Users/stato/Desktop/GitHub Project/Solar-Intelligence-Platform/apps/web/.next/dev/types/routes.d.ts' is not a module.
+src/components/dashboard/EnergyDecisionsSection.tsx(2,58): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/components/dashboard/EnergyDecisionsSection.tsx(3,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'Actionability'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'AggregateSourceRef'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'BenefitRange'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'Confidence'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'InsightItem'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'InsightType'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'ProductRecommendationItem'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'SavingsExplanation'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'SavingsExplanationSection'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'SavingsLineItem'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'Severity'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'SmartProductCatalogItem'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'SuitabilityRule'. Consider explicitly re-exporting to resolve the ambiguity.
+src/lib/contracts/index.ts(6,1): error TS2308: Module "./ai-insight-v2" has already exported a member named 'TraceableReason'. Consider explicitly re-exporting to resolve the ambiguity.

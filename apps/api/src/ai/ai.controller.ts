@@ -23,4 +23,22 @@ export class AiController {
       }
     };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("insights/v3")
+  async generateInsightsV3(
+    @Body() payload: unknown,
+    @Headers("x-correlation-id") correlationId?: string
+  ) {
+    const data = await this.aiService.generateInsightsV3(payload);
+    return {
+      success: true,
+      data,
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: "v3",
+        correlationId: correlationId ?? null
+      }
+    };
+  }
 }
