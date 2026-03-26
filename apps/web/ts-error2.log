@@ -1,0 +1,2 @@
+src/components/dashboard/EnergyDecisionsSection.tsx(10,1): error TS1128: Declaration or statement expected.
+src/components/dashboard/EnergyDecisionsSection.tsx(10,3): error TS1434: Unexpected keyword or identifier.

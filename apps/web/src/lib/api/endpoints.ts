@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
     demoSeed: "/dashboard/demo/seed"
   },
   ai: {
-    insights: "/ai/insights"
+    insights: "/ai/insights",
+    insightsV3: "/ai/insights/v3"
   }
 } as const;

@@ -39,9 +39,12 @@ Definition of Done:
 - Any future doc changes require versioned updates
 
 ## In Progress
-- [ ] 7.9 End-to-end AI flow validation [needs-audit] — OpenAI production wiring deferred until key is available; output validator (7.8) is in place and will gate this path
 
 ## Recently Closed
+- [x] 7.12 Energy Decision product links + monetization [done]
+- [x] 7.11 Energy Decision AI frontend integration [done]
+- [x] 7.10 Energy Decision AI (v3 contract) [done]
+- [x] 7.9 End-to-end AI flow validation [done]
 - [x] 7.8 AI output validation + guardrails [done]
 - [x] 7.7 Frontend AI insights integration [done]
 - [x] 7.6 Savings explanation with and without upgrades [done]
@@ -122,7 +125,14 @@ Definition of Done:
 - [x] Phase 5: Dashboard integration endpoints [done]
 - [x] Phase 6: Frontend MVP pages and states [done]
 - [x] Phase 7: AI insights + fallback [done]
-- [ ] Phase 8: QA, polish, release readiness [planned]
+- [ ] Phase 8: Database Migration & Hardening [active]
+
+## Phase 8 - Postgres Database Migration
+- [x] 8.1 Schema Analysis & ORM Selection [done]
+- [ ] 8.2 Prisma & Infrastructure Scaffold (`docker-compose`, migrations, PrismaService) [active]
+- [ ] 8.3 Repository Abstraction Layer [planned]
+- [ ] 8.4 Prisma Integration & Transactions [planned]
+- [ ] 8.5 Auth Hardening (Proper JWT) [planned]
 
 ## Phase 6 - Frontend MVP Pages and States
 

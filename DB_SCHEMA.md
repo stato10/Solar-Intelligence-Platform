@@ -35,7 +35,7 @@
 - `id`, `site_id`, `system_size_kw`, `tilt`, `azimuth`, `panel_wattage`, `panel_efficiency`, `inverter_type`, `last_cleaning_date`, `created_at`, `updated_at`
 
 ### `user_devices`
-- `id`, `site_id`, `has_boiler`, `has_ev`, `has_dishwasher`, `has_washing_machine`, `has_ac`, `usage_flexibility_level`
+- `id`, `site_id`, `has_boiler`, `has_ev`, `has_battery`, `has_dishwasher`, `has_washing_machine`, `has_ac`, `flexible_load_shifting_possible`, `open_to_upgrades`, `home_occupancy_profile`
 
 ### `tariffs`
 - `id`, `site_id`, `self_consumption_rate`, `export_rate`, `currency`, `effective_from`

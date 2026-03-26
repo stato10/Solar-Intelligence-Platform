@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  admin
+}
+
+enum OccupancyProfile {
+  mostly_day
+  mostly_evening
+  mixed
+}
+
+// -------------------------------------------------------------
+// 1. Unified User (Auth + Domain)
+// -------------------------------------------------------------
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   // Secure bcrypt hash
+  fullName     String
+  role         Role     @default(owner)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  sites        Site[]
+}
+
+// -------------------------------------------------------------
+// 2. Core Domain: Sites & Topologies
+// -------------------------------------------------------------
+model Site {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteName  String
+  address   String
+  latitude  Float
+  longitude Float
+  timezone  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  solarSystems  SolarSystem[]
+  deviceProfile SiteDeviceProfile?
+  tariffs       Tariff[]
+
+  @@index([userId])
+}
+
+// -------------------------------------------------------------
+// 3. Hardware Modules (1:N capability)
+// -------------------------------------------------------------
+model SolarSystem {
+  id               String   @id @default(uuid())
+  siteId           String
+  site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  systemSizeKw     Float
+  tilt             Float
+  azimuth          Float
+  panelWattage     Float
+  panelEfficiency  Float
+  inverterType     String?
+  lastCleaningDate DateTime
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([siteId])
+}
+
+// -------------------------------------------------------------
+// 4. Device Profiling (V3 AI Alignment)
+// -------------------------------------------------------------
+model SiteDeviceProfile {
+  id                           String           @id @default(uuid())
+  siteId                       String           @unique
+  site                         Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  
+  hasBoiler                    Boolean          @default(false)
+  hasEv                        Boolean          @default(false)
+  hasBattery                   Boolean          @default(false)
+  hasDishwasher                Boolean          @default(false)
+  hasWashingMachine            Boolean          @default(false)
+  hasAc                        Boolean          @default(false)
+  flexibleLoadShiftingPossible Boolean          @default(false)
+  openToUpgrades               Boolean          @default(true)
+  homeOccupancyProfile         OccupancyProfile // Strict enum for LLM context constraint
+
+  createdAt                    DateTime         @default(now())
+  updatedAt                    DateTime         @updatedAt
+
+  @@index([siteId])
+}
+
+// -------------------------------------------------------------
+// 5. Financial Configuration (Temporal)
+// -------------------------------------------------------------
+model Tariff {
+  id                  String    @id @default(uuid())
+  siteId              String
+  site                Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  selfConsumptionRate Float
+  exportRate          Float
+  currency            String
+  isActive            Boolean   @default(true)
+  effectiveFrom       DateTime
+  effectiveUntil      DateTime? // Null means currently active
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([siteId])
+}

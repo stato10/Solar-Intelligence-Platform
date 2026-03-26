@@ -1,23 +1,24 @@
 import { BarChart3, TriangleAlert, Zap } from "lucide-react";
 import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
-import { fetchAiInsights } from "@/lib/api/ai-insights";
+import { fetchAiInsightsV3 } from "@/lib/api/ai-insights";
 import { fetchDashboardAggregate } from "@/lib/api/dashboard";
 import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
 import { DashboardAiInsightsSection } from "./_components/ai-insights-section";
+import { EnergyDecisionsSection } from "@/components/dashboard/EnergyDecisionsSection";
 import { DashboardEmptyState, DashboardErrorState } from "./_components/dashboard-state";
 
 export default async function DashboardPage() {
   let dashboard: DashboardAggregateData | null = null;
   let dashboardVm: ReturnType<typeof toDashboardPageViewModel> | null = null;
   let errorMessage: string | null = null;
-  let aiInsights: AiInsightContractOutput | null = null;
+  let aiInsights: import("@/lib/contracts").AiInsightContractOutputV3 | null = null;
   let aiInsightsError: string | null = null;
 
   try {
     dashboard = await fetchDashboardAggregate();
     dashboardVm = toDashboardPageViewModel(dashboard);
     try {
-      aiInsights = await fetchAiInsights(dashboard);
+      aiInsights = await fetchAiInsightsV3(dashboard);
     } catch (aiError) {
       aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
     }
@@ -61,7 +62,9 @@ export default async function DashboardPage() {
             })}
           </div>
 
-          <DashboardAiInsightsSection data={aiInsights} errorMessage={aiInsightsError} />
+          <EnergyDecisionsSection decisions={aiInsights?.energyDecisions ?? []} />
+
+          <DashboardAiInsightsSection data={aiInsights as any} errorMessage={aiInsightsError} />
 
           <div className="grid gap-4 md:grid-cols-2">
             <article className="rounded-xl border border-border bg-card p-5">
