@@ -80,7 +80,7 @@ Definition of Done:
 - [x] Phase 4.9g Final sync audit and phase gate check [done]
 
 ## Blocked
-- [ ] OpenAI output sometimes fails v2/v3 contract validation in runtime (must degrade safely + pass regression checks) [blocked]
+- [x] OpenAI output sometimes fails v2/v3 contract validation in runtime (must degrade safely + pass regression checks) [resolved]
 
 ## Done
 - [x] Bootstrap brief defined and aligned to web-first application direction
@@ -176,15 +176,15 @@ Execution Order (strict, single-task flow):
 - [x] Add auth regression tests (invalid token, expired token, bad credentials).
 - [x] Audit pass and close 8.5.
 
-### AI Stabilization Gate (must pass before MVP close) [planned]
-- [ ] Keep OpenAI path enabled when key exists.
-- [ ] On invalid OpenAI output, return deterministic fallback output instead of breaking user flow.
-- [ ] Enforce v2/v3 output validator before response.
-- [ ] Add regression tests:
-  - [ ] OpenAI valid output -> returned as-is.
-  - [ ] OpenAI invalid output -> deterministic fallback returned.
-  - [ ] Missing key -> deterministic fallback returned.
-- [ ] Remove blocked status once runtime validation is stable.
+### AI Stabilization Gate (must pass before MVP close) [done]
+- [x] Keep OpenAI path enabled when key exists.
+- [x] On invalid OpenAI output, return deterministic fallback output instead of breaking user flow.
+- [x] Enforce v2/v3 output validator before response.
+- [x] Add regression tests:
+  - [x] OpenAI valid output -> returned as-is.
+  - [x] OpenAI invalid output -> deterministic fallback returned.
+  - [x] Missing key -> deterministic fallback returned.
+- [x] Remove blocked status once runtime validation is stable.
 
 ## Phase 6 - Frontend MVP Pages and States
 

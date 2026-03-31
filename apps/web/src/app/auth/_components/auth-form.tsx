@@ -51,6 +51,7 @@ export function AuthForm() {
   function persistSession(accessToken: string, user: AuthUser) {
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    document.cookie = `${ACCESS_TOKEN_KEY}=${encodeURIComponent(accessToken)}; path=/; max-age=604800; samesite=lax`;
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

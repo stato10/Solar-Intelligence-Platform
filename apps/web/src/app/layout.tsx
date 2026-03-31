@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { AuthTokenCookieSync } from "@/components/auth/auth-token-cookie-sync";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
@@ -24,8 +25,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${plusJakarta.variable} ${jetBrainsMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${plusJakarta.variable} ${jetBrainsMono.variable} antialiased`} suppressHydrationWarning>
+        <AuthTokenCookieSync />
         <AppShell>{children}</AppShell>
       </body>
     </html>

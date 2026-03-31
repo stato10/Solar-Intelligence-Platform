@@ -10,12 +10,21 @@ export class ApiHttpError extends Error {
   }
 }
 
-export async function postJson<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
+export async function postJson<TReq, TRes>(
+  path: string,
+  body: TReq,
+  options?: { accessToken?: string }
+): Promise<TRes> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (options?.accessToken) {
+    headers.Authorization = `Bearer ${options.accessToken}`;
+  }
+
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers,
     body: JSON.stringify(body),
     cache: "no-store"
   });

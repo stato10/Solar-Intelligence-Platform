@@ -1,6 +1,8 @@
 import { BarChart3, TriangleAlert, Zap } from "lucide-react";
+import { cookies } from "next/headers";
 import type { AiInsightContractOutputV3, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsightsV3 } from "@/lib/api/ai-insights";
+import { ApiHttpError } from "@/lib/api/client";
 import { fetchDashboardAggregate } from "@/lib/api/dashboard";
 import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
 import { DashboardAiInsightsSection } from "./_components/ai-insights-section";
@@ -15,12 +17,17 @@ export default async function DashboardPage() {
   let aiInsightsError: string | null = null;
 
   try {
+    const accessToken = (await cookies()).get("sip.accessToken")?.value;
     dashboard = await fetchDashboardAggregate();
     dashboardVm = toDashboardPageViewModel(dashboard);
     try {
-      aiInsights = await fetchAiInsightsV3(dashboard);
+      aiInsights = await fetchAiInsightsV3(dashboard, accessToken);
     } catch (aiError) {
-      aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
+      if (aiError instanceof ApiHttpError && aiError.status === 401) {
+        aiInsightsError = "Sign in again to load personalized AI insights.";
+      } else {
+        aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
+      }
     }
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown dashboard error";
