@@ -9,8 +9,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll(@Query() query: UsersListQueryDto) {
-    const result = this.usersService.findAll(query);
+  async findAll(@Query() query: UsersListQueryDto) {
+    const result = await this.usersService.findAll(query);
     return {
       success: true,
       data: result.items,
@@ -23,10 +23,10 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() payload: CreateUserDto) {
+  async create(@Body() payload: CreateUserDto) {
     return {
       success: true,
-      data: this.usersService.create(payload),
+      data: await this.usersService.create(payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -35,10 +35,10 @@ export class UsersController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  async findOne(@Param("id") id: string) {
     return {
       success: true,
-      data: this.usersService.findOne(id),
+      data: await this.usersService.findOne(id),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -47,10 +47,10 @@ export class UsersController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() payload: UpdateUserDto) {
+  async update(@Param("id") id: string, @Body() payload: UpdateUserDto) {
     return {
       success: true,
-      data: this.usersService.update(id, payload),
+      data: await this.usersService.update(id, payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"

@@ -20,37 +20,37 @@ export class DashboardDemoSeedService {
     const userEmail = "demo.owner@sip.local";
     const siteName = "Demo Solar Site";
 
-    const existingUser = this.usersService
-      .findAll({ page: 1, limit: 100, search: userEmail })
-      .items.find((item) => item.email === userEmail);
+    const existingUser = (
+      await this.usersService.findAll({ page: 1, limit: 100, search: userEmail })
+    ).items.find((item) => item.email === userEmail);
     const user =
       existingUser ??
-      this.usersService.create({
+      (await this.usersService.create({
         fullName: "Demo Owner",
         email: userEmail,
         role: "owner"
-      });
+      }));
 
-    const existingSite = this.sitesService
-      .findAll({ page: 1, limit: 100, userId: user.id, search: siteName })
-      .items.find((item) => item.siteName === siteName && item.userId === user.id);
+    const existingSite = (
+      await this.sitesService.findAll({ page: 1, limit: 100, userId: user.id, search: siteName })
+    ).items.find((item) => item.siteName === siteName && item.userId === user.id);
     const site =
       existingSite ??
-      this.sitesService.create({
+      (await this.sitesService.create({
         userId: user.id,
         siteName,
         address: "Rothschild Blvd 1, Tel Aviv",
         latitude: 32.0853,
         longitude: 34.7818,
         timezone: "Asia/Jerusalem"
-      });
+      }));
 
-    const existingSystem = this.solarSystemsService
-      .findAll({ page: 1, limit: 10, siteId: site.id })
-      .items.at(0);
+    const existingSystem = (
+      await this.solarSystemsService.findAll({ page: 1, limit: 10, siteId: site.id })
+    ).items.at(0);
     const system =
       existingSystem ??
-      this.solarSystemsService.create({
+      (await this.solarSystemsService.create({
         siteId: site.id,
         systemSizeKw: 8.5,
         tilt: 25,
@@ -59,20 +59,20 @@ export class DashboardDemoSeedService {
         panelEfficiency: 21.5,
         inverterType: "string",
         lastCleaningDate: "2026-03-01T00:00:00.000Z"
-      });
+      }));
 
-    const existingTariff = this.tariffsService
-      .findAll({ page: 1, limit: 10, siteId: site.id })
-      .items.at(0);
+    const existingTariff = (
+      await this.tariffsService.findAll({ page: 1, limit: 10, siteId: site.id })
+    ).items.at(0);
     const tariff =
       existingTariff ??
-      this.tariffsService.create({
+      (await this.tariffsService.create({
         siteId: site.id,
         selfConsumptionRate: 0.62,
         exportRate: 0.28,
         currency: "ILS",
         effectiveFrom: "2026-01-01T00:00:00.000Z"
-      });
+      }));
 
     const aggregatePayload: AggregateDashboardRequestDto = {
       siteId: site.id,

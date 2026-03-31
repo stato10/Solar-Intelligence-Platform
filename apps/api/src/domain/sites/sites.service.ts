@@ -1,20 +1,23 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { paginateArray } from "../common/pagination";
 import { UsersService } from "../users/users.service";
 import { CreateSiteDto } from "./dto/create-site.dto";
 import { SitesListQueryDto } from "./dto/sites-list-query.dto";
 import { UpdateSiteDto } from "./dto/update-site.dto";
-import { SiteEntity } from "./entities/site.entity";
+import { SITES_REPOSITORY, SitesRepository } from "./repositories/sites.repository";
 
 @Injectable()
 export class SitesService {
-  private readonly sites: SiteEntity[] = [];
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    @Inject(SITES_REPOSITORY)
+    private readonly sitesRepository: SitesRepository
+  ) {}
 
-  findAll(query: SitesListQueryDto) {
+  async findAll(query: SitesListQueryDto) {
+    const sites = await this.sitesRepository.findAll();
     const search = query.search?.trim().toLowerCase();
-    const filtered = this.sites.filter((site) => {
+    const filtered = sites.filter((site) => {
       if (query.userId && site.userId !== query.userId) {
         return false;
       }
@@ -29,41 +32,24 @@ export class SitesService {
     return paginateArray(filtered, query);
   }
 
-  create(payload: CreateSiteDto) {
-    this.usersService.findOne(payload.userId);
-    const site: SiteEntity = {
-      id: randomUUID(),
-      userId: payload.userId,
-      siteName: payload.siteName,
-      address: payload.address,
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      timezone: payload.timezone,
-      createdAt: new Date().toISOString()
-    };
-    this.sites.push(site);
-    return site;
+  async create(payload: CreateSiteDto) {
+    await this.usersService.findOne(payload.userId);
+    return this.sitesRepository.create(payload);
   }
 
-  findOne(id: string) {
-    const site = this.sites.find((item) => item.id === id);
+  async findOne(id: string) {
+    const site = await this.sitesRepository.findById(id);
     if (!site) {
       throw new NotFoundException(`Site ${id} not found`);
     }
     return site;
   }
 
-  update(id: string, payload: UpdateSiteDto) {
-    const site = this.findOne(id);
+  async update(id: string, payload: UpdateSiteDto) {
+    await this.findOne(id);
     if (payload.userId !== undefined) {
-      this.usersService.findOne(payload.userId);
-      site.userId = payload.userId;
+      await this.usersService.findOne(payload.userId);
     }
-    if (payload.siteName !== undefined) site.siteName = payload.siteName;
-    if (payload.address !== undefined) site.address = payload.address;
-    if (payload.latitude !== undefined) site.latitude = payload.latitude;
-    if (payload.longitude !== undefined) site.longitude = payload.longitude;
-    if (payload.timezone !== undefined) site.timezone = payload.timezone;
-    return site;
+    return this.sitesRepository.update(id, payload);
   }
 }

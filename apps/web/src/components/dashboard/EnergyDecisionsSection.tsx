@@ -1,4 +1,4 @@
-import { EnergyDecisionItem, EnergyDecisionTopic, Severity } from "@/lib/contracts";
+import { EnergyDecisionItem, EnergyDecisionTopic } from "@/lib/contracts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,11 +29,6 @@ const TOPIC_ICONS: Record<EnergyDecisionTopic, React.ElementType> = {
 function DecisionCard({ item }: { item: EnergyDecisionItem }) {
   const Icon = TOPIC_ICONS[item.topic] || Lightbulb;
   
-  const severityColor = 
-    item.severity === "high" ? "destructive" :
-    item.severity === "moderate" ? "default" :
-    "secondary";
-
   const recColor = 
     item.recommendation === "recommended" ? "default" :
     item.recommendation === "consider" ? "secondary" : "outline";

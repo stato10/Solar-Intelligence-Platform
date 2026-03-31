@@ -9,8 +9,8 @@ export class TariffsController {
   constructor(private readonly tariffsService: TariffsService) {}
 
   @Get()
-  findAll(@Query() query: TariffsListQueryDto) {
-    const result = this.tariffsService.findAll(query);
+  async findAll(@Query() query: TariffsListQueryDto) {
+    const result = await this.tariffsService.findAll(query);
     return {
       success: true,
       data: result.items,
@@ -23,10 +23,10 @@ export class TariffsController {
   }
 
   @Post()
-  create(@Body() payload: CreateTariffDto) {
+  async create(@Body() payload: CreateTariffDto) {
     return {
       success: true,
-      data: this.tariffsService.create(payload),
+      data: await this.tariffsService.create(payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -35,10 +35,10 @@ export class TariffsController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  async findOne(@Param("id") id: string) {
     return {
       success: true,
-      data: this.tariffsService.findOne(id),
+      data: await this.tariffsService.findOne(id),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -47,10 +47,10 @@ export class TariffsController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() payload: UpdateTariffDto) {
+  async update(@Param("id") id: string, @Body() payload: UpdateTariffDto) {
     return {
       success: true,
-      data: this.tariffsService.update(id, payload),
+      data: await this.tariffsService.update(id, payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"

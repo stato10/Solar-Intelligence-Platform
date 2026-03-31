@@ -80,7 +80,7 @@ Definition of Done:
 - [x] Phase 4.9g Final sync audit and phase gate check [done]
 
 ## Blocked
-- [ ] OpenAI production key not yet available (AI summary validation limited to fallback path) [blocked]
+- [ ] OpenAI output sometimes fails v2/v3 contract validation in runtime (must degrade safely + pass regression checks) [blocked]
 
 ## Done
 - [x] Bootstrap brief defined and aligned to web-first application direction
@@ -129,10 +129,62 @@ Definition of Done:
 
 ## Phase 8 - Postgres Database Migration
 - [x] 8.1 Schema Analysis & ORM Selection [done]
-- [ ] 8.2 Prisma & Infrastructure Scaffold (`docker-compose`, migrations, PrismaService) [active]
-- [ ] 8.3 Repository Abstraction Layer [planned]
+- [x] 8.2 Prisma & Infrastructure Scaffold (`docker-compose`, migrations, PrismaService) [done]
+- [ ] 8.3 Repository Abstraction Layer [active]
 - [ ] 8.4 Prisma Integration & Transactions [planned]
 - [ ] 8.5 Auth Hardening (Proper JWT) [planned]
+
+Execution Order (strict, single-task flow):
+- `8.2 -> 8.3 -> 8.4 -> 8.5 -> cross-cutting tests -> final audit/close`
+- Do not open next task before current task reaches `[done]`.
+
+### 8.2 Detailed Assignment (Prisma & Infrastructure) [done]
+- [x] Add Prisma module/service wiring in API app bootstrap.
+- [x] Generate initial migration and lock file in `apps/api/prisma/migrations`.
+- [x] Ensure Docker Postgres is the canonical DB runtime on host `5432`.
+- [x] Disable local Windows PostgreSQL service to prevent dual-binding conflicts.
+- [x] Ensure `prisma.config.ts` loads workspace root `.env`.
+- [x] Ensure seed command is configured and runnable under Prisma 7.
+- [x] Run `prisma generate`.
+- [x] Run `prisma migrate deploy`.
+- [x] Run `prisma db seed`.
+- [x] Run API quality gates (`lint`, `build`).
+- [x] Audit pass and close 8.2 (`needs-audit -> done`).
+
+### 8.3 Detailed Assignment (Repository Abstraction Layer) [active]
+- [ ] Introduce repository interfaces for `users`, `sites`, `solar-systems`, `devices`, `tariffs`.
+- [ ] Keep controller/service API contracts unchanged (no response-shape breaking changes).
+- [ ] Replace direct in-memory arrays with repository-backed reads/writes.
+- [ ] Preserve validation and relation checks currently enforced in services.
+- [ ] Add minimal integration tests for repository-backed CRUD happy paths.
+- [ ] Run API contract smoke tests after repository swap.
+- [ ] Audit pass and close 8.3.
+
+### 8.4 Detailed Assignment (Prisma Integration & Transactions) [planned]
+- [ ] Add transactional boundaries for multi-step domain flows.
+- [ ] Ensure rollback behavior on partial failures.
+- [ ] Keep deterministic engine and dashboard logic unchanged.
+- [ ] Verify API-engine and dashboard smoke/snapshot tests still pass.
+- [ ] Add regression checks for transaction failure paths.
+- [ ] Audit pass and close 8.4.
+
+### 8.5 Detailed Assignment (Auth Hardening - Proper JWT) [planned]
+- [ ] Replace `dev.*` token format with proper JWT issue/verify flow.
+- [ ] Add password hashing for persisted users.
+- [ ] Keep auth route contract stable for frontend (`register/login/me` envelope).
+- [ ] Ensure protected AI endpoints work with frontend-authenticated flow.
+- [ ] Add auth regression tests (invalid token, expired token, bad credentials).
+- [ ] Audit pass and close 8.5.
+
+### AI Stabilization Gate (must pass before MVP close) [planned]
+- [ ] Keep OpenAI path enabled when key exists.
+- [ ] On invalid OpenAI output, return deterministic fallback output instead of breaking user flow.
+- [ ] Enforce v2/v3 output validator before response.
+- [ ] Add regression tests:
+  - [ ] OpenAI valid output -> returned as-is.
+  - [ ] OpenAI invalid output -> deterministic fallback returned.
+  - [ ] Missing key -> deterministic fallback returned.
+- [ ] Remove blocked status once runtime validation is stable.
 
 ## Phase 6 - Frontend MVP Pages and States
 
@@ -210,9 +262,11 @@ Definition of Done:
 - Output is explainable and non-hallucinatory
 
 ## Phase 8 Definition of Done
-- No critical bugs in happy-path usage
-- Performance and reliability baselines met
-- Docs and runbooks ready for pilot/demo
+- 8.2, 8.3, 8.4, 8.5 are all marked `[done]` with audit evidence.
+- AI stabilization gate is fully green (OpenAI + fallback + validator behavior verified).
+- Cross-cutting MVP test gate is fully green.
+- No active blockers in `Blocked` section.
+- `PHASE_GATE_CHECKLIST.md` and `SYNC_PROTOCOL.md` closure steps completed.
 
 ## Cross-Cutting Tasks
 
@@ -222,6 +276,17 @@ Testing:
 - [x] API <-> engine contract tests
 - [ ] Provider adapter tests (mock/real behavior)
 - [x] Dashboard response snapshot tests
+
+Cross-cutting MVP test gate (must all pass before final close):
+- [ ] `npm run lint:api`
+- [ ] `npm run build:api`
+- [ ] `npm run lint:web`
+- [ ] `npm run build:web`
+- [ ] `python apps/engine/tests/run_golden.py`
+- [ ] `python apps/api/tests/run_engine_contract_smoke.py`
+- [ ] `python apps/api/tests/run_dashboard_contract_smoke.py`
+- [ ] `python apps/api/tests/run_dashboard_snapshot.py`
+- [ ] Auth + onboarding + dashboard + AI (v2/v3) end-to-end smoke (manual scripted run)
 
 Risk Management:
 - [x] Create `RISK_REGISTER.md`

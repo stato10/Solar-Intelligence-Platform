@@ -8,9 +8,10 @@ import { DashboardModule } from "./dashboard/dashboard.module";
 import { DomainModule } from "./domain";
 import { IntegrationsModule } from "./integrations";
 import { RequestLoggingMiddleware } from "./observability/request-logging.middleware";
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
-  imports: [ConfigModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule],
+  imports: [ConfigModule, PrismaModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule],
   controllers: [AppController],
   providers: [AppService]
 })

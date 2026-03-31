@@ -9,8 +9,8 @@ export class SolarSystemsController {
   constructor(private readonly solarSystemsService: SolarSystemsService) {}
 
   @Get()
-  findAll(@Query() query: SolarSystemsListQueryDto) {
-    const result = this.solarSystemsService.findAll(query);
+  async findAll(@Query() query: SolarSystemsListQueryDto) {
+    const result = await this.solarSystemsService.findAll(query);
     return {
       success: true,
       data: result.items,
@@ -23,10 +23,10 @@ export class SolarSystemsController {
   }
 
   @Post()
-  create(@Body() payload: CreateSolarSystemDto) {
+  async create(@Body() payload: CreateSolarSystemDto) {
     return {
       success: true,
-      data: this.solarSystemsService.create(payload),
+      data: await this.solarSystemsService.create(payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -35,10 +35,10 @@ export class SolarSystemsController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  async findOne(@Param("id") id: string) {
     return {
       success: true,
-      data: this.solarSystemsService.findOne(id),
+      data: await this.solarSystemsService.findOne(id),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -47,10 +47,10 @@ export class SolarSystemsController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() payload: UpdateSolarSystemDto) {
+  async update(@Param("id") id: string, @Body() payload: UpdateSolarSystemDto) {
     return {
       success: true,
-      data: this.solarSystemsService.update(id, payload),
+      data: await this.solarSystemsService.update(id, payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
