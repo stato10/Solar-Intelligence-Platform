@@ -1,77 +1,97 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
+import { ConfigService } from "@nestjs/config";
+import { compare, hash } from "bcryptjs";
+import { sign, verify } from "jsonwebtoken";
+import { PrismaService } from "../prisma/prisma.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { AuthUser } from "./interfaces/auth-user.interface";
 
-interface InMemoryAuthRecord extends AuthUser {
-  password: string;
+interface JwtClaims {
+  sub: string;
+  email: string;
+  role: "owner" | "admin";
 }
 
 @Injectable()
 export class AuthService {
-  private readonly users = new Map<string, InMemoryAuthRecord>();
+  private readonly jwtSecret: string;
 
-  register(payload: RegisterDto) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService
+  ) {
+    const secret = this.configService.get<string>("JWT_SECRET");
+    if (!secret) {
+      throw new Error("JWT_SECRET is required");
+    }
+    this.jwtSecret = secret;
+  }
+
+  async register(payload: RegisterDto) {
     const email = payload.email.toLowerCase();
-    const existing = this.users.get(email);
+    const existing = await this.prisma.user.findUnique({
+      where: { email }
+    });
 
     if (existing) {
-      return this.buildResponse(
-        {
-          message: "User already exists"
-        },
-        false
-      );
+      return this.buildResponse({ message: "User already exists" }, false);
     }
 
-    const newUser: InMemoryAuthRecord = {
-      id: randomUUID(),
-      fullName: payload.fullName,
-      email,
-      role: "owner",
-      password: payload.password
-    };
-    this.users.set(email, newUser);
+    const passwordHash = await hash(payload.password, 10);
+    const newUser = await this.prisma.user.create({
+      data: {
+        fullName: payload.fullName,
+        email,
+        role: "owner",
+        passwordHash
+      }
+    });
+    const publicUser = this.publicUser(newUser);
 
     return this.buildResponse(
       {
-        user: this.publicUser(newUser),
-        accessToken: this.createDevToken(newUser)
+        user: publicUser,
+        accessToken: this.createJwtToken(publicUser)
       },
       true
     );
   }
 
-  login(payload: LoginDto) {
+  async login(payload: LoginDto) {
     const email = payload.email.toLowerCase();
-    const user = this.users.get(email);
+    const user = await this.prisma.user.findUnique({
+      where: { email }
+    });
 
-    if (!user || user.password !== payload.password) {
+    if (!user || !(await compare(payload.password, user.passwordHash))) {
       throw new UnauthorizedException("Invalid credentials");
     }
+    const publicUser = this.publicUser(user);
 
     return this.buildResponse(
       {
-        user: this.publicUser(user),
-        accessToken: this.createDevToken(user)
+        user: publicUser,
+        accessToken: this.createJwtToken(publicUser)
       },
       true
     );
   }
 
-  me(authHeader?: string) {
+  async me(authHeader?: string) {
     const token = this.extractToken(authHeader);
     if (!token) {
       throw new UnauthorizedException("Missing token");
     }
 
-    const parsed = this.parseDevToken(token);
+    const parsed = this.parseJwtToken(token);
     if (!parsed) {
       throw new UnauthorizedException("Invalid token");
     }
 
-    const user = this.users.get(parsed.email);
+    const user = await this.prisma.user.findUnique({
+      where: { id: parsed.sub }
+    });
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
@@ -79,29 +99,44 @@ export class AuthService {
     return this.buildResponse({ user: this.publicUser(user) }, true);
   }
 
-  private publicUser(user: InMemoryAuthRecord): AuthUser {
-    const { password, ...publicUser } = user;
-    void password;
-    return publicUser;
+  private publicUser(user: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: "owner" | "admin";
+  }): AuthUser {
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role
+    };
   }
 
-  private createDevToken(user: AuthUser) {
-    const encoded = Buffer.from(
-      JSON.stringify({ email: user.email, role: user.role }),
-      "utf8"
-    ).toString("base64url");
-    return `dev.${encoded}`;
+  private createJwtToken(user: AuthUser): string {
+    const claims: JwtClaims = {
+      sub: user.id,
+      email: user.email,
+      role: user.role
+    };
+    return sign(claims, this.jwtSecret, { expiresIn: "7d" });
   }
 
-  private parseDevToken(token: string): { email: string; role: string } | null {
+  private parseJwtToken(token: string): JwtClaims | null {
     try {
-      const [, encoded] = token.split(".");
-      if (!encoded) {
+      const parsed = verify(token, this.jwtSecret);
+      if (typeof parsed !== "object" || parsed === null) {
         return null;
       }
-
-      const decoded = Buffer.from(encoded, "base64url").toString("utf8");
-      return JSON.parse(decoded) as { email: string; role: string };
+      if (
+        typeof (parsed as Record<string, unknown>).sub !== "string" ||
+        typeof (parsed as Record<string, unknown>).email !== "string" ||
+        ((parsed as Record<string, unknown>).role !== "owner" &&
+          (parsed as Record<string, unknown>).role !== "admin")
+      ) {
+        return null;
+      }
+      return parsed as JwtClaims;
     } catch {
       return null;
     }

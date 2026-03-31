@@ -83,21 +83,24 @@ Respond with the exact AiInsightContractOutput JSON structure.`
       }
     }
 
-    // Change B (task 7.8) — output guardrail enforcement.
-    // Validate before returning so any future insight generator (OpenAI or
-    // third-party) cannot propagate a malformed output to the API consumer.
+    // AI Stabilization Gate:
+    // If OpenAI output is malformed, degrade safely to deterministic fallback
+    // instead of returning HTTP 500 to the user flow.
     if (!isValidAiInsightOutput(result)) {
       this.logger.error(
         JSON.stringify({
           event: "ai.insights.output_validation_failed",
           siteId: aggregatePayload.siteId,
           generatedAt: aggregatePayload.generatedAt,
-          message: "AI insight output did not satisfy ai-insight-v2 contract."
+          message: "OpenAI output did not satisfy ai-insight-v2 contract. Falling back."
         })
       );
-      throw new InternalServerErrorException(
-        "AI insight output did not meet contract requirements."
-      );
+      result = this.fallbackService.generate(input);
+      if (!isValidAiInsightOutput(result)) {
+        throw new InternalServerErrorException(
+          "AI insight output did not meet contract requirements."
+        );
+      }
     }
 
     return result;
@@ -178,18 +181,24 @@ Respond with the exact AiInsightContractOutputV3 JSON structure.`
       }
     }
 
+    // AI Stabilization Gate:
+    // If OpenAI output is malformed, degrade safely to deterministic fallback
+    // instead of returning HTTP 500 to the user flow.
     if (!isValidAiInsightOutputV3(result)) {
       this.logger.error(
         JSON.stringify({
           event: "ai.insights.output_validation_failed.v3",
           siteId: requestPayload.aggregate.siteId,
           generatedAt: requestPayload.aggregate.generatedAt,
-          message: "AI insight output did not satisfy ai-insight-v3 contract."
+          message: "OpenAI output did not satisfy ai-insight-v3 contract. Falling back."
         })
       );
-      throw new InternalServerErrorException(
-        "AI insight output did not meet v3 contract requirements."
-      );
+      result = this.fallbackService.generateV3(input);
+      if (!isValidAiInsightOutputV3(result)) {
+        throw new InternalServerErrorException(
+          "AI insight output did not meet v3 contract requirements."
+        );
+      }
     }
 
     return result;

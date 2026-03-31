@@ -1,9 +1,15 @@
 import { Injectable } from "@nestjs/common";
+import { hashSync } from "bcryptjs";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { CreateUserDto } from "../dto/create-user.dto";
 import { UpdateUserDto } from "../dto/update-user.dto";
 import { UserEntity } from "../entities/user.entity";
 import { UsersRepository } from "./users.repository";
+
+const DOMAIN_USER_PLACEHOLDER_PASSWORD_HASH = hashSync(
+  "domain_user_placeholder_password",
+  10
+);
 
 function toUserEntity(model: {
   id: string;
@@ -48,7 +54,7 @@ export class PrismaUsersRepository implements UsersRepository {
         email: payload.email.toLowerCase(),
         role: payload.role,
         // Domain users currently do not provide passwords in this flow.
-        passwordHash: "domain_user_placeholder_hash"
+        passwordHash: DOMAIN_USER_PLACEHOLDER_PASSWORD_HASH
       }
     });
     return toUserEntity(user);

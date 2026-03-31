@@ -90,6 +90,7 @@ model SiteDeviceProfile {
   hasDishwasher                Boolean          @default(false)
   hasWashingMachine            Boolean          @default(false)
   hasAc                        Boolean          @default(false)
+  usageFlexibilityLevel        Int              @default(3)
   flexibleLoadShiftingPossible Boolean          @default(false)
   openToUpgrades               Boolean          @default(true)
   homeOccupancyProfile         OccupancyProfile // Strict enum for LLM context constraint
