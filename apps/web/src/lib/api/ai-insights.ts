@@ -2,10 +2,14 @@ import type { AiInsightSuccessEnvelope, AiInsightContractOutput, DashboardAggreg
 import { API_ENDPOINTS } from "./endpoints";
 import { postJson } from "./client";
 
-export async function fetchAiInsights(aggregate: DashboardAggregateData): Promise<AiInsightContractOutput> {
+export async function fetchAiInsights(
+  aggregate: DashboardAggregateData,
+  accessToken?: string
+): Promise<AiInsightContractOutput> {
   const envelope = await postJson<DashboardAggregateData, AiInsightSuccessEnvelope>(
     API_ENDPOINTS.ai.insights,
-    aggregate
+    aggregate,
+    { accessToken }
   );
 
   if (!envelope.success || !envelope.data) {
@@ -15,7 +19,10 @@ export async function fetchAiInsights(aggregate: DashboardAggregateData): Promis
   return envelope.data;
 }
 
-export async function fetchAiInsightsV3(aggregate: DashboardAggregateData): Promise<import("../contracts").AiInsightContractOutputV3> {
+export async function fetchAiInsightsV3(
+  aggregate: DashboardAggregateData,
+  accessToken?: string
+): Promise<import("../contracts").AiInsightContractOutputV3> {
   const requestPayload: import("../contracts").CanonicalAiInsightRequestV3 = {
     aggregate,
     userData: {
@@ -43,7 +50,8 @@ export async function fetchAiInsightsV3(aggregate: DashboardAggregateData): Prom
 
   const envelope = await postJson<import("../contracts").CanonicalAiInsightRequestV3, { success: boolean; data: import("../contracts").AiInsightContractOutputV3 }>(
     API_ENDPOINTS.ai.insightsV3,
-    requestPayload
+    requestPayload,
+    { accessToken }
   );
 
   if (!envelope.success || !envelope.data) {

@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsights } from "@/lib/api/ai-insights";
+import { ApiHttpError } from "@/lib/api/client";
 import { fetchDashboardAggregate } from "@/lib/api/dashboard";
 import { toSavingsPageViewModel } from "@/lib/view-models/savings";
 import { SavingsAiInsightsSection } from "./_components/savings-ai-insights-section";
@@ -13,12 +15,17 @@ export default async function SavingsPage() {
   let aiInsightsError: string | null = null;
 
   try {
+    const accessToken = (await cookies()).get("sip.accessToken")?.value;
     aggregate = await fetchDashboardAggregate();
     savingsVm = toSavingsPageViewModel(aggregate);
     try {
-      aiInsights = await fetchAiInsights(aggregate);
+      aiInsights = await fetchAiInsights(aggregate, accessToken);
     } catch (aiError) {
-      aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
+      if (aiError instanceof ApiHttpError && aiError.status === 401) {
+        aiInsightsError = "Sign in again to load personalized AI insights.";
+      } else {
+        aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
+      }
     }
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown savings error";
