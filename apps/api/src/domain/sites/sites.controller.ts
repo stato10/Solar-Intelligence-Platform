@@ -9,8 +9,8 @@ export class SitesController {
   constructor(private readonly sitesService: SitesService) {}
 
   @Get()
-  findAll(@Query() query: SitesListQueryDto) {
-    const result = this.sitesService.findAll(query);
+  async findAll(@Query() query: SitesListQueryDto) {
+    const result = await this.sitesService.findAll(query);
     return {
       success: true,
       data: result.items,
@@ -23,10 +23,10 @@ export class SitesController {
   }
 
   @Post()
-  create(@Body() payload: CreateSiteDto) {
+  async create(@Body() payload: CreateSiteDto) {
     return {
       success: true,
-      data: this.sitesService.create(payload),
+      data: await this.sitesService.create(payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -35,10 +35,10 @@ export class SitesController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  async findOne(@Param("id") id: string) {
     return {
       success: true,
-      data: this.sitesService.findOne(id),
+      data: await this.sitesService.findOne(id),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -47,10 +47,10 @@ export class SitesController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() payload: UpdateSiteDto) {
+  async update(@Param("id") id: string, @Body() payload: UpdateSiteDto) {
     return {
       success: true,
-      data: this.sitesService.update(id, payload),
+      data: await this.sitesService.update(id, payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"

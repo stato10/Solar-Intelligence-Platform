@@ -9,8 +9,8 @@ export class DevicesController {
   constructor(private readonly devicesService: DevicesService) {}
 
   @Get()
-  findAll(@Query() query: DevicesListQueryDto) {
-    const result = this.devicesService.findAll(query);
+  async findAll(@Query() query: DevicesListQueryDto) {
+    const result = await this.devicesService.findAll(query);
     return {
       success: true,
       data: result.items,
@@ -23,10 +23,10 @@ export class DevicesController {
   }
 
   @Post()
-  create(@Body() payload: CreateDeviceProfileDto) {
+  async create(@Body() payload: CreateDeviceProfileDto) {
     return {
       success: true,
-      data: this.devicesService.create(payload),
+      data: await this.devicesService.create(payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -35,10 +35,10 @@ export class DevicesController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  async findOne(@Param("id") id: string) {
     return {
       success: true,
-      data: this.devicesService.findOne(id),
+      data: await this.devicesService.findOne(id),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -47,10 +47,10 @@ export class DevicesController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() payload: UpdateDeviceProfileDto) {
+  async update(@Param("id") id: string, @Body() payload: UpdateDeviceProfileDto) {
     return {
       success: true,
-      data: this.devicesService.update(id, payload),
+      data: await this.devicesService.update(id, payload),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"

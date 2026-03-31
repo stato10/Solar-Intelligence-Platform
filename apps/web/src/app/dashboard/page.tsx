@@ -1,5 +1,5 @@
 import { BarChart3, TriangleAlert, Zap } from "lucide-react";
-import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
+import type { AiInsightContractOutput, AiInsightContractOutputV3, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsightsV3 } from "@/lib/api/ai-insights";
 import { fetchDashboardAggregate } from "@/lib/api/dashboard";
 import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   let dashboard: DashboardAggregateData | null = null;
   let dashboardVm: ReturnType<typeof toDashboardPageViewModel> | null = null;
   let errorMessage: string | null = null;
-  let aiInsights: import("@/lib/contracts").AiInsightContractOutputV3 | null = null;
+  let aiInsights: AiInsightContractOutputV3 | null = null;
   let aiInsightsError: string | null = null;
 
   try {
@@ -64,7 +64,10 @@ export default async function DashboardPage() {
 
           <EnergyDecisionsSection decisions={aiInsights?.energyDecisions ?? []} />
 
-          <DashboardAiInsightsSection data={aiInsights as any} errorMessage={aiInsightsError} />
+          <DashboardAiInsightsSection
+            data={aiInsights as unknown as AiInsightContractOutput | null}
+            errorMessage={aiInsightsError}
+          />
 
           <div className="grid gap-4 md:grid-cols-2">
             <article className="rounded-xl border border-border bg-card p-5">
