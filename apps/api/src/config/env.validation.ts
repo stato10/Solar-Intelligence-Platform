@@ -12,6 +12,10 @@ function ensureNumber(name: string, value: unknown) {
 }
 
 export function validateEnv(config: EnvInput) {
+  if (typeof config.JWT_SECRET !== "string" || config.JWT_SECRET.trim().length < 32) {
+    throw new Error("JWT_SECRET must be set and at least 32 characters long");
+  }
+
   ensureNumber("API_PORT", config.API_PORT);
   ensureNumber("DB_PORT", config.DB_PORT);
   ensureNumber("OPENCAGE_DEFAULT_LIMIT", config.OPENCAGE_DEFAULT_LIMIT);

@@ -11,7 +11,7 @@
     "score": "number",
     "estimatedLossPercent": "number",
     "cleaningRecommended": "boolean",
-    "recommendedCleaningDate": "null",
+    "recommendedCleaningDate": "string",
     "explanation": "string"
   },
   "heat": {

@@ -5,10 +5,6 @@ import { UpdateDeviceProfileDto } from "../dto/update-device-profile.dto";
 import { DeviceProfileEntity } from "../entities/device-profile.entity";
 import { DevicesRepository } from "./devices.repository";
 
-function toUsageFlexibilityLevel(flexible: boolean): number {
-  return flexible ? 4 : 2;
-}
-
 function toFlexibleLoadShiftingPossible(level: number): boolean {
   return level >= 3;
 }
@@ -21,6 +17,7 @@ function toDeviceProfileEntity(model: {
   hasDishwasher: boolean;
   hasWashingMachine: boolean;
   hasAc: boolean;
+  usageFlexibilityLevel: number;
   flexibleLoadShiftingPossible: boolean;
   createdAt: Date;
 }): DeviceProfileEntity {
@@ -32,7 +29,7 @@ function toDeviceProfileEntity(model: {
     hasDishwasher: model.hasDishwasher,
     hasWashingMachine: model.hasWashingMachine,
     hasAc: model.hasAc,
-    usageFlexibilityLevel: toUsageFlexibilityLevel(model.flexibleLoadShiftingPossible),
+    usageFlexibilityLevel: model.usageFlexibilityLevel,
     createdAt: model.createdAt.toISOString()
   };
 }
@@ -73,6 +70,7 @@ export class PrismaDevicesRepository implements DevicesRepository {
         hasAc: payload.hasAc,
         // Fields not currently represented by v1 DTOs remain deterministic defaults.
         hasBattery: false,
+        usageFlexibilityLevel: payload.usageFlexibilityLevel,
         flexibleLoadShiftingPossible: toFlexibleLoadShiftingPossible(
           payload.usageFlexibilityLevel
         ),
@@ -99,6 +97,7 @@ export class PrismaDevicesRepository implements DevicesRepository {
         ...(payload.hasAc !== undefined ? { hasAc: payload.hasAc } : {}),
         ...(payload.usageFlexibilityLevel !== undefined
           ? {
+              usageFlexibilityLevel: payload.usageFlexibilityLevel,
               flexibleLoadShiftingPossible: toFlexibleLoadShiftingPossible(
                 payload.usageFlexibilityLevel
               )

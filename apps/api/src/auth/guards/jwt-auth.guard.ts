@@ -1,18 +1,24 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Request } from "express";
+import { verify } from "jsonwebtoken";
 
 /**
- * JwtAuthGuard (task 7.8 — Change F)
- *
- * Protects routes that require an authenticated user.
- * Validates the dev-token format used by the scaffold auth layer
- * (`dev.<base64url-encoded-json>`), consistent with AuthService.me().
- *
- * When real JWT (Passport + JwtStrategy) is introduced in a future hardening
- * phase, replace the body of parseDevToken() only — no other changes needed.
+ * Protects routes that require an authenticated user by validating
+ * a signed bearer JWT and attaching minimal user context on request.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+  private readonly jwtSecret: string;
+
+  constructor(private readonly configService: ConfigService) {
+    const secret = this.configService.get<string>("JWT_SECRET");
+    if (!secret) {
+      throw new Error("JWT_SECRET is required");
+    }
+    this.jwtSecret = secret;
+  }
+
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers["authorization"];
@@ -22,7 +28,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException("Missing or malformed authorization token.");
     }
 
-    const parsed = this.parseDevToken(token);
+    const parsed = this.parseJwtToken(token);
     if (!parsed) {
       throw new UnauthorizedException("Invalid authorization token.");
     }
@@ -39,23 +45,19 @@ export class JwtAuthGuard implements CanActivate {
     return authHeader.replace("Bearer ", "").trim();
   }
 
-  private parseDevToken(token: string): { email: string; role: string } | null {
+  private parseJwtToken(token: string): { sub: string; email: string; role: "owner" | "admin" } | null {
     try {
-      const [, encoded] = token.split(".");
-      if (!encoded) {
+      const parsed = verify(token, this.jwtSecret);
+      if (typeof parsed !== "object" || parsed === null) {
         return null;
       }
-      const decoded = Buffer.from(encoded, "base64url").toString("utf8");
-      const parsed = JSON.parse(decoded) as unknown;
       if (
-        typeof parsed === "object" &&
-        parsed !== null &&
-        "email" in parsed &&
-        "role" in parsed &&
+        typeof (parsed as Record<string, unknown>).sub === "string" &&
         typeof (parsed as Record<string, unknown>).email === "string" &&
-        typeof (parsed as Record<string, unknown>).role === "string"
+        ((parsed as Record<string, unknown>).role === "owner" ||
+          (parsed as Record<string, unknown>).role === "admin")
       ) {
-        return parsed as { email: string; role: string };
+        return parsed as { sub: string; email: string; role: "owner" | "admin" };
       }
       return null;
     } catch {

@@ -125,14 +125,14 @@ Definition of Done:
 - [x] Phase 5: Dashboard integration endpoints [done]
 - [x] Phase 6: Frontend MVP pages and states [done]
 - [x] Phase 7: AI insights + fallback [done]
-- [ ] Phase 8: Database Migration & Hardening [active]
+- [x] Phase 8: Database Migration & Hardening [done]
 
 ## Phase 8 - Postgres Database Migration
 - [x] 8.1 Schema Analysis & ORM Selection [done]
 - [x] 8.2 Prisma & Infrastructure Scaffold (`docker-compose`, migrations, PrismaService) [done]
-- [ ] 8.3 Repository Abstraction Layer [active]
-- [ ] 8.4 Prisma Integration & Transactions [planned]
-- [ ] 8.5 Auth Hardening (Proper JWT) [planned]
+- [x] 8.3 Repository Abstraction Layer [done]
+- [x] 8.4 Prisma Integration & Transactions [done]
+- [x] 8.5 Auth Hardening (Proper JWT) [done]
 
 Execution Order (strict, single-task flow):
 - `8.2 -> 8.3 -> 8.4 -> 8.5 -> cross-cutting tests -> final audit/close`
@@ -151,30 +151,30 @@ Execution Order (strict, single-task flow):
 - [x] Run API quality gates (`lint`, `build`).
 - [x] Audit pass and close 8.2 (`needs-audit -> done`).
 
-### 8.3 Detailed Assignment (Repository Abstraction Layer) [active]
-- [ ] Introduce repository interfaces for `users`, `sites`, `solar-systems`, `devices`, `tariffs`.
-- [ ] Keep controller/service API contracts unchanged (no response-shape breaking changes).
-- [ ] Replace direct in-memory arrays with repository-backed reads/writes.
-- [ ] Preserve validation and relation checks currently enforced in services.
-- [ ] Add minimal integration tests for repository-backed CRUD happy paths.
-- [ ] Run API contract smoke tests after repository swap.
-- [ ] Audit pass and close 8.3.
+### 8.3 Detailed Assignment (Repository Abstraction Layer) [done]
+- [x] Introduce repository interfaces for `users`, `sites`, `solar-systems`, `devices`, `tariffs`.
+- [x] Keep controller/service API contracts unchanged (no response-shape breaking changes).
+- [x] Replace direct in-memory arrays with repository-backed reads/writes.
+- [x] Preserve validation and relation checks currently enforced in services.
+- [x] Add minimal integration tests for repository-backed CRUD happy paths.
+- [x] Run API contract smoke tests after repository swap.
+- [x] Audit pass and close 8.3.
 
-### 8.4 Detailed Assignment (Prisma Integration & Transactions) [planned]
-- [ ] Add transactional boundaries for multi-step domain flows.
-- [ ] Ensure rollback behavior on partial failures.
-- [ ] Keep deterministic engine and dashboard logic unchanged.
-- [ ] Verify API-engine and dashboard smoke/snapshot tests still pass.
-- [ ] Add regression checks for transaction failure paths.
-- [ ] Audit pass and close 8.4.
+### 8.4 Detailed Assignment (Prisma Integration & Transactions) [done]
+- [x] Add transactional boundaries for multi-step domain flows.
+- [x] Ensure rollback behavior on partial failures.
+- [x] Keep deterministic engine and dashboard logic unchanged.
+- [x] Verify API-engine and dashboard smoke/snapshot tests still pass.
+- [x] Add regression checks for transaction failure paths.
+- [x] Audit pass and close 8.4.
 
-### 8.5 Detailed Assignment (Auth Hardening - Proper JWT) [planned]
-- [ ] Replace `dev.*` token format with proper JWT issue/verify flow.
-- [ ] Add password hashing for persisted users.
-- [ ] Keep auth route contract stable for frontend (`register/login/me` envelope).
-- [ ] Ensure protected AI endpoints work with frontend-authenticated flow.
-- [ ] Add auth regression tests (invalid token, expired token, bad credentials).
-- [ ] Audit pass and close 8.5.
+### 8.5 Detailed Assignment (Auth Hardening - Proper JWT) [done]
+- [x] Replace `dev.*` token format with proper JWT issue/verify flow.
+- [x] Add password hashing for persisted users.
+- [x] Keep auth route contract stable for frontend (`register/login/me` envelope).
+- [x] Ensure protected AI endpoints work with frontend-authenticated flow.
+- [x] Add auth regression tests (invalid token, expired token, bad credentials).
+- [x] Audit pass and close 8.5.
 
 ### AI Stabilization Gate (must pass before MVP close) [planned]
 - [ ] Keep OpenAI path enabled when key exists.

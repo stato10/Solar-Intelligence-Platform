@@ -1,4 +1,4 @@
-import type { AiInsightContractOutput } from "@/lib/contracts/ai-insight-v2";
+import type { AiInsightContractOutput, AiInsightContractOutputV3 } from "@/lib/contracts";
 import { AiInlineError } from "@/components/ai/ai-inline-error";
 import { formatBenefitRangeIlsMonthly, formatSourceRefsForDisplay } from "@/lib/view-models/ai-insights";
 
@@ -6,7 +6,7 @@ const DASHBOARD_STATE_LIMIT = 3;
 const PRODUCT_PREVIEW_LIMIT = 2;
 
 interface DashboardAiInsightsSectionProps {
-  data: AiInsightContractOutput | null;
+  data: Pick<AiInsightContractOutput | AiInsightContractOutputV3, "currentStateInsights" | "productRecommendations" | "meta"> | null;
   errorMessage: string | null;
 }
 
