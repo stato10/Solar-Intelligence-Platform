@@ -1,5 +1,5 @@
 import type { AiInsightContractOutput, SavingsLineItem } from "@/lib/contracts/ai-insight-v2";
-import { AiInlineError } from "@/components/ai/ai-inline-error";
+import { AiInlineEmpty, AiInlineError, AiStateCard } from "@/components/ai/ai-inline-error";
 import { formatBenefitRangeIlsMonthly, formatSourceRefsForDisplay } from "@/lib/view-models/ai-insights";
 
 interface SavingsAiInsightsSectionProps {
@@ -10,7 +10,7 @@ interface SavingsAiInsightsSectionProps {
 function SavingsLineItemRow({ item }: { item: SavingsLineItem }) {
   const rangeText = formatBenefitRangeIlsMonthly(item.expectedBenefitRangeIlsMonthly);
   return (
-    <li className="rounded-md border border-border px-3 py-2">
+    <li className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
       <p className="font-medium">{item.title}</p>
       <p className="text-xs text-muted-foreground">{item.message}</p>
       {rangeText ? <p className="mt-1 text-xs text-muted-foreground">Estimated benefit: {rangeText}</p> : null}
@@ -32,8 +32,8 @@ function ExplanationBlock({
   items: SavingsLineItem[];
 }) {
   return (
-    <article className="rounded-xl border border-border bg-card p-5">
-      <p className="text-xs text-muted-foreground">{title}</p>
+    <article className="glass-card rounded-2xl p-5">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</p>
       <p className="mt-2 text-sm">{summary}</p>
       {items.length ? (
         <ul className="mt-3 space-y-2 text-sm">
@@ -52,12 +52,9 @@ export function SavingsAiInsightsSection({ data, errorMessage }: SavingsAiInsigh
   if (errorMessage) {
     return (
       <div className="space-y-4">
-        <article className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground">AI savings explanation</p>
-          <div className="mt-2">
-            <AiInlineError message={errorMessage} />
-          </div>
-        </article>
+        <AiStateCard title="AI savings explanation">
+          <AiInlineError message={errorMessage} />
+        </AiStateCard>
       </div>
     );
   }
@@ -77,16 +74,17 @@ export function SavingsAiInsightsSection({ data, errorMessage }: SavingsAiInsigh
 
   if (!hasSavingsContent && !products.length) {
     return (
-      <article className="rounded-xl border border-border bg-card p-5">
-        <p className="text-xs text-muted-foreground">AI savings explanation</p>
-        <p className="mt-2 text-sm text-muted-foreground">No AI savings narrative for this snapshot.</p>
-      </article>
+      <AiStateCard title="AI savings explanation">
+        <AiInlineEmpty message="No AI savings narrative for this snapshot." />
+      </AiStateCard>
     );
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-sm font-medium text-foreground">AI savings explanation</p>
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        AI savings explanation
+      </p>
       {hasSavingsContent ? (
         <div className="grid gap-4 md:grid-cols-2">
           <ExplanationBlock
@@ -103,13 +101,15 @@ export function SavingsAiInsightsSection({ data, errorMessage }: SavingsAiInsigh
       ) : null}
 
       {products.length ? (
-        <article className="rounded-xl border border-border bg-card p-5">
-          <p className="text-xs text-muted-foreground">AI product ideas (informational)</p>
+        <article className="glass-card rounded-2xl p-5">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            AI product ideas (informational)
+          </p>
           <ul className="mt-3 grid gap-3 sm:grid-cols-2">
             {products.map((p) => {
               const rangeText = formatBenefitRangeIlsMonthly(p.expectedBenefitRangeIlsMonthly);
               return (
-                <li key={p.id} className="rounded-md border border-border px-3 py-3">
+                <li key={p.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-3">
                   <p className="font-medium">{p.name}</p>
                   <p className="text-xs text-muted-foreground">{p.useCase}</p>
                   <p className="mt-2 text-xs text-muted-foreground">{p.reason.text}</p>
