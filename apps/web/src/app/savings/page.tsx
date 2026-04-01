@@ -35,10 +35,15 @@ export default async function SavingsPage() {
   const isEmpty = !hasError && !savingsVm;
 
   return (
-    <section className="space-y-6">
-      <div className="rounded-xl border border-border bg-card p-8">
-        <h1 className="text-2xl font-semibold tracking-tight">{savingsVm?.header.title ?? "Savings"}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <section className="space-y-8">
+      <div className="glass-card rounded-2xl p-8">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          Financial optimization
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+          {savingsVm?.header.title ?? "Savings"}
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
           {savingsVm?.header.subtitle ?? "Savings signals from aggregate payload."}
         </p>
         {hasError ? <SavingsErrorState message={errorMessage ?? "Unknown savings error"} /> : null}
@@ -49,8 +54,10 @@ export default async function SavingsPage() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Financial Summary</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Financial summary
+              </p>
               <p className="mt-2 text-sm">
                 Daily estimated savings:{" "}
                 <span className="font-semibold">
@@ -71,8 +78,10 @@ export default async function SavingsPage() {
               </p>
             </article>
 
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Optimization Value</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Optimization value
+              </p>
               <p className="mt-2 text-sm">
                 Estimated value:{" "}
                 <span className="font-semibold">{savingsVm?.optimization.estimatedValueText ?? "--"}</span>
@@ -85,8 +94,10 @@ export default async function SavingsPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Benchmark and Export Context</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Benchmark and export context
+              </p>
               <p className="mt-2 text-sm">
                 Expected production:{" "}
                 <span className="font-semibold">{savingsVm?.benchmark.expectedProductionText ?? "--"}</span>
@@ -113,13 +124,30 @@ export default async function SavingsPage() {
               </p>
               <p className="mt-1 text-sm">
                 Performance status:{" "}
-                <span className="font-semibold">{savingsVm?.benchmark.performanceStatus ?? "--"}</span>
+                <span className="font-semibold capitalize">{savingsVm?.benchmark.performanceStatus ?? "--"}</span>
               </p>
               <p className="mt-2 text-xs text-muted-foreground">{savingsVm?.benchmark.insight ?? "--"}</p>
+              <div
+                className={`mt-3 rounded-xl border px-3 py-2 text-xs ${
+                  savingsVm?.benchmark.performanceStatus === "good"
+                    ? "state-good"
+                    : savingsVm?.benchmark.performanceStatus === "warning"
+                      ? "state-warning"
+                      : "state-danger"
+                }`}
+              >
+                {savingsVm?.benchmark.performanceStatus === "good"
+                  ? "Performance is close to expected range."
+                  : savingsVm?.benchmark.performanceStatus === "warning"
+                    ? "Performance drift detected. Review optimization actions."
+                    : "Critical deviation detected. Prioritize corrective action."}
+              </div>
             </article>
 
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Self-Consumption Context</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Self-consumption context
+              </p>
               <p className="mt-2 text-sm">
                 Self-consumption score:{" "}
                 <span className="font-semibold">{savingsVm?.selfConsumption.scoreText ?? "--"}</span>
@@ -136,7 +164,11 @@ export default async function SavingsPage() {
               </p>
               <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                 {savingsVm?.selfConsumption.actions.length ? (
-                  savingsVm.selfConsumption.actions.map((item, index) => <li key={index}>- {item}</li>)
+                  savingsVm.selfConsumption.actions.map((item, index) => (
+                    <li key={index} className="rounded-md border border-border/70 bg-card/60 px-2 py-1">
+                      {item}
+                    </li>
+                  ))
                 ) : (
                   <li>No self-consumption actions available.</li>
                 )}
@@ -147,12 +179,14 @@ export default async function SavingsPage() {
           <SavingsAiInsightsSection data={aiInsights} errorMessage={aiInsightsError} />
 
           <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Likely Value-Related Recommendations</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Likely value-related recommendations
+              </p>
               <ul className="mt-2 space-y-2 text-sm">
                 {savingsVm?.recommendations.valueRelated.length ? (
                   savingsVm.recommendations.valueRelated.map((item) => (
-                    <li key={item.id} className="rounded-md border border-border px-3 py-2">
+                    <li key={item.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
                       <p className="font-medium">{item.title}</p>
                       <p className="text-xs text-muted-foreground">{item.message}</p>
                       <p className="text-xs text-muted-foreground">
@@ -167,12 +201,14 @@ export default async function SavingsPage() {
               </ul>
             </article>
 
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Other Recommendations (Transparent View)</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Other recommendations (transparent view)
+              </p>
               <ul className="mt-2 space-y-2 text-sm">
                 {savingsVm?.recommendations.other.length ? (
                   savingsVm.recommendations.other.map((item) => (
-                    <li key={item.id} className="rounded-md border border-border px-3 py-2">
+                    <li key={item.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
                       <p className="font-medium">{item.title}</p>
                       <p className="text-xs text-muted-foreground">{item.message}</p>
                       <p className="text-xs text-muted-foreground">
@@ -188,7 +224,7 @@ export default async function SavingsPage() {
             </article>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground">
+          <div className="glass-card rounded-2xl p-5 text-xs text-muted-foreground">
             Site: {savingsVm?.context.siteId ?? "--"} | Generated at: {savingsVm?.context.generatedAt ?? "--"} |
             Source: {savingsVm?.context.source ?? "--"} | Providers: weather=
             {savingsVm?.context.providers.weather ?? "--"}, solar=

@@ -35,12 +35,15 @@ export default async function MaintenancePage() {
   const isEmpty = !hasError && !maintenanceVm;
 
   return (
-    <section className="space-y-6">
-      <div className="rounded-xl border border-border bg-card p-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
+    <section className="space-y-8">
+      <div className="glass-card rounded-2xl p-8">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          Maintenance control
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
           {maintenanceVm?.header.title ?? "Maintenance"}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
           {maintenanceVm?.header.subtitle ?? "Maintenance signals from aggregate payload."}
         </p>
         {hasError ? <MaintenanceErrorState message={errorMessage ?? "Unknown maintenance error"} /> : null}
@@ -51,8 +54,8 @@ export default async function MaintenancePage() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Soiling</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Soiling</p>
               <p className="mt-2 text-sm">
                 Score: <span className="font-semibold">{maintenanceVm?.soiling.scoreText ?? "--"}</span>
               </p>
@@ -75,10 +78,23 @@ export default async function MaintenancePage() {
               <p className="mt-2 text-xs text-muted-foreground">
                 {maintenanceVm?.soiling.explanation ?? "--"}
               </p>
+              <div
+                className={`mt-3 rounded-xl border px-3 py-2 text-xs ${
+                  maintenanceVm?.soiling.cleaningRecommendedText === "Yes"
+                    ? "state-warning"
+                    : "state-good"
+                }`}
+              >
+                {maintenanceVm?.soiling.cleaningRecommendedText === "Yes"
+                  ? "Action recommended: plan cleaning soon."
+                  : "Current soiling trend is under control."}
+              </div>
             </article>
 
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Heat Maintenance Signals</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Heat maintenance signals
+              </p>
               <p className="mt-2 text-sm">
                 Score: <span className="font-semibold">{maintenanceVm?.heat.scoreText ?? "--"}</span>
               </p>
@@ -93,12 +109,14 @@ export default async function MaintenancePage() {
             </article>
           </div>
 
-          <article className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs text-muted-foreground">Maintenance Alerts</p>
+          <article className="glass-card rounded-2xl p-5">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Maintenance alerts
+            </p>
             <ul className="mt-2 space-y-2 text-sm">
               {maintenanceVm?.alerts.items.length ? (
                 maintenanceVm.alerts.items.map((alert) => (
-                  <li key={alert.id} className="rounded-md border border-border px-3 py-2">
+                  <li key={alert.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
                     <p className="font-medium">
                       {alert.riskType} ({alert.severity})
                     </p>
@@ -115,12 +133,14 @@ export default async function MaintenancePage() {
           <MaintenanceAiInsightsSection data={aiInsights} errorMessage={aiInsightsError} />
 
           <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Likely Maintenance Recommendations</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Likely maintenance recommendations
+              </p>
               <ul className="mt-2 space-y-2 text-sm">
                 {maintenanceVm?.recommendations.maintenanceLikely.length ? (
                   maintenanceVm.recommendations.maintenanceLikely.map((item) => (
-                    <li key={item.id} className="rounded-md border border-border px-3 py-2">
+                    <li key={item.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
                       <p className="font-medium">{item.title}</p>
                       <p className="text-xs text-muted-foreground">{item.message}</p>
                       <p className="text-xs text-muted-foreground">
@@ -135,12 +155,14 @@ export default async function MaintenancePage() {
               </ul>
             </article>
 
-            <article className="rounded-xl border border-border bg-card p-5">
-              <p className="text-xs text-muted-foreground">Other Recommendations (Transparent View)</p>
+            <article className="glass-card rounded-2xl p-5">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Other recommendations (transparent view)
+              </p>
               <ul className="mt-2 space-y-2 text-sm">
                 {maintenanceVm?.recommendations.other.length ? (
                   maintenanceVm.recommendations.other.map((item) => (
-                    <li key={item.id} className="rounded-md border border-border px-3 py-2">
+                    <li key={item.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
                       <p className="font-medium">{item.title}</p>
                       <p className="text-xs text-muted-foreground">{item.message}</p>
                       <p className="text-xs text-muted-foreground">
@@ -156,7 +178,7 @@ export default async function MaintenancePage() {
             </article>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground">
+          <div className="glass-card rounded-2xl p-5 text-xs text-muted-foreground">
             Site: {maintenanceVm?.context.siteId ?? "--"} | Generated at:{" "}
             {maintenanceVm?.context.generatedAt ?? "--"} | Source: {maintenanceVm?.context.source ?? "--"} |
             Providers: weather={maintenanceVm?.context.providers.weather ?? "--"}, solar=

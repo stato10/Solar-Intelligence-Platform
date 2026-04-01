@@ -1,5 +1,5 @@
 import type { AiInsightContractOutput, AiInsightContractOutputV3 } from "@/lib/contracts";
-import { AiInlineError } from "@/components/ai/ai-inline-error";
+import { AiInlineEmpty, AiInlineError, AiStateCard } from "@/components/ai/ai-inline-error";
 import { formatBenefitRangeIlsMonthly, formatSourceRefsForDisplay } from "@/lib/view-models/ai-insights";
 
 const DASHBOARD_STATE_LIMIT = 3;
@@ -13,12 +13,9 @@ interface DashboardAiInsightsSectionProps {
 export function DashboardAiInsightsSection({ data, errorMessage }: DashboardAiInsightsSectionProps) {
   if (errorMessage) {
     return (
-      <article className="rounded-xl border border-border bg-card p-5">
-        <p className="text-xs text-muted-foreground">AI insights</p>
-        <div className="mt-2">
-          <AiInlineError message={errorMessage} />
-        </div>
-      </article>
+      <AiStateCard title="AI insights">
+        <AiInlineError message={errorMessage} />
+      </AiStateCard>
     );
   }
 
@@ -31,16 +28,15 @@ export function DashboardAiInsightsSection({ data, errorMessage }: DashboardAiIn
 
   if (!stateItems.length && !productPreview.length) {
     return (
-      <article className="rounded-xl border border-border bg-card p-5">
-        <p className="text-xs text-muted-foreground">AI insights</p>
-        <p className="mt-2 text-sm text-muted-foreground">No AI summary available for this snapshot.</p>
-      </article>
+      <AiStateCard title="AI insights">
+        <AiInlineEmpty message="No AI summary available for this snapshot." />
+      </AiStateCard>
     );
   }
 
   return (
-    <article className="rounded-xl border border-border bg-card p-5">
-      <p className="text-xs text-muted-foreground">AI insights</p>
+    <article className="glass-card rounded-2xl p-5">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">AI insights</p>
       <p className="mt-1 text-xs text-muted-foreground">
         Based on dashboard aggregate ({data.meta.basedOnSource}). Generated {data.meta.generatedAt}.
       </p>
@@ -48,7 +44,7 @@ export function DashboardAiInsightsSection({ data, errorMessage }: DashboardAiIn
       {stateItems.length ? (
         <ul className="mt-3 space-y-2 text-sm">
           {stateItems.map((item) => (
-            <li key={item.id} className="rounded-md border border-border px-3 py-2">
+            <li key={item.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
               <p className="font-medium">{item.title}</p>
               <p className="text-xs text-muted-foreground">{item.message}</p>
               <p className="mt-1 text-xs text-muted-foreground">{item.reason.text}</p>
@@ -62,12 +58,14 @@ export function DashboardAiInsightsSection({ data, errorMessage }: DashboardAiIn
 
       {productPreview.length ? (
         <div className={stateItems.length ? "mt-4 border-t border-border pt-4" : "mt-3"}>
-          <p className="text-xs font-medium text-muted-foreground">Suggested products (informational)</p>
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Suggested products (informational)
+          </p>
           <ul className="mt-2 space-y-2 text-sm">
             {productPreview.map((p) => {
               const rangeText = formatBenefitRangeIlsMonthly(p.expectedBenefitRangeIlsMonthly);
               return (
-                <li key={p.id} className="rounded-md border border-border px-3 py-2">
+                <li key={p.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
                   <p className="font-medium">{p.name}</p>
                   <p className="text-xs text-muted-foreground">{p.useCase}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{p.whyRelevant.text}</p>
