@@ -98,8 +98,8 @@ export function AuthForm() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Authentication</h1>
+    <div className="glass-card rounded-3xl p-8">
+      <h2 className="text-2xl font-semibold tracking-tight">Authentication</h2>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         Sign in or create an account to continue to the dashboard.
       </p>
@@ -138,7 +138,7 @@ export function AuthForm() {
               name="fullName"
               type="text"
               autoComplete="name"
-              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+              className="h-11 w-full rounded-xl border border-border bg-background/80 px-3 text-sm outline-none transition-colors focus:border-primary/50"
               placeholder="Jane Doe"
               value={fullName}
               onChange={(event) => {
@@ -159,7 +159,7 @@ export function AuthForm() {
             name="email"
             type="email"
             autoComplete="email"
-            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            className="h-11 w-full rounded-xl border border-border bg-background/80 px-3 text-sm outline-none transition-colors focus:border-primary/50"
             placeholder="you@example.com"
             value={email}
             onChange={(event) => {
@@ -179,7 +179,7 @@ export function AuthForm() {
             name="password"
             type="password"
             autoComplete={mode === "register" ? "new-password" : "current-password"}
-            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+            className="h-11 w-full rounded-xl border border-border bg-background/80 px-3 text-sm outline-none transition-colors focus:border-primary/50"
             placeholder="Minimum 8 characters"
             value={password}
             onChange={(event) => {
@@ -191,7 +191,7 @@ export function AuthForm() {
         </div>
 
         {errorMessage ? (
-          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="state-danger rounded-xl border px-3 py-2 text-sm">
             {errorMessage}
           </p>
         ) : null}
