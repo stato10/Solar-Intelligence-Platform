@@ -46,13 +46,34 @@ export default async function DashboardPage() {
 
   return (
     <section className="space-y-8">
-      <div className="glass-card rounded-2xl p-8">
-        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+      <div className="glass-card relative overflow-hidden rounded-3xl p-8">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.18),transparent_45%),radial-gradient(circle_at_20%_70%,rgba(59,130,246,0.12),transparent_42%)]" />
+        <p className="relative text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Control overview
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{headerTitle}</h1>
-        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{headerSubtitle}</p>
-        {hasError ? <DashboardErrorState message={errorMessage ?? "Unknown dashboard error"} /> : null}
+        <h1 className="relative mt-2 text-3xl font-semibold tracking-tight md:text-4xl">{headerTitle}</h1>
+        <p className="relative mt-3 max-w-2xl text-sm text-muted-foreground">{headerSubtitle}</p>
+        <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-border/80 bg-card/65 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Daily savings</p>
+            <p className="mt-1 text-lg font-semibold">{dashboardVm?.financial.dailySavingsText ?? "--"}</p>
+          </div>
+          <div className="rounded-xl border border-border/80 bg-card/65 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Monthly savings</p>
+            <p className="mt-1 text-lg font-semibold">{dashboardVm?.financial.monthlySavingsText ?? "--"}</p>
+          </div>
+          <div className="rounded-xl border border-border/80 bg-card/65 px-4 py-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Top action</p>
+            <p className="mt-1 line-clamp-1 text-sm font-semibold">
+              {primaryRecommendation?.title ?? "No recommendation yet"}
+            </p>
+          </div>
+        </div>
+        {hasError ? (
+          <div className="relative mt-4">
+            <DashboardErrorState message={errorMessage ?? "Unknown dashboard error"} />
+          </div>
+        ) : null}
       </div>
 
       {hasError ? null : isDashboardEmpty ? (
@@ -70,7 +91,7 @@ export default async function DashboardPage() {
                   <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {card.title}
                   </p>
-                  <p className="mt-2 text-3xl font-semibold tracking-tight">{card.valueText}</p>
+                  <p className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">{card.valueText}</p>
                   <p className="mt-2 text-xs text-muted-foreground">{card.hint}</p>
                 </article>
               );
@@ -101,7 +122,7 @@ export default async function DashboardPage() {
                   Next best action
                 </p>
                 {primaryRecommendation ? (
-                  <div className="mt-3 rounded-xl border border-border/80 bg-card/60 p-3">
+                  <div className="mt-3 state-warning rounded-xl border p-3">
                     <p className="text-sm font-semibold">{primaryRecommendation.title}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{primaryRecommendation.message}</p>
                   </div>
