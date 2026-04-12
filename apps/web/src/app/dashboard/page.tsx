@@ -1,13 +1,21 @@
-import { BarChart3, TriangleAlert, Zap } from "lucide-react";
 import { cookies } from "next/headers";
 import type { AiInsightContractOutputV3, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsightsV3 } from "@/lib/api/ai-insights";
 import { ApiHttpError } from "@/lib/api/client";
-import { fetchDashboardAggregate } from "@/lib/api/dashboard";
+import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
+import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
+import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
 import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
-import { DashboardAiInsightsSection } from "./_components/ai-insights-section";
 import { EnergyDecisionsSection } from "@/components/dashboard/EnergyDecisionsSection";
 import { DashboardEmptyState, DashboardErrorState } from "./_components/dashboard-state";
+
+// 6 New Core Sections
+import { HeroInsightCard } from "@/components/dashboard/HeroInsightCard";
+import { PerformanceStatsGrid } from "@/components/dashboard/PerformanceStatsGrid";
+import { MaintenancePanel } from "@/components/dashboard/MaintenancePanel";
+import { SavingsPanel } from "@/components/dashboard/SavingsPanel";
+import { UsageWindowCard } from "@/components/dashboard/UsageWindowCard";
+import { AiInsightsPanel } from "@/components/dashboard/AiInsightsPanel";
 
 export default async function DashboardPage() {
   let dashboard: DashboardAggregateData | null = null;
@@ -15,11 +23,21 @@ export default async function DashboardPage() {
   let errorMessage: string | null = null;
   let aiInsights: AiInsightContractOutputV3 | null = null;
   let aiInsightsError: string | null = null;
+  let opportunities: MarketplaceOpportunity[] = [];
+  let accessToken: string | undefined;
 
   try {
-    const accessToken = (await cookies()).get("sip.accessToken")?.value;
-    dashboard = await fetchDashboardAggregate();
+    const cookieStore = await cookies();
+    accessToken = cookieStore.get("sip.accessToken")?.value;
+    const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
+
+    if (activeSiteId) {
+      dashboard = await fetchDashboardBySiteId(activeSiteId, accessToken);
+    } else {
+      dashboard = await fetchDashboardAggregate(); // Default demo 
+    }
     dashboardVm = toDashboardPageViewModel(dashboard);
+    
     try {
       aiInsights = await fetchAiInsightsV3(dashboard, accessToken);
     } catch (aiError) {
@@ -29,143 +47,88 @@ export default async function DashboardPage() {
         aiInsightsError = aiError instanceof Error ? aiError.message : "Unknown AI error";
       }
     }
+
+    // Opportunities are completely non-breaking and additive
+    try {
+      opportunities = await fetchMarketplaceOpportunities(dashboard, aiInsights ?? undefined, accessToken);
+    } catch (oppError) {
+      console.error("Failed to load opportunities dynamically, continuing without them", oppError);
+    }
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown dashboard error";
   }
-  const iconByKey = {
-    zap: Zap,
-    "triangle-alert": TriangleAlert,
-    "bar-chart-3": BarChart3
-  } as const;
+
   const hasError = Boolean(errorMessage);
   const isDashboardEmpty = !hasError && !dashboardVm;
-  const headerTitle = dashboardVm?.header.title ?? "Solar Dashboard";
-  const headerSubtitle =
-    dashboardVm?.header.subtitle ?? "Live data is pulled from the aggregated backend endpoint.";
-  const primaryRecommendation = dashboardVm?.recommendations.items?.[0] ?? null;
+
+  if (hasError) {
+    return (
+      <section className="space-y-6">
+        <DashboardErrorState message={errorMessage ?? "Unknown dashboard error"} />
+      </section>
+    );
+  }
+
+  if (isDashboardEmpty || !dashboardVm) {
+    return (
+      <section className="space-y-6">
+        <DashboardEmptyState />
+      </section>
+    );
+  }
 
   return (
-    <section className="space-y-8">
-      <div className="glass-card relative overflow-hidden rounded-3xl p-8">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.18),transparent_45%),radial-gradient(circle_at_20%_70%,rgba(59,130,246,0.12),transparent_42%)]" />
-        <p className="relative text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Control overview
-        </p>
-        <h1 className="relative mt-2 text-3xl font-semibold tracking-tight md:text-4xl">{headerTitle}</h1>
-        <p className="relative mt-3 max-w-2xl text-sm text-muted-foreground">{headerSubtitle}</p>
-        <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-border/80 bg-card/65 px-4 py-3">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Daily savings</p>
-            <p className="mt-1 text-lg font-semibold">{dashboardVm?.financial.dailySavingsText ?? "--"}</p>
-          </div>
-          <div className="rounded-xl border border-border/80 bg-card/65 px-4 py-3">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Monthly savings</p>
-            <p className="mt-1 text-lg font-semibold">{dashboardVm?.financial.monthlySavingsText ?? "--"}</p>
-          </div>
-          <div className="rounded-xl border border-border/80 bg-card/65 px-4 py-3">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Top action</p>
-            <p className="mt-1 line-clamp-1 text-sm font-semibold">
-              {primaryRecommendation?.title ?? "No recommendation yet"}
-            </p>
-          </div>
-        </div>
-        {hasError ? (
-          <div className="relative mt-4">
-            <DashboardErrorState message={errorMessage ?? "Unknown dashboard error"} />
-          </div>
-        ) : null}
+    <section className="space-y-6 pb-12">
+      {/* 1. Hero Insight (Above the fold) */}
+      <HeroInsightCard 
+        hero={dashboardVm.hero} 
+        opportunities={opportunities} 
+        siteId={dashboardVm.siteId}
+        siteName={dashboardVm.siteName}
+        accessToken={accessToken}
+      />
+
+      {/* 2. Performance Stats Grid */}
+      <PerformanceStatsGrid performance={dashboardVm.performance} />
+
+      {/* 3 & 4. Maintenance and Savings (Below the fold, 2-column) */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <MaintenancePanel maintenance={dashboardVm.maintenance} />
+        <SavingsPanel savings={dashboardVm.savings} />
       </div>
 
-      {hasError ? null : isDashboardEmpty ? (
-        <DashboardEmptyState />
-      ) : (
-        <>
-          <div className="grid gap-4 md:grid-cols-3">
-            {(dashboardVm?.cards ?? []).map((card) => {
-              const CardIcon = iconByKey[card.icon];
-              return (
-                <article key={card.id} className="glass-card rounded-2xl p-5">
-                  <div className="mb-4 inline-flex rounded-lg bg-primary/12 p-2 text-primary">
-                    <CardIcon className="h-5 w-5" />
-                  </div>
-                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    {card.title}
-                  </p>
-                  <p className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">{card.valueText}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{card.hint}</p>
-                </article>
-              );
-            })}
-          </div>
+      {/* 5. Usage Optimization Window */}
+      <UsageWindowCard 
+        usageWindow={dashboardVm.usageWindow} 
+        opportunities={opportunities} 
+        siteId={dashboardVm.siteId}
+        accessToken={accessToken}
+      />
 
-          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-4">
-              <DashboardAiInsightsSection data={aiInsights} errorMessage={aiInsightsError} />
-            </div>
-            <aside className="space-y-4">
-              <article className="glass-card rounded-2xl p-5">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Financial impact
-                </p>
-                <p className="mt-3 text-sm">
-                  Daily savings:{" "}
-                  <span className="font-semibold">{dashboardVm?.financial.dailySavingsText ?? "--"}</span>
-                </p>
-                <p className="mt-1 text-sm">
-                  Monthly savings:{" "}
-                  <span className="font-semibold">{dashboardVm?.financial.monthlySavingsText ?? "--"}</span>
-                </p>
-              </article>
+      {/* 6. AI Insights Panel (Collapsible) */}
+      <div className="pt-2">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight">AI Analysis & Decisions</h2>
+        <div className="space-y-6">
+          <EnergyDecisionsSection 
+            decisions={aiInsights?.energyDecisions ?? []} 
+            opportunities={opportunities}
+            siteId={dashboardVm.siteId}
+            accessToken={accessToken}
+          />
+          <AiInsightsPanel data={aiInsights} errorMessage={aiInsightsError} />
+        </div>
+      </div>
 
-              <article className="glass-card rounded-2xl p-5">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Next best action
-                </p>
-                {primaryRecommendation ? (
-                  <div className="mt-3 state-warning rounded-xl border p-3">
-                    <p className="text-sm font-semibold">{primaryRecommendation.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{primaryRecommendation.message}</p>
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">No recommendations available.</p>
-                )}
-              </article>
-            </aside>
-          </div>
-
-          <EnergyDecisionsSection decisions={aiInsights?.energyDecisions ?? []} />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <article className="glass-card rounded-2xl p-5">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Recommendations
-              </p>
-              <ul className="mt-2 space-y-2 text-sm">
-                {dashboardVm?.recommendations.items?.length ? (
-                  dashboardVm.recommendations.items.map((item) => (
-                    <li key={item.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.message}</p>
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-muted-foreground">No recommendations available.</li>
-                )}
-              </ul>
-            </article>
-
-            <article className="glass-card rounded-2xl p-5">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Data providers
-              </p>
-              <p className="mt-3 text-sm text-muted-foreground">
-                weather=<span className="font-medium text-foreground">{dashboardVm?.providers.weather ?? "--"}</span>
-                , solar=<span className="font-medium text-foreground">{dashboardVm?.providers.solar ?? "--"}</span>
-              </p>
-            </article>
-          </div>
-        </>
-      )}
+      {/* Footer metadata */}
+      <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row">
+        <p>
+          Generated: {dashboardVm.generatedAt}
+        </p>
+        <div className="flex gap-4">
+          <span>Providers: {dashboardVm.providers.weather} (Weather) · {dashboardVm.providers.solar} (Solar)</span>
+          <span>Engine: {dashboardVm.providers.engine}</span>
+        </div>
+      </div>
     </section>
   );
 }

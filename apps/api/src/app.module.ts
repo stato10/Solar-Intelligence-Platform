@@ -10,8 +10,13 @@ import { IntegrationsModule } from "./integrations";
 import { RequestLoggingMiddleware } from "./observability/request-logging.middleware";
 import { PrismaModule } from "./prisma/prisma.module";
 
+import { LeadsModule } from "./leads/leads.module";
+import { MarketplaceModule } from "./marketplace/marketplace.module";
+import { ProvidersModule } from "./providers/providers.module";
+import { ProductsModule } from "./products/products.module";
+
 @Module({
-  imports: [ConfigModule, PrismaModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule],
+  imports: [ConfigModule, PrismaModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule, LeadsModule, MarketplaceModule, ProvidersModule, ProductsModule],
   controllers: [AppController],
   providers: [AppService]
 })

@@ -38,6 +38,7 @@ export interface DashboardRecommendation {
 
 export interface DashboardAggregateData {
   siteId: string;
+  siteName?: string;
   generatedAt: string;
   source: "DASHBOARD_AGGREGATED_V1";
   forecast: {

@@ -4,7 +4,7 @@ import type {
   DashboardAggregateSuccessEnvelope
 } from "@/lib/contracts";
 import { API_ENDPOINTS } from "./endpoints";
-import { postJson } from "./client";
+import { getJson, postJson } from "./client";
 
 export function getDefaultDashboardAggregateRequest(): DashboardAggregateRequest {
   return {
@@ -28,6 +28,27 @@ export async function fetchDashboardAggregate(
   const envelope = await postJson<DashboardAggregateRequest, DashboardAggregateSuccessEnvelope>(
     API_ENDPOINTS.dashboard.aggregate,
     request
+  );
+
+  if (!envelope.success || !envelope.data) {
+    throw new Error("Dashboard response payload is invalid");
+  }
+
+  return envelope.data;
+}
+
+export async function fetchDashboardBySiteId(
+  siteId: string,
+  accessToken?: string
+): Promise<DashboardAggregateData> {
+  const headers: Record<string, string> = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {};
+
+  const envelope = await getJson<DashboardAggregateSuccessEnvelope>(
+    `${API_ENDPOINTS.dashboard.aggregate.replace("/aggregate", "")}/site/${siteId}`,
+    undefined,
+    { headers }
   );
 
   if (!envelope.success || !envelope.data) {

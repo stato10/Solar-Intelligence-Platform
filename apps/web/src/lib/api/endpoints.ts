@@ -17,5 +17,8 @@ export const API_ENDPOINTS = {
   ai: {
     insights: "/ai/insights",
     insightsV3: "/ai/insights/v3"
+  },
+  integrations: {
+    geolocationForward: "/integrations/providers/geolocation/forward"
   }
 } as const;

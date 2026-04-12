@@ -57,17 +57,14 @@ export interface SavingsPageViewModel {
   };
 }
 
-function formatNumberText(value: number, suffix = ""): string {
-  return `${value.toFixed(2)}${suffix}`;
-}
-
-function formatDateText(value: string | null): string {
-  if (!value) {
-    return "--";
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-}
+import {
+  formatCurrency,
+  formatKwh,
+  formatPercent,
+  formatDate,
+  formatScore,
+  formatTimeRange
+} from "@/lib/utils/formatters";
 
 function isValueRelatedRecommendation(item: DashboardRecommendation): boolean {
   const signal = `${item.type} ${item.sourceModule}`.toLowerCase();
@@ -90,7 +87,7 @@ function toRecommendationVm(item: DashboardRecommendation): SavingsRecommendatio
     severity: item.severity,
     typeLabel: item.type,
     sourceModuleLabel: item.sourceModule,
-    validityText: `${formatDateText(item.validFrom)} -> ${formatDateText(item.validUntil)}`,
+    validityText: formatTimeRange(formatDate(item.validFrom), formatDate(item.validUntil)),
     isValueRelated: isValueRelatedRecommendation(item)
   };
 }
@@ -105,7 +102,7 @@ export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPag
     },
     context: {
       siteId: data.siteId,
-      generatedAt: formatDateText(data.generatedAt),
+      generatedAt: formatDate(data.generatedAt),
       source: data.source,
       providers: {
         weather: data.providers.weather,
@@ -114,28 +111,31 @@ export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPag
       }
     },
     financial: {
-      dailyEstimatedSavingsText: `${formatNumberText(data.financial.dailyEstimatedSavings)} ILS`,
-      monthlyEstimatedSavingsText: `${formatNumberText(data.financial.monthlyEstimatedSavings)} ILS`,
-      yearlyOptimizationPotentialText: `${formatNumberText(data.financial.yearlyOptimizationPotential)} ILS`
+      dailyEstimatedSavingsText: formatCurrency(data.financial.dailyEstimatedSavings),
+      monthlyEstimatedSavingsText: formatCurrency(data.financial.monthlyEstimatedSavings),
+      yearlyOptimizationPotentialText: formatCurrency(data.financial.yearlyOptimizationPotential)
     },
     optimization: {
-      estimatedValueText: `${formatNumberText(data.optimization.estimatedValue)} ILS`,
-      opportunityScoreText: `${formatNumberText(data.optimization.opportunityScore)} / 100`
+      estimatedValueText: formatCurrency(data.optimization.estimatedValue),
+      opportunityScoreText: formatScore(data.optimization.opportunityScore)
     },
     benchmark: {
-      expectedProductionText: `${formatNumberText(data.benchmark.expectedProductionKwh)} kWh`,
-      actualProductionText: `${formatNumberText(data.benchmark.actualProductionKwh)} kWh`,
-      expectedExportText: `${formatNumberText(data.benchmark.expectedExportKwh)} kWh`,
-      actualExportText: `${formatNumberText(data.benchmark.actualExportKwh)} kWh`,
-      productionDeviationText: `${formatNumberText(data.benchmark.productionDeviationPercent)}%`,
-      exportDeviationText: `${formatNumberText(data.benchmark.exportDeviationPercent)}%`,
+      expectedProductionText: formatKwh(data.benchmark.expectedProductionKwh),
+      actualProductionText: formatKwh(data.benchmark.actualProductionKwh),
+      expectedExportText: formatKwh(data.benchmark.expectedExportKwh),
+      actualExportText: formatKwh(data.benchmark.actualExportKwh),
+      productionDeviationText: formatPercent(data.benchmark.productionDeviationPercent),
+      exportDeviationText: formatPercent(data.benchmark.exportDeviationPercent),
       performanceStatus: data.benchmark.performanceStatus,
       insight: data.benchmark.insight
     },
     selfConsumption: {
-      scoreText: `${formatNumberText(data.selfConsumption.selfConsumptionScore)} / 100`,
-      estimatedSavingsText: `${formatNumberText(data.selfConsumption.estimatedSavingsIls)} ILS`,
-      recommendedWindowText: `${formatDateText(data.selfConsumption.recommendedUsageWindow.start)} -> ${formatDateText(data.selfConsumption.recommendedUsageWindow.end)}`,
+      scoreText: formatScore(data.selfConsumption.selfConsumptionScore),
+      estimatedSavingsText: formatCurrency(data.selfConsumption.estimatedSavingsIls),
+      recommendedWindowText: formatTimeRange(
+        formatDate(data.selfConsumption.recommendedUsageWindow.start),
+        formatDate(data.selfConsumption.recommendedUsageWindow.end)
+      ),
       actions: data.selfConsumption.actions
     },
     recommendations: {

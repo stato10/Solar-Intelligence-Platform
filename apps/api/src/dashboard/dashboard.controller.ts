@@ -4,12 +4,32 @@ import { AggregateDashboardRequestDto } from "./dto/aggregate-dashboard.dto";
 import { DemoSeedRequestDto } from "./dto/demo-seed-request.dto";
 import { DashboardService } from "./dashboard.service";
 
+import { Get, Param } from "@nestjs/common";
+import { DashboardQueryService } from "./dashboard-query.service";
+
 @Controller("dashboard")
 export class DashboardController {
   constructor(
     private readonly dashboardService: DashboardService,
-    private readonly dashboardDemoSeedService: DashboardDemoSeedService
+    private readonly dashboardDemoSeedService: DashboardDemoSeedService,
+    private readonly dashboardQueryService: DashboardQueryService
   ) {}
+
+  @Get("site/:siteId")
+  async aggregateBySiteId(
+    @Param("siteId") siteId: string,
+    @Headers("x-correlation-id") correlationId?: string
+  ) {
+    const data = await this.dashboardQueryService.aggregateBySiteId(siteId, correlationId);
+    return {
+      success: true,
+      data,
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: "v1"
+      }
+    };
+  }
 
   @Post("aggregate")
   async aggregate(

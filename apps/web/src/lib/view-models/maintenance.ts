@@ -55,14 +55,13 @@ export interface MaintenancePageViewModel {
   };
 }
 
-function formatDateText(value: string | null): string {
-  if (!value) {
-    return "--";
-  }
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-}
+import {
+  formatPercent,
+  formatDate,
+  formatScore,
+  formatTimeRange,
+  formatDateTime
+} from "@/lib/utils/formatters";
 
 function toAlertVm(alert: DashboardRiskAlert): MaintenanceRiskAlertVm {
   return {
@@ -70,7 +69,7 @@ function toAlertVm(alert: DashboardRiskAlert): MaintenanceRiskAlertVm {
     riskType: alert.riskType,
     severity: alert.severity,
     message: alert.message,
-    windowText: `${formatDateText(alert.expectedStart)} -> ${formatDateText(alert.expectedEnd)}`
+    windowText: formatTimeRange(formatDateTime(alert.expectedStart), formatDateTime(alert.expectedEnd))
   };
 }
 
@@ -93,7 +92,7 @@ function toRecommendationVm(item: DashboardRecommendation): MaintenanceRecommend
     severity: item.severity,
     typeLabel: item.type,
     sourceModuleLabel: item.sourceModule,
-    validityText: `${formatDateText(item.validFrom)} -> ${formatDateText(item.validUntil)}`,
+    validityText: formatTimeRange(formatDate(item.validFrom), formatDate(item.validUntil)),
     isMaintenanceLikely: isMaintenanceLikelyRecommendation(item)
   };
 }
@@ -110,7 +109,7 @@ export function toMaintenancePageViewModel(data: DashboardAggregateData): Mainte
     },
     context: {
       siteId: data.siteId,
-      generatedAt: formatDateText(data.generatedAt),
+      generatedAt: formatDate(data.generatedAt),
       source: data.source,
       providers: {
         weather: data.providers.weather,
@@ -119,16 +118,19 @@ export function toMaintenancePageViewModel(data: DashboardAggregateData): Mainte
       }
     },
     soiling: {
-      scoreText: `${data.soiling.score.toFixed(2)} / 100`,
-      estimatedLossText: `${data.soiling.estimatedLossPercent.toFixed(2)}%`,
+      scoreText: formatScore(data.soiling.score),
+      estimatedLossText: formatPercent(data.soiling.estimatedLossPercent),
       cleaningRecommendedText: data.soiling.cleaningRecommended ? "Yes" : "No",
-      recommendedCleaningDateText: formatDateText(data.soiling.recommendedCleaningDate),
+      recommendedCleaningDateText: formatDate(data.soiling.recommendedCleaningDate),
       explanation: data.soiling.explanation
     },
     heat: {
-      scoreText: `${data.heat.score.toFixed(2)} / 100`,
-      estimatedLossText: `${data.heat.estimatedLossPercent.toFixed(2)}%`,
-      peakWindowText: `${formatDateText(data.heat.peakHeatWindowStart)} -> ${formatDateText(data.heat.peakHeatWindowEnd)}`
+      scoreText: formatScore(data.heat.score),
+      estimatedLossText: formatPercent(data.heat.estimatedLossPercent),
+      peakWindowText: formatTimeRange(
+        formatDateTime(data.heat.peakHeatWindowStart),
+        formatDateTime(data.heat.peakHeatWindowEnd)
+      )
     },
     alerts: {
       items: data.risks.alerts.map(toAlertVm)

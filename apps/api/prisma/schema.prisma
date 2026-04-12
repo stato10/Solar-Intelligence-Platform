@@ -66,7 +66,7 @@ model SolarSystem {
   tilt             Float
   azimuth          Float
   panelWattage     Float
-  panelEfficiency  Float
+  panelEfficiency  Float    // Canonical unit: percentage (0–100), e.g. 21.5 means 21.5%
   inverterType     String?
   lastCleaningDate DateTime
   isActive         Boolean  @default(true)
@@ -118,4 +118,107 @@ model Tariff {
   updatedAt           DateTime  @updatedAt
 
   @@index([siteId])
+}
+
+// -------------------------------------------------------------
+// 6. Marketplace Foundation: Revenue & Leads
+// -------------------------------------------------------------
+
+model Provider {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  category     ProviderCategory
+  description  String?
+  serviceAreas String[]
+  phone        String?
+  whatsappUrl  String?
+  websiteUrl   String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  recommendationLinks RecommendationLink[]
+}
+
+model Product {
+  id                String          @id @default(uuid())
+  name              String
+  slug              String          @unique
+  category          ProductCategory
+  description       String?
+  brand             String?
+  estimatedPriceMin Float?
+  estimatedPriceMax Float?
+  affiliateUrl      String?
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  recommendationLinks RecommendationLink[]
+}
+
+model LeadIntent {
+  id              String       @id @default(uuid())
+  siteId          String
+  userId          String
+  sourceType      LeadSourceType
+  sourceReference String?
+  title           String
+  message         String?
+  status          LeadStatus   @default(new_lead)
+  estimatedValue  Float?
+  metadataJson    Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([siteId])
+  @@index([userId])
+  @@index([status])
+}
+
+model RecommendationLink {
+  id          String    @id @default(uuid())
+  triggerType String
+  providerId  String?
+  provider    Provider? @relation(fields: [providerId], references: [id])
+  productId   String?
+  product     Product?  @relation(fields: [productId], references: [id])
+  priority    Int       @default(0)
+  countryCode String?
+  isActive    Boolean   @default(true)
+
+  @@index([triggerType])
+}
+
+enum ProviderCategory {
+  cleaning
+  maintenance
+  installation
+  battery
+  ev_charging
+  automation
+}
+
+enum ProductCategory {
+  battery
+  ev_charger
+  switcher
+  cooling
+  automatic_cleaning
+}
+
+enum LeadSourceType {
+  cleaning_recommendation
+  battery_recommendation
+  ev_recommendation
+  automation_recommendation
+}
+
+enum LeadStatus {
+  new_lead
+  submitted
+  contacted
+  closed
+  cancelled
 }

@@ -25,19 +25,24 @@ export async function fetchAiInsightsV3(
 ): Promise<import("../contracts").AiInsightContractOutputV3> {
   const requestPayload: import("../contracts").CanonicalAiInsightRequestV3 = {
     aggregate,
+    // TODO: Replace hardcoded userData with actual SiteDeviceProfile from DB
+    // The SiteDeviceProfile table already exists in the schema — wire it through
+    // a dedicated API endpoint (e.g. GET /api/v1/sites/:siteId/device-profile)
     userData: {
-      hasBoiler: true, // Mocked for V3 prompt accuracy until DB table is implemented
-      hasEv: true, // Mocked
+      hasBoiler: true,
+      hasEv: true,
       hasSignificantAc: true,
       flexibleLoadShiftingPossible: true,
-      hasBattery: false, // Defaulting to false to test battery recommendations
+      hasBattery: false,
       openToUpgrades: true,
-      homeOccupancyProfile: "mostly-evening"
+      homeOccupancyProfile: "mostly_evening" // Must match Prisma OccupancyProfile enum (underscore, not hyphen)
     },
+    // TODO: Replace hardcoded apiData with actual tariff and weather context
+    // from the user's site/tariff records and current weather snapshot
     apiData: {
       tariffs: {
-        importRateIlsPerKwh: 0.61, // Mocked typical import
-        exportRateIlsPerKwh: 0.16 // Mocked typical export
+        importRateIlsPerKwh: 0.61,
+        exportRateIlsPerKwh: 0.16
       },
       peakProductionWindow: {
         start: "10:00",

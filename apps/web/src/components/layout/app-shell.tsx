@@ -4,6 +4,7 @@ import { SunMedium } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { SiteSelector } from "./site-selector";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
@@ -32,9 +33,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-muted-foreground">Control Center</p>
             </div>
           </div>
-          <span className="rounded-full border border-border/80 bg-card/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground">
-            Phase 1 Scaffold
-          </span>
+          <div className="flex items-center gap-4">
+            <SiteSelector />
+            <span className="hidden md:inline-flex rounded-full border border-border/80 bg-card/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground">
+              Phase 1 Scaffold
+            </span>
+          </div>
         </div>
         <div className="mx-auto flex h-12 w-full max-w-7xl items-center gap-2 overflow-x-auto px-6">
           {NAV_ITEMS.map((item) => {
