@@ -14,3 +14,4 @@ export {
   isValidAiInsightOutputV3,
   isCanonicalAiInsightRequestV3
 } from "./ai-insight-v3";
+export * from './marketplace';

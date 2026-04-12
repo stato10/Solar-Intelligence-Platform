@@ -35,3 +35,28 @@ export async function postJson<TReq, TRes>(
 
   return (await response.json()) as TRes;
 }
+
+export async function getJson<TRes>(
+  path: string,
+  searchParams?: Record<string, string>,
+  options?: { headers?: Record<string, string> }
+): Promise<TRes> {
+  const url = new URL(`${getApiBaseUrl()}${path}`);
+  if (searchParams) {
+    Object.entries(searchParams).forEach(([key, value]) => {
+      url.searchParams.append(key, value);
+    });
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: options?.headers,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new ApiHttpError(response.status, `GET Request failed with status ${response.status}`);
+  }
+
+  return (await response.json()) as TRes;
+}

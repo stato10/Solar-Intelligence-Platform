@@ -11,6 +11,7 @@ import {
   createSolarSystem,
   resolveDomainUserId
 } from "@/lib/api/onboarding";
+import { geocodeAddress } from "@/lib/api/geocoding";
 
 const ACCESS_TOKEN_KEY = "sip.accessToken";
 const AUTH_USER_KEY = "sip.authUser";
@@ -57,6 +58,11 @@ export function OnboardingStep1Form() {
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Geocoding state
+  const [geocoding, setGeocoding] = useState(false);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
 
   const todayDateValue = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -117,6 +123,49 @@ export function OnboardingStep1Form() {
     return null;
   }
 
+  async function handleResolveAddress() {
+    if (address.trim().length < 3) {
+      setErrorMessage("Enter at least 3 characters for address before resolving.");
+      return;
+    }
+
+    setGeocoding(true);
+    setErrorMessage(null);
+    setResolvedAddress(null);
+    setCountryCode(null);
+
+    try {
+      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY) ?? undefined;
+      const result = await geocodeAddress(address, accessToken);
+
+      if (!result) {
+        setErrorMessage(
+          "Could not resolve address. Please check the address and try again, or enter coordinates manually."
+        );
+        return;
+      }
+
+      // Auto-fill lat, lng, timezone from geocoding result
+      setLatitude(String(result.lat));
+      setLongitude(String(result.lon));
+      if (result.timezone) {
+        setTimezone(result.timezone);
+      }
+      setResolvedAddress(result.formattedAddress);
+      if (result.countryCode) {
+        setCountryCode(result.countryCode);
+      }
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? `Address resolution failed: ${error.message}`
+          : "Address resolution failed with an unknown error."
+      );
+    } finally {
+      setGeocoding(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
@@ -168,7 +217,8 @@ export function OnboardingStep1Form() {
       const snapshot: OnboardingStep1Snapshot = {
         siteId: createdSite.id,
         solarSystemId: createdSolarSystem.id,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        ...(countryCode ? { countryCode } : {})
       };
       localStorage.setItem(STEP1_SNAPSHOT_KEY, JSON.stringify(snapshot));
       setSuccessMessage(
@@ -229,20 +279,79 @@ export function OnboardingStep1Form() {
             </label>
           </div>
 
-          <label className="space-y-2 text-sm">
+          {/* Address field with Resolve button */}
+          <div className="space-y-2 text-sm">
             <span className="font-medium">Address</span>
-            <input
-              type="text"
-              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
-              value={address}
-              onChange={(event) => {
-                clearMessages();
-                setAddress(event.target.value);
-              }}
-              disabled={pending}
-              placeholder="123 Solar St, Tel Aviv"
-            />
-          </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="h-10 flex-1 rounded-md border border-border bg-background px-3 text-sm"
+                value={address}
+                onChange={(event) => {
+                  clearMessages();
+                  setResolvedAddress(null);
+                  setAddress(event.target.value);
+                }}
+                disabled={pending || geocoding}
+                placeholder="123 Solar St, Tel Aviv"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="default"
+                disabled={pending || geocoding || address.trim().length < 3}
+                onClick={handleResolveAddress}
+                className="shrink-0"
+              >
+                {geocoding ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Resolving…
+                  </span>
+                ) : (
+                  "📍 Resolve Address"
+                )}
+              </Button>
+            </div>
+
+            {/* Resolved address confirmation */}
+            {resolvedAddress ? (
+              <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>
+                  Resolved: <strong>{resolvedAddress}</strong>
+                  {" → "}
+                  Lat: {latitude}, Lon: {longitude}
+                  {timezone !== "UTC" ? `, TZ: ${timezone}` : ""}
+                </span>
+              </div>
+            ) : null}
+          </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2 text-sm">

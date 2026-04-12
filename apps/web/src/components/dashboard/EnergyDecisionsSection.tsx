@@ -12,9 +12,14 @@ import {
   Lightbulb
 } from "lucide-react";
 import React from "react";
+import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
+import { OpportunityActionCard } from "./OpportunityActionCard";
 
 interface EnergyDecisionsSectionProps {
   decisions: EnergyDecisionItem[];
+  opportunities?: MarketplaceOpportunity[];
+  siteId?: string;
+  accessToken?: string;
 }
 
 const TOPIC_ICONS: Record<EnergyDecisionTopic, React.ElementType> = {
@@ -26,7 +31,7 @@ const TOPIC_ICONS: Record<EnergyDecisionTopic, React.ElementType> = {
   "maintenance-priority": Wrench
 };
 
-function DecisionCard({ item }: { item: EnergyDecisionItem }) {
+function DecisionCard({ item, opportunities, siteId, accessToken }: { item: EnergyDecisionItem, opportunities: MarketplaceOpportunity[], siteId?: string, accessToken?: string }) {
   const Icon = TOPIC_ICONS[item.topic] || Lightbulb;
   
   const recColor = 
@@ -65,8 +70,48 @@ function DecisionCard({ item }: { item: EnergyDecisionItem }) {
           )}
         </div>
         
+        {/* Marketplace Opportunity Card */}
+        {item.recommendation === "recommended" && (
+          <div className="mt-4">
+            {item.topic === "battery-worthiness" && opportunities.find(o => o.topic === "battery") && (
+              <OpportunityActionCard
+                title="Explore Battery Systems"
+                message="Connect with top tier installers for customized battery quotes."
+                type="product"
+                topic="battery"
+                estimatedValue={item.estimatedBenefitRangeIlsMonthly ? `${item.estimatedBenefitRangeIlsMonthly.min} - ${item.estimatedBenefitRangeIlsMonthly.max} ILS / mo` : undefined}
+                actionLabel="Get Battery Quotes"
+                payload={{
+                  siteId: siteId ?? "",
+                  sourceType: "battery_recommendation",
+                  title: "Battery Request from AI Decisions",
+                  estimatedValue: item.estimatedBenefitRangeIlsMonthly?.min,
+                }}
+                accessToken={accessToken}
+              />
+            )}
+            {item.topic === "ev-charging" && opportunities.find(o => o.topic === "ev") && (
+              <OpportunityActionCard
+                title="Smart EV Chargers"
+                message="Find chargers that sync perfectly with your solar production."
+                type="product"
+                topic="ev"
+                estimatedValue={item.estimatedBenefitRangeIlsMonthly ? `${item.estimatedBenefitRangeIlsMonthly.min} - ${item.estimatedBenefitRangeIlsMonthly.max} ILS / mo` : undefined}
+                actionLabel="Explore EV Chargers"
+                payload={{
+                  siteId: siteId ?? "",
+                  sourceType: "ev_recommendation",
+                  title: "EV Charger Request from AI Decisions",
+                  estimatedValue: item.estimatedBenefitRangeIlsMonthly?.min,
+                }}
+                accessToken={accessToken}
+              />
+            )}
+          </div>
+        )}
+        
         {/* Phase 7.12 Product Link Interstitials */}
-        {item.requiresPurchase && item.suggestedProduct && (
+        {item.requiresPurchase && item.suggestedProduct && !opportunities.find(o => o.topic === (item.topic === "battery-worthiness" ? "battery" : item.topic === "ev-charging" ? "ev" : "")) && (
           <div className="mt-3 pt-3 border-t">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
@@ -84,7 +129,7 @@ function DecisionCard({ item }: { item: EnergyDecisionItem }) {
   );
 }
 
-export function EnergyDecisionsSection({ decisions }: EnergyDecisionsSectionProps) {
+export function EnergyDecisionsSection({ decisions, opportunities = [], siteId, accessToken }: EnergyDecisionsSectionProps) {
   if (!decisions || decisions.length === 0) return null;
 
   const availableNow = decisions.filter(d => !d.requiresPurchase);
@@ -102,7 +147,7 @@ export function EnergyDecisionsSection({ decisions }: EnergyDecisionsSectionProp
         </CardHeader>
         <CardContent className="p-4 space-y-4">
           {availableNow.length > 0 ? (
-            availableNow.map(item => <DecisionCard key={item.id} item={item} />)
+            availableNow.map(item => <DecisionCard key={item.id} item={item} opportunities={opportunities} siteId={siteId} accessToken={accessToken} />)
           ) : (
             <div className="text-center p-8 text-muted-foreground border border-dashed rounded-lg">
               You are highly optimized! No immediate behavioral changes required.
@@ -121,7 +166,7 @@ export function EnergyDecisionsSection({ decisions }: EnergyDecisionsSectionProp
         </CardHeader>
         <CardContent className="p-4 space-y-4">
           {upgradeDependent.length > 0 ? (
-            upgradeDependent.map(item => <DecisionCard key={item.id} item={item} />)
+            upgradeDependent.map(item => <DecisionCard key={item.id} item={item} opportunities={opportunities} siteId={siteId} accessToken={accessToken} />)
           ) : (
             <div className="text-center p-8 text-muted-foreground border border-dashed rounded-lg">
               No hardware purchases are financially justified at this time.

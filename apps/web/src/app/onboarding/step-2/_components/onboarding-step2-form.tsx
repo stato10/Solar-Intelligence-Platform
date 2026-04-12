@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import type { OnboardingStep1Snapshot } from "@/lib/contracts/onboarding-step1";
 import type { OnboardingStep2Snapshot } from "@/lib/contracts/onboarding-step2";
 import {
-  OnboardingApiError,
   createDeviceProfile,
-  createTariff
+  createTariff,
+  OnboardingApiError
 } from "@/lib/api/onboarding";
+import { getDefaultTariff } from "@/lib/utils/tariff";
 
 const ACCESS_TOKEN_KEY = "sip.accessToken";
 const STEP1_SNAPSHOT_KEY = "sip.onboarding.step1";
@@ -32,7 +33,8 @@ function parseStep1Snapshot(raw: string | null): OnboardingStep1Snapshot | null 
       return {
         siteId: parsed.siteId,
         solarSystemId: parsed.solarSystemId,
-        createdAt: parsed.createdAt
+        createdAt: parsed.createdAt,
+        countryCode: parsed.countryCode
       };
     }
   } catch {
@@ -79,6 +81,12 @@ export function OnboardingStep2Form() {
     }
     setSnapshotError(null);
     setSiteId(snapshot.siteId);
+
+    // Apply country-specific default tariffs if we have them
+    const defaultTariff = getDefaultTariff(snapshot.countryCode);
+    setSelfConsumptionRate(String(defaultTariff.selfConsumptionRate));
+    setExportRate(String(defaultTariff.exportRate));
+    setCurrency(defaultTariff.currency);
   }, []);
 
   function clearMessages() {
@@ -233,7 +241,7 @@ export function OnboardingStep2Form() {
                   setSelfConsumptionRate(event.target.value);
                 }}
                 disabled={pending}
-                placeholder="0.62"
+                placeholder="e.g. 0.62"
               />
             </label>
 
@@ -250,7 +258,7 @@ export function OnboardingStep2Form() {
                   setExportRate(event.target.value);
                 }}
                 disabled={pending}
-                placeholder="0.28"
+                placeholder="e.g. 0.28"
               />
             </label>
 

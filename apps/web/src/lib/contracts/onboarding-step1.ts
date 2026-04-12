@@ -24,6 +24,7 @@ export interface OnboardingStep1Snapshot {
   siteId: string;
   solarSystemId: string;
   createdAt: string;
+  countryCode?: string;
 }
 
 export interface DomainUserSummary {
