@@ -53,6 +53,11 @@ export function MaintenancePanel({ maintenance }: MaintenancePanelProps) {
             {!maintenance.cleaningRecommended && (
               <p className="mt-1 text-xs text-muted-foreground">Soiling is under control</p>
             )}
+            {maintenance.soilingExplanation && (
+              <p className="mt-2 text-xs text-muted-foreground opacity-85 border-l-2 border-primary/20 pl-2">
+                {maintenance.soilingExplanation}
+              </p>
+            )}
           </div>
         </div>
 

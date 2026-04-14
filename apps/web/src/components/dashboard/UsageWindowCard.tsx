@@ -95,9 +95,9 @@ export function UsageWindowCard({ usageWindow, opportunities = [], siteId, acces
         </div>
       </div>
 
-      {/* Automation Opportunity Card */}
-      {opportunities.find(o => o.topic === "switcher") ? (
-        <div className="mt-6 border-t border-border/50 pt-2">
+      {/* Automation Opportunity Card or Placeholder CTA */}
+      <div className="mt-6 border-t border-border/50 pt-4">
+        {opportunities.find(o => o.topic === "switcher") ? (
           <OpportunityActionCard
             title="Automate Heavy Appliances"
             message="Smart plugs and switchers can automatically run your boiler or dishwasher during peak production."
@@ -109,12 +109,24 @@ export function UsageWindowCard({ usageWindow, opportunities = [], siteId, acces
               siteId: siteId ?? "",
               sourceType: "automation_recommendation",
               title: "Automation Request from Usage Window",
-              estimatedValue: parseFloat(usageWindow.estimatedSavings.replace(/[^\d.]/g, '')),
+              estimatedValue: parseFloat(usageWindow.estimatedSavings.replace(/[^\d.]/g, '')) || undefined,
             }}
             accessToken={accessToken}
           />
-        </div>
-      ) : null}
+        ) : (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-border/50 bg-card/40 p-4">
+            <div>
+              <h4 className="font-semibold text-sm text-foreground/90">Automate your usage</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                You can save more by setting timers or using smart plugs for your heavy appliances.
+              </p>
+            </div>
+            <button className="whitespace-nowrap rounded-xl bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium hover:bg-secondary/80 transition-colors">
+              Optimize Usage
+            </button>
+          </div>
+        )}
+      </div>
     </article>
   );
 }

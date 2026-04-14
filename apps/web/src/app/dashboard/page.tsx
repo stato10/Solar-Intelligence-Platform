@@ -115,7 +115,7 @@ export default async function DashboardPage() {
             siteId={dashboardVm.siteId}
             accessToken={accessToken}
           />
-          <AiInsightsPanel data={aiInsights} errorMessage={aiInsightsError} />
+          <AiInsightsPanel data={aiInsights as AiInsightContractOutputV3 | null} errorMessage={aiInsightsError} />
         </div>
       </div>
 
