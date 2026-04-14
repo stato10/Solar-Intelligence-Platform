@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import type { CreateLeadIntentPayload } from "@/lib/contracts/marketplace";
 import { createLeadIntent } from "@/lib/api/marketplace";
@@ -32,6 +33,8 @@ export function OpportunityActionCard({
   
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
+  const { toast } = useToast();
+
   if (!isEnabled) {
     return null;
   }
@@ -41,10 +44,19 @@ export function OpportunityActionCard({
       setStatus("loading");
       await createLeadIntent(payload, accessToken);
       setStatus("success");
+      toast({
+        title: "Interest saved",
+        description: "We'll connect you with relevant solutions shortly.",
+        variant: "success",
+      });
     } catch (error) {
       console.error("Failed to create lead intent", error);
       setStatus("error");
-      // Could show toast here
+      toast({
+        title: "Error",
+        description: "Failed to save request. Please try again.",
+        variant: "error",
+      });
     }
   };
 
@@ -99,15 +111,6 @@ export function OpportunityActionCard({
           </Button>
         </div>
       </div>
-      
-      {status === "error" && (
-        <p className="mt-3 text-xs text-rose-600 font-medium">Failed to save request. Please try again.</p>
-      )}
-      {status === "success" && (
-        <p className="mt-3 text-xs text-emerald-700 font-medium border-t border-emerald-500/20 pt-2">
-          We&apos;ve recorded your interest and will connect you with relevant solutions shortly.
-        </p>
-      )}
     </div>
   );
 }

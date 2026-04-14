@@ -8,7 +8,7 @@ import { SiteSelector } from "./site-selector";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
-  { href: "/auth", label: "Auth" },
+  { href: "/onboarding", label: "Setup Site" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/maintenance", label: "Maintenance" },
   { href: "/savings", label: "Savings" },
@@ -35,9 +35,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-4">
             <SiteSelector />
-            <span className="hidden md:inline-flex rounded-full border border-border/80 bg-card/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground">
-              Phase 1 Scaffold
-            </span>
           </div>
         </div>
         <div className="mx-auto flex h-12 w-full max-w-7xl items-center gap-2 overflow-x-auto px-6">
