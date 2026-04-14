@@ -9,7 +9,7 @@ export class LeadsController {
 
   @Post('intents')
   async createIntent(@Request() req: any, @Body() dto: CreateLeadIntentDto) {
-    const userId = req.user.id;
+    const userId = req.user.sub;
     const intent = await this.leadsService.createIntent(userId, dto);
     return {
       success: true,
@@ -19,7 +19,7 @@ export class LeadsController {
 
   @Get('intents/:siteId')
   async getIntents(@Request() req: any, @Param('siteId') siteId: string) {
-    const userId = req.user.id;
+    const userId = req.user.sub;
     const intents = await this.leadsService.getIntentsForSite(userId, siteId);
     return {
       success: true,

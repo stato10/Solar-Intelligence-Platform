@@ -3,13 +3,32 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export type LocalLeadSourceType = 'cleaning_recommendation' | 'battery_recommendation' | 'ev_recommendation' | 'automation_recommendation';
 
-export interface CreateLeadIntentDto {
-  siteId: string;
-  sourceType: LocalLeadSourceType;
+import { IsString, IsOptional, IsNumber, IsObject } from 'class-validator';
+
+export class CreateLeadIntentDto {
+  @IsString()
+  siteId!: string;
+
+  @IsString()
+  sourceType!: LocalLeadSourceType;
+
+  @IsOptional()
+  @IsString()
   sourceReference?: string;
-  title: string;
+
+  @IsString()
+  title!: string;
+
+  @IsOptional()
+  @IsString()
   message?: string;
+
+  @IsOptional()
+  @IsNumber()
   estimatedValue?: number;
+
+  @IsOptional()
+  @IsObject()
   metadataJson?: Record<string, unknown>;
 }
 

@@ -1,15 +1,19 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards, Request } from "@nestjs/common";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { CreateSiteDto } from "./dto/create-site.dto";
 import { SitesListQueryDto } from "./dto/sites-list-query.dto";
 import { UpdateSiteDto } from "./dto/update-site.dto";
 import { SitesService } from "./sites.service";
 
+@UseGuards(JwtAuthGuard)
 @Controller("sites")
 export class SitesController {
   constructor(private readonly sitesService: SitesService) {}
 
   @Get()
-  async findAll(@Query() query: SitesListQueryDto) {
+  async findAll(@Request() req: any, @Query() query: SitesListQueryDto) {
+    // Force filtering by the authenticated user
+    query.userId = req.user.sub;
     const result = await this.sitesService.findAll(query);
     return {
       success: true,

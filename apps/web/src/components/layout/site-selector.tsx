@@ -26,12 +26,15 @@ export function SiteSelector() {
   useEffect(() => {
     async function loadSites() {
       const token = localStorage.getItem(ACCESS_TOKEN_KEY) ?? undefined;
+      console.log("SiteSelector: token present?", !!token);
       if (!token) {
         setIsLoading(false);
         return;
       }
 
+      console.log("SiteSelector: fetching user sites...");
       const userSites = await fetchUserSites(token);
+      console.log("SiteSelector: fetched sites:", userSites);
       setSites(userSites);
 
       // Restore active site from cookie or default to first
@@ -55,6 +58,7 @@ export function SiteSelector() {
     loadSites();
   }, []);
 
+  console.log("SiteSelector render:", { isLoading, sitesLength: sites.length });
   if (isLoading || sites.length === 0) {
     return null;
   }
