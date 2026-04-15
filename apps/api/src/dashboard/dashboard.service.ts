@@ -1,12 +1,9 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { EngineClientService } from "../integrations/engine/engine-client.service";
-import {
-  SOLAR_PROVIDER_TOKEN,
-  WEATHER_PROVIDER_TOKEN
-} from "../integrations/providers/common/provider.tokens";
-import { ProviderRequestMeta } from "../integrations/providers/common/provider.types";
-import { SolarProvider } from "../integrations/providers/contracts/solar-provider.interface";
-import { WeatherProvider } from "../integrations/providers/contracts/weather-provider.interface";
+import { FreshnessPolicyService } from "../data-ingestion/freshness-policy.service";
+import { SnapshotWriterService } from "../data-ingestion/snapshot-writer.service";
+import { WeatherIngestionService } from "../data-ingestion/weather-ingestion.service";
+import { SolarIngestionService } from "../data-ingestion/solar-ingestion.service";
 import { AggregateDashboardRequestDto } from "./dto/aggregate-dashboard.dto";
 
 @Injectable()
@@ -14,85 +11,233 @@ export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
 
   constructor(
-    @Inject(SOLAR_PROVIDER_TOKEN) private readonly solarProvider: SolarProvider,
-    @Inject(WEATHER_PROVIDER_TOKEN) private readonly weatherProvider: WeatherProvider,
-    private readonly engineClientService: EngineClientService
+    private readonly engineClientService: EngineClientService,
+    private readonly snapshotWriter: SnapshotWriterService,
+    private readonly freshnessPolicy: FreshnessPolicyService,
+    private readonly weatherIngestion: WeatherIngestionService,
+    private readonly solarIngestion: SolarIngestionService
   ) {}
 
   async aggregate(payload: AggregateDashboardRequestDto, correlationId?: string) {
     const generatedAt = payload.generatedAt ?? new Date().toISOString();
     const lossPercent = payload.lossPercent ?? 14;
     const startedAt = Date.now();
-    const meta: ProviderRequestMeta | undefined = correlationId
-      ? {
-          requestId: correlationId
-        }
-      : undefined;
 
-    const [weather, solar] = await Promise.all([
-      this.weatherProvider.getSnapshot({
-        siteId: payload.siteId,
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-        timezone: payload.timezone
-      }, meta),
-      this.solarProvider.getForecast({
-        siteId: payload.siteId,
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-        systemSizeKw: payload.systemSizeKw,
-        lossPercent
-      }, meta)
-    ]);
+    // ─── Step 1: Check for fresh cached snapshot ──────────────────────
+    const existingSnapshot = await this.snapshotWriter.getCurrentSnapshot(payload.siteId);
 
-    const engine = await this.engineClientService.calculateV1({
-      siteId: payload.siteId,
-      generatedAt,
-      weather: {
-        temperature: weather.temperature,
-        cloudCover: weather.cloudCover,
-        windSpeed: weather.windSpeed,
-        precipitation: weather.precipitation
-      },
-      solar: {
-        expectedDailyKwh: solar.expectedDailyKwh,
-        expectedWeeklyKwh: solar.expectedWeeklyKwh,
-        expectedMonthlyKwh: solar.expectedMonthlyKwh
-      },
-      tariff: payload.tariff
-    }, { correlationId });
+    if (existingSnapshot && this.freshnessPolicy.isFresh(existingSnapshot.fetchedAt, "weather_current")) {
+      const cachedAggregate = existingSnapshot.aggregateJson as Record<string, unknown> | null;
 
-    const engineData = engine.data;
-    const response = {
-      siteId: payload.siteId,
-      generatedAt,
-      source: "DASHBOARD_AGGREGATED_V1",
-      forecast: engineData.forecast,
-      soiling: engineData.soiling,
-      heat: engineData.heat,
-      risks: engineData.risks,
-      optimization: engineData.optimization,
-      financial: engineData.financial,
-      benchmark: engineData.benchmark,
-      selfConsumption: engineData.selfConsumption,
-      providers: {
-        weather: weather.source,
-        solar: solar.source,
-        engine: engine.engineBaseUrl
+      if (cachedAggregate) {
+        this.logger.log(
+          JSON.stringify({
+            event: "dashboard.aggregate.cache_hit",
+            correlationId,
+            siteId: payload.siteId,
+            snapshotAge: Date.now() - existingSnapshot.fetchedAt.getTime(),
+            durationMs: Date.now() - startedAt
+          })
+        );
+        return cachedAggregate;
       }
-    };
+    }
 
-    this.logger.log(
-      JSON.stringify({
-        event: "dashboard.aggregate.finish",
-        correlationId,
+    // ─── Step 2: Fetch fresh data from providers ──────────────────────
+    try {
+      const [weatherSnapshot, solarBaseline] = await Promise.all([
+        this.weatherIngestion.ingestWeather({
+          siteId: payload.siteId,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          timezone: payload.timezone
+        }),
+        this.solarIngestion.ingestSolarBaseline({
+          siteId: payload.siteId,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          systemSizeKw: payload.systemSizeKw,
+          lossPercent
+        })
+      ]);
+
+      // If both ingestions failed, fall back to stale snapshot
+      if (!weatherSnapshot && !solarBaseline) {
+        return this.handleTotalIngestionFailure(payload.siteId, existingSnapshot, correlationId, startedAt);
+      }
+
+      // Use ingested data or safe fallbacks for engine call
+      const weatherForEngine = weatherSnapshot
+        ? {
+            temperature: weatherSnapshot.current.temperature,
+            cloudCover: weatherSnapshot.current.cloudCover,
+            windSpeed: weatherSnapshot.current.windSpeed,
+            precipitation: weatherSnapshot.current.precipitation
+          }
+        : {
+            temperature: 25,
+            cloudCover: 50,
+            windSpeed: 3,
+            precipitation: 0
+          };
+
+      const solarForEngine = solarBaseline
+        ? {
+            expectedDailyKwh: solarBaseline.expectedDailyKwh,
+            expectedWeeklyKwh: solarBaseline.expectedWeeklyKwh,
+            expectedMonthlyKwh: solarBaseline.expectedMonthlyKwh
+          }
+        : {
+            expectedDailyKwh: payload.systemSizeKw * 4 * (1 - lossPercent / 100),
+            expectedWeeklyKwh: payload.systemSizeKw * 4 * (1 - lossPercent / 100) * 7,
+            expectedMonthlyKwh: payload.systemSizeKw * 4 * (1 - lossPercent / 100) * 30
+          };
+
+      // ─── Step 3: Call calculation engine ───────────────────────────
+      const engine = await this.engineClientService.calculateV1(
+        {
+          siteId: payload.siteId,
+          generatedAt,
+          weather: weatherForEngine,
+          solar: solarForEngine,
+          tariff: payload.tariff
+        },
+        { correlationId }
+      );
+
+      const engineData = engine.data;
+
+      // ─── Step 4: Build response (SAME shape as before) ────────────
+      const response = {
         siteId: payload.siteId,
-        weatherProvider: weather.source,
-        solarProvider: solar.source,
-        durationMs: Date.now() - startedAt
+        generatedAt,
+        source: "DASHBOARD_AGGREGATED_V1",
+        forecast: engineData.forecast,
+        soiling: engineData.soiling,
+        heat: engineData.heat,
+        risks: engineData.risks,
+        optimization: engineData.optimization,
+        financial: engineData.financial,
+        benchmark: engineData.benchmark,
+        selfConsumption: engineData.selfConsumption,
+        providers: {
+          weather: weatherSnapshot?.source ?? "fallback",
+          solar: solarBaseline?.source ?? "fallback",
+          engine: engine.engineBaseUrl
+        }
+      };
+
+      // ─── Step 5: Persist to database (fire-and-forget) ────────────
+      this.persistSnapshot(
+        payload.siteId,
+        weatherSnapshot,
+        solarBaseline,
+        response,
+        engineData
+      ).catch((err) => {
+        this.logger.error(
+          `Failed to persist snapshot for site ${payload.siteId}: ${
+            err instanceof Error ? err.message : "unknown"
+          }`
+        );
+      });
+
+      this.logger.log(
+        JSON.stringify({
+          event: "dashboard.aggregate.fresh_fetch",
+          correlationId,
+          siteId: payload.siteId,
+          weatherProvider: weatherSnapshot?.source ?? "fallback",
+          solarProvider: solarBaseline?.source ?? "fallback",
+          durationMs: Date.now() - startedAt
+        })
+      );
+
+      return response;
+    } catch (error) {
+      // ─── Step 6: Total failure fallback to stale snapshot ──────────
+      return this.handleTotalIngestionFailure(payload.siteId, existingSnapshot, correlationId, startedAt, error);
+    }
+  }
+
+  /**
+   * When everything fails (providers + engine), return stale snapshot data
+   * rather than throwing a 500 error. Dashboard uptime > data freshness.
+   */
+  private handleTotalIngestionFailure(
+    siteId: string,
+    existingSnapshot: any,
+    correlationId: string | undefined,
+    startedAt: number,
+    error?: unknown
+  ) {
+    if (existingSnapshot?.aggregateJson) {
+      this.logger.warn(
+        JSON.stringify({
+          event: "dashboard.aggregate.stale_fallback",
+          correlationId,
+          siteId,
+          snapshotAge: Date.now() - existingSnapshot.fetchedAt.getTime(),
+          durationMs: Date.now() - startedAt,
+          reason: error instanceof Error ? error.message : "ingestion_failed"
+        })
+      );
+      return existingSnapshot.aggregateJson;
+    }
+
+    // No snapshot at all — this is a truly new site with no data
+    this.logger.error(
+      JSON.stringify({
+        event: "dashboard.aggregate.total_failure",
+        correlationId,
+        siteId,
+        durationMs: Date.now() - startedAt,
+        reason: error instanceof Error ? error.message : "no_snapshot_available"
       })
     );
 
-    return response;
+    // Re-throw so the controller returns a proper error
+    if (error instanceof Error) throw error;
+    throw new Error(`Dashboard aggregate failed for site ${siteId} — no cached data available`);
+  }
+
+  /**
+   * Persists weather, solar, and aggregate data to the snapshot tables.
+   * Also extracts benchmark data to create/update the daily summary.
+   * Runs as fire-and-forget to not block the response.
+   */
+  private async persistSnapshot(
+    siteId: string,
+    weatherSnapshot: any,
+    solarBaseline: any,
+    aggregateResponse: any,
+    engineData: any
+  ) {
+    // Save current snapshot
+    await this.snapshotWriter.saveCurrentSnapshot({
+      siteId,
+      weatherJson: weatherSnapshot ?? {},
+      solarJson: solarBaseline ?? {},
+      aggregateJson: aggregateResponse
+    });
+
+    // Extract benchmark data for daily summary logging
+    const benchmark = engineData.benchmark;
+    const soiling = engineData.soiling;
+    const heat = engineData.heat;
+    const financial = engineData.financial;
+
+    if (benchmark) {
+      await this.snapshotWriter.saveDailySummary({
+        siteId,
+        date: new Date(),
+        expectedKwh: benchmark.expectedProductionKwh ?? 0,
+        actualKwh: benchmark.actualProductionKwh ?? 0,
+        deviationPercent: benchmark.productionDeviationPercent ?? 0,
+        soilingScore: soiling?.score,
+        heatScore: heat?.score,
+        dailySavings: financial?.dailyEstimatedSavings
+      });
+    }
   }
 }

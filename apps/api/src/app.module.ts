@@ -15,8 +15,10 @@ import { MarketplaceModule } from "./marketplace/marketplace.module";
 import { ProvidersModule } from "./providers/providers.module";
 import { ProductsModule } from "./products/products.module";
 
+import { DataIngestionModule } from "./data-ingestion/data-ingestion.module";
+
 @Module({
-  imports: [ConfigModule, PrismaModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule, LeadsModule, MarketplaceModule, ProvidersModule, ProductsModule],
+  imports: [ConfigModule, PrismaModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule, LeadsModule, MarketplaceModule, ProvidersModule, ProductsModule, DataIngestionModule],
   controllers: [AppController],
   providers: [AppService]
 })

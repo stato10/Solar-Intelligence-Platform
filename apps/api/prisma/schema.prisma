@@ -51,6 +51,9 @@ model Site {
   solarSystems  SolarSystem[]
   deviceProfile SiteDeviceProfile?
   tariffs       Tariff[]
+  currentSnapshot    SiteCurrentSnapshot?
+  dailySummaries     SiteDailySummary[]
+  monthlySummaries   SiteMonthlySummary[]
 
   @@index([userId])
 }
@@ -221,4 +224,57 @@ enum LeadStatus {
   contacted
   closed
   cancelled
+}
+
+// -------------------------------------------------------------
+// 7. Data Orchestration & Snapshot Engine
+// -------------------------------------------------------------
+
+model SiteCurrentSnapshot {
+  id              String   @id @default(uuid())
+  siteId          String   @unique
+  site            Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  fetchedAt       DateTime
+  weatherJson     Json?
+  solarJson       Json?
+  aggregateJson   Json?
+  aiContextJson   Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([siteId])
+}
+
+model SiteDailySummary {
+  id               String   @id @default(uuid())
+  siteId           String
+  site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  expectedKwh      Float
+  actualKwh        Float
+  deviationPercent Float
+  soilingScore     Float?
+  heatScore        Float?
+  dailySavings     Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([siteId, date])
+  @@index([siteId])
+}
+
+model SiteMonthlySummary {
+  id               String   @id @default(uuid())
+  siteId           String
+  site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  month            DateTime @db.Date // Store the first day of the month
+  totalExpected    Float
+  totalActual      Float
+  totalSavings     Float?
+  avgDeviation     Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([siteId, month])
+  @@index([siteId])
 }

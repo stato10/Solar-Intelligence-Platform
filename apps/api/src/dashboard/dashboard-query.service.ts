@@ -17,6 +17,8 @@ export class DashboardQueryService {
   /**
    * Fetches the full site data from DB (Site, SolarSystem, Tariff)
    * constructs the aggregation payload, and returns the dashboard data.
+   * Passes solar system metadata (tilt, azimuth, lastCleaningDate)
+   * so the ingestion layer can use them for PVGIS accuracy.
    */
   async aggregateBySiteId(siteId: string, correlationId?: string) {
     const site = await this.sitesService.findOne(siteId);
@@ -34,6 +36,7 @@ export class DashboardQueryService {
     const { items: tariffs } = await this.tariffsService.findAll({ siteId });
     const tariff = tariffs.length > 0 ? tariffs[0] : null;
 
+    // Use canonical lat/lng from database Site record — NEVER from raw input
     const payload: AggregateDashboardRequestDto = {
       siteId: site.id,
       latitude: site.latitude,
