@@ -4,6 +4,10 @@ import { FreshnessPolicyService } from "../data-ingestion/freshness-policy.servi
 import { SnapshotWriterService } from "../data-ingestion/snapshot-writer.service";
 import { WeatherIngestionService } from "../data-ingestion/weather-ingestion.service";
 import { SolarIngestionService } from "../data-ingestion/solar-ingestion.service";
+import {
+  IntelligenceEvaluatorService,
+  IntelligenceInput
+} from "../intelligence";
 import { AggregateDashboardRequestDto } from "./dto/aggregate-dashboard.dto";
 
 @Injectable()
@@ -15,7 +19,8 @@ export class DashboardService {
     private readonly snapshotWriter: SnapshotWriterService,
     private readonly freshnessPolicy: FreshnessPolicyService,
     private readonly weatherIngestion: WeatherIngestionService,
-    private readonly solarIngestion: SolarIngestionService
+    private readonly solarIngestion: SolarIngestionService,
+    private readonly intelligence: IntelligenceEvaluatorService
   ) {}
 
   async aggregate(payload: AggregateDashboardRequestDto, correlationId?: string) {
@@ -39,7 +44,7 @@ export class DashboardService {
             durationMs: Date.now() - startedAt
           })
         );
-        return cachedAggregate;
+        return this.withIntelligence(cachedAggregate);
       }
     }
 
@@ -108,7 +113,7 @@ export class DashboardService {
       const engineData = engine.data;
 
       // ─── Step 4: Build response (SAME shape as before) ────────────
-      const response = {
+      const baseResponse = {
         siteId: payload.siteId,
         generatedAt,
         source: "DASHBOARD_AGGREGATED_V1",
@@ -126,6 +131,9 @@ export class DashboardService {
           engine: engine.engineBaseUrl
         }
       };
+
+      // ─── Step 4b: Attach Intelligence Layer (additive, non-breaking) ────
+      const response = this.withIntelligence(baseResponse);
 
       // ─── Step 5: Persist to database (fire-and-forget) ────────────
       this.persistSnapshot(
@@ -182,7 +190,7 @@ export class DashboardService {
           reason: error instanceof Error ? error.message : "ingestion_failed"
         })
       );
-      return existingSnapshot.aggregateJson;
+      return this.withIntelligence(existingSnapshot.aggregateJson);
     }
 
     // No snapshot at all — this is a truly new site with no data
@@ -239,5 +247,46 @@ export class DashboardService {
         dailySavings: financial?.dailyEstimatedSavings
       });
     }
+  }
+
+  /**
+   * Appends the Intelligence Layer output to an aggregate response.
+   *
+   * Non-breaking: never throws, skips when the payload is missing the
+   * required fields, and preserves an already-present `intelligence`
+   * block on cached snapshots to avoid recompute.
+   */
+  private withIntelligence<T extends Record<string, unknown>>(response: T): T {
+    if (!response || typeof response !== "object") return response;
+    if ((response as { intelligence?: unknown }).intelligence) return response;
+
+    if (!this.isIntelligenceInput(response)) return response;
+
+    try {
+      const intelligence = this.intelligence.evaluate(response);
+      return { ...response, intelligence };
+    } catch (error) {
+      this.logger.warn(
+        `Intelligence evaluation failed: ${error instanceof Error ? error.message : "unknown"}`
+      );
+      return response;
+    }
+  }
+
+  private isIntelligenceInput(value: unknown): value is IntelligenceInput {
+    if (!value || typeof value !== "object") return false;
+    const v = value as Record<string, unknown>;
+    return (
+      typeof v.siteId === "string" &&
+      typeof v.generatedAt === "string" &&
+      !!v.forecast &&
+      !!v.soiling &&
+      !!v.heat &&
+      !!v.risks &&
+      !!v.optimization &&
+      !!v.financial &&
+      !!v.benchmark &&
+      !!v.selfConsumption
+    );
   }
 }

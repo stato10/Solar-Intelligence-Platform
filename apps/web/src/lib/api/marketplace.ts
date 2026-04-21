@@ -8,6 +8,9 @@ export async function fetchMarketplaceOpportunities(
   accessToken?: string
 ): Promise<MarketplaceOpportunity[]> {
   try {
+    // Opportunities require authentication
+    if (!accessToken) return [];
+
     const res = await postJson<{ aggregate: unknown; aiInsights?: unknown }, { success: boolean; data: MarketplaceOpportunity[] }>(
       "/marketplace/opportunities/derive",
       { aggregate, aiInsights },
@@ -18,7 +21,8 @@ export async function fetchMarketplaceOpportunities(
     }
     return res.data;
   } catch (error) {
-    console.error("Failed to load opportunities dynamically", error);
+    // Log message only to avoid Next.js dev overlay catching the full Error object
+    console.warn("Failed to load opportunities dynamically (e.g. not logged in)");
     return [];
   }
 }

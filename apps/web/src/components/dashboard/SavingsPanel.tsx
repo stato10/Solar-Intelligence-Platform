@@ -1,4 +1,4 @@
-import { Coins, TrendingUp, Target } from "lucide-react";
+import { Coins, TrendingUp, TrendingDown, Target } from "lucide-react";
 import type { SavingsSummaryVm } from "@/lib/view-models/dashboard";
 
 interface SavingsPanelProps {
@@ -49,6 +49,28 @@ export function SavingsPanel({ savings }: SavingsPanelProps) {
             {savings.yearlySavings}
           </p>
         </div>
+
+        {/* Maintenance leakage (from intelligence) */}
+        {savings.maintenanceLeakage && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+            <TrendingDown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+            <p className="text-xs">
+              <span className="font-medium text-amber-600 dark:text-amber-400">{savings.maintenanceLeakage}</span>
+              <span className="text-muted-foreground"> lost monthly to maintenance</span>
+            </p>
+          </div>
+        )}
+
+        {/* Headroom (from intelligence) */}
+        {savings.headroom && (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+            <p className="text-xs">
+              <span className="font-medium text-emerald-600 dark:text-emerald-400">{savings.headroom}</span>
+              <span className="text-muted-foreground"> additional savings possible</span>
+            </p>
+          </div>
+        )}
 
         {/* Opportunity */}
         <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
