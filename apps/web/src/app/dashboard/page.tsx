@@ -52,7 +52,7 @@ export default async function DashboardPage() {
     try {
       opportunities = await fetchMarketplaceOpportunities(dashboard, aiInsights ?? undefined, accessToken);
     } catch (oppError) {
-      console.error("Failed to load opportunities dynamically, continuing without them", oppError);
+      console.warn("Failed to load opportunities dynamically, continuing without them");
     }
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown dashboard error";

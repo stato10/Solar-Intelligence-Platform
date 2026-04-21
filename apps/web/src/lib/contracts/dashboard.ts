@@ -36,6 +36,96 @@ export interface DashboardRecommendation {
   sourceModule: string;
 }
 
+// ---------------------------------------------------------------------------
+// Intelligence Layer — backend-derived, additively attached to the aggregate
+// response. Frontend view-models prefer this when present; otherwise fall
+// back to local derivation for backward compatibility.
+// ---------------------------------------------------------------------------
+export type IntelligenceStatusLevel = "good" | "warning" | "critical";
+
+export type IntelligenceMoneyPeriod =
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "recoverable";
+
+export type IntelligenceCtaType =
+  | "cleaning"
+  | "optimization"
+  | "monitoring"
+  | "battery"
+  | "ev"
+  | "automation"
+  | "general";
+
+export type IntelligenceAlertCategory =
+  | "maintenance"
+  | "weather"
+  | "production"
+  | "financial";
+
+export type IntelligenceOpportunityType =
+  | "cleaning"
+  | "battery"
+  | "ev"
+  | "automation";
+
+export type IntelligenceConfidence = "low" | "medium" | "high";
+
+export interface IntelligenceStatusBlock {
+  level: IntelligenceStatusLevel;
+  statusLabel: string;
+  headline: string;
+  primaryCause: string;
+  moneyImpactIls: number;
+  moneyPeriod: IntelligenceMoneyPeriod;
+  cta: {
+    label: string;
+    type: IntelligenceCtaType;
+  };
+}
+
+export interface IntelligenceProfitBlock {
+  dailySavingsIls: number;
+  monthlySavingsIls: number;
+  yearlySavingsIls: number;
+  maintenanceLeakageMonthlyIls: number;
+  exportValueDailyIls: number;
+  selfConsumptionValueDailyIls: number;
+  currentMonthlyIls: number;
+  optimalMonthlyIls: number;
+  headroomMonthlyIls: number;
+}
+
+export interface IntelligenceAlertItem {
+  id: string;
+  severity: "low" | "moderate" | "high";
+  category: IntelligenceAlertCategory;
+  title: string;
+  message: string;
+  actionHint?: string;
+  moneyImpactIls?: number;
+}
+
+export interface IntelligenceOpportunityItem {
+  id: string;
+  type: IntelligenceOpportunityType;
+  title: string;
+  description: string;
+  estimatedValueIls: number;
+  confidence: IntelligenceConfidence;
+  priority: number;
+}
+
+export interface DashboardIntelligence {
+  status: IntelligenceStatusBlock;
+  profit: IntelligenceProfitBlock;
+  alerts: IntelligenceAlertItem[];
+  opportunities: IntelligenceOpportunityItem[];
+  generatedAt: string;
+}
+
 export interface DashboardAggregateData {
   siteId: string;
   siteName?: string;
@@ -96,6 +186,12 @@ export interface DashboardAggregateData {
     solar: string;
     engine: string;
   };
+  /**
+   * Optional Intelligence Layer block. Added additively by the backend.
+   * Older clients and older cached snapshots may omit this field, so
+   * all consumers MUST treat it as optional.
+   */
+  intelligence?: DashboardIntelligence;
 }
 
 export type DashboardAggregateSuccessEnvelope = ApiSuccessEnvelope<DashboardAggregateData>;

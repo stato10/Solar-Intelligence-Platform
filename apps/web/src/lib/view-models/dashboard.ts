@@ -1,4 +1,4 @@
-import type { DashboardAggregateData } from "@/lib/contracts";
+import type { DashboardAggregateData, DashboardIntelligence } from "@/lib/contracts";
 import {
   formatCurrency,
   formatPercent,
@@ -30,7 +30,7 @@ export interface HeroInsightVm {
   /** Primary CTA text */
   ctaLabel: string;
   /** Type of CTA for future lead routing */
-  ctaType: "cleaning" | "optimization" | "monitoring" | "general";
+  ctaType: "cleaning" | "optimization" | "monitoring" | "battery" | "ev" | "automation" | "general";
 }
 
 // ---------------------------------------------------------------------------
@@ -68,6 +68,8 @@ export interface MaintenanceSummaryVm {
     type: string;
     severity: "low" | "moderate" | "high";
     message: string;
+    actionHint?: string;
+    moneyImpact?: string;
   }>;
 }
 
@@ -80,6 +82,10 @@ export interface SavingsSummaryVm {
   yearlySavings: string;
   opportunityScore: string;
   opportunityValue: string;
+  /** New: maintenance leakage from intelligence */
+  maintenanceLeakage?: string;
+  /** New: current vs optimal gap */
+  headroom?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,14 +127,37 @@ export interface DashboardPageViewModel {
 }
 
 // ---------------------------------------------------------------------------
-// Hero derivation logic
+// Intelligence-first Hero derivation
 // ---------------------------------------------------------------------------
-function deriveHero(data: DashboardAggregateData): HeroInsightVm {
+function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm {
+  const status = intel.status;
+  const PERIOD_LABELS: Record<string, string> = {
+    daily: "daily impact",
+    weekly: "weekly impact",
+    monthly: "monthly impact",
+    yearly: "yearly impact",
+    recoverable: "recoverable value",
+  };
+
+  return {
+    headline: status.headline,
+    explanation: status.primaryCause,
+    moneyImpact: formatCurrency(status.moneyImpactIls),
+    moneyPeriod: PERIOD_LABELS[status.moneyPeriod] ?? status.moneyPeriod,
+    status: status.level as SemanticStatus,
+    statusLabel: status.statusLabel,
+    ctaLabel: status.cta.label,
+    ctaType: status.cta.type as HeroInsightVm["ctaType"],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Fallback: client-side Hero derivation (for old cached snapshots)
+// ---------------------------------------------------------------------------
+function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
   const devPercent = data.benchmark.productionDeviationPercent;
-  const status = deviationToStatus(devPercent);
   const cleaningRec = data.soiling.cleaningRecommended;
 
-  // Pick the most impactful headline
   if (cleaningRec && Math.abs(devPercent) > 5) {
     return {
       headline: "Cleaning recommended — production is below expected",
@@ -168,7 +197,6 @@ function deriveHero(data: DashboardAggregateData): HeroInsightVm {
     };
   }
 
-  // Everything is fine
   return {
     headline: "Your system is performing well",
     explanation: `Production is within expected range. ${data.benchmark.insight}`,
@@ -187,9 +215,49 @@ function deriveHero(data: DashboardAggregateData): HeroInsightVm {
 export function toDashboardPageViewModel(data: DashboardAggregateData): DashboardPageViewModel {
   const devPercent = data.benchmark.productionDeviationPercent;
   const devStatus = deviationToStatus(devPercent);
+  const intel = data.intelligence;
+
+  // Prefer backend intelligence for hero; fall back to client-side derivation
+  const hero = intel
+    ? deriveHeroFromIntelligence(intel)
+    : deriveHeroFallback(data);
+
+  // Build intelligence-enriched alerts for the maintenance summary
+  const intelligenceAlerts = intel?.alerts ?? [];
+  const maintenanceAlerts = intelligenceAlerts.filter(
+    (a) => a.category === "maintenance" || a.category === "production"
+  );
+
+  // Merge raw risk alerts with intelligence alerts for richer display
+  const mergedAlerts = maintenanceAlerts.length > 0
+    ? maintenanceAlerts.map((a) => ({
+        id: a.id,
+        type: a.category,
+        severity: a.severity,
+        message: a.message,
+        actionHint: a.actionHint,
+        moneyImpact: a.moneyImpactIls ? formatCurrency(a.moneyImpactIls) : undefined,
+      }))
+    : data.risks.alerts.map((a, i) => ({
+        id: `alert-${i}`,
+        type: a.riskType,
+        severity: a.severity,
+        message: a.message,
+      }));
+
+  // Build savings with intelligence profit data when available
+  const savings: SavingsSummaryVm = {
+    dailySavings: formatCurrency(intel?.profit.dailySavingsIls ?? data.financial.dailyEstimatedSavings),
+    monthlySavings: formatCurrency(intel?.profit.monthlySavingsIls ?? data.financial.monthlyEstimatedSavings),
+    yearlySavings: formatCurrency(intel?.profit.yearlySavingsIls ?? data.financial.yearlyOptimizationPotential),
+    opportunityScore: formatScore(data.optimization.opportunityScore),
+    opportunityValue: formatCurrency(data.optimization.estimatedValue),
+    maintenanceLeakage: intel ? formatCurrency(intel.profit.maintenanceLeakageMonthlyIls) : undefined,
+    headroom: intel ? formatCurrency(intel.profit.headroomMonthlyIls) : undefined,
+  };
 
   return {
-    hero: deriveHero(data),
+    hero,
 
     performance: {
       expected: {
@@ -220,22 +288,11 @@ export function toDashboardPageViewModel(data: DashboardAggregateData): Dashboar
       heatScore: formatScore(data.heat.score),
       heatLoss: formatPercent(data.heat.estimatedLossPercent),
       heatWindow: formatTimeRange(data.heat.peakHeatWindowStart, data.heat.peakHeatWindowEnd),
-      alertCount: data.risks.alerts.length,
-      alerts: data.risks.alerts.map((a, i) => ({
-        id: `alert-${i}`,
-        type: a.riskType,
-        severity: a.severity,
-        message: a.message,
-      })),
+      alertCount: mergedAlerts.length,
+      alerts: mergedAlerts,
     },
 
-    savings: {
-      dailySavings: formatCurrency(data.financial.dailyEstimatedSavings),
-      monthlySavings: formatCurrency(data.financial.monthlyEstimatedSavings),
-      yearlySavings: formatCurrency(data.financial.yearlyOptimizationPotential),
-      opportunityScore: formatScore(data.optimization.opportunityScore),
-      opportunityValue: formatCurrency(data.optimization.estimatedValue),
-    },
+    savings,
 
     usageWindow: {
       windowText: formatTimeRange(

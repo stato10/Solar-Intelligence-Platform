@@ -1,5 +1,20 @@
-import type { DashboardAggregateData, DashboardRecommendation } from "@/lib/contracts";
+import type {
+  DashboardAggregateData,
+  DashboardRecommendation,
+  IntelligenceOpportunityItem,
+} from "@/lib/contracts";
+import {
+  formatCurrency,
+  formatKwh,
+  formatPercent,
+  formatDate,
+  formatScore,
+  formatTimeRange,
+} from "@/lib/utils/formatters";
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 export interface SavingsRecommendationVm {
   id: string;
   title: string;
@@ -11,6 +26,27 @@ export interface SavingsRecommendationVm {
   isValueRelated: boolean;
 }
 
+export interface ProfitVsLossVm {
+  currentMonthly: string;
+  optimalMonthly: string;
+  headroom: string;
+  maintenanceLeakage: string;
+  exportValueDaily: string;
+  selfConsumptionValueDaily: string;
+  /** 0-100 ratio: current / optimal */
+  efficiencyPercent: number;
+}
+
+export interface UpgradeOpportunityVm {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  estimatedValue: string;
+  confidence: string;
+  priority: number;
+}
+
 export interface SavingsPageViewModel {
   header: {
     title: string;
@@ -20,17 +56,14 @@ export interface SavingsPageViewModel {
     siteId: string;
     generatedAt: string;
     source: string;
-    providers: {
-      weather: string;
-      solar: string;
-      engine: string;
-    };
+    providers: { weather: string; solar: string; engine: string };
   };
   financial: {
     dailyEstimatedSavingsText: string;
     monthlyEstimatedSavingsText: string;
     yearlyOptimizationPotentialText: string;
   };
+  profitVsLoss: ProfitVsLossVm;
   optimization: {
     estimatedValueText: string;
     opportunityScoreText: string;
@@ -47,6 +80,7 @@ export interface SavingsPageViewModel {
   };
   selfConsumption: {
     scoreText: string;
+    scoreValue: number;
     estimatedSavingsText: string;
     recommendedWindowText: string;
     actions: string[];
@@ -55,17 +89,12 @@ export interface SavingsPageViewModel {
     valueRelated: SavingsRecommendationVm[];
     other: SavingsRecommendationVm[];
   };
+  opportunities: UpgradeOpportunityVm[];
 }
 
-import {
-  formatCurrency,
-  formatKwh,
-  formatPercent,
-  formatDate,
-  formatScore,
-  formatTimeRange
-} from "@/lib/utils/formatters";
-
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 function isValueRelatedRecommendation(item: DashboardRecommendation): boolean {
   const signal = `${item.type} ${item.sourceModule}`.toLowerCase();
   return (
@@ -88,17 +117,53 @@ function toRecommendationVm(item: DashboardRecommendation): SavingsRecommendatio
     typeLabel: item.type,
     sourceModuleLabel: item.sourceModule,
     validityText: formatTimeRange(formatDate(item.validFrom), formatDate(item.validUntil)),
-    isValueRelated: isValueRelatedRecommendation(item)
+    isValueRelated: isValueRelatedRecommendation(item),
   };
 }
 
+function toOpportunityVm(item: IntelligenceOpportunityItem): UpgradeOpportunityVm {
+  return {
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    description: item.description,
+    estimatedValue: formatCurrency(item.estimatedValueIls),
+    confidence: item.confidence,
+    priority: item.priority,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Main mapper
+// ---------------------------------------------------------------------------
 export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPageViewModel {
   const recommendationItems = data.optimization.recommendations.map(toRecommendationVm);
+  const intel = data.intelligence;
+
+  // Build Profit vs Loss from intelligence or calculated fallback
+  const currentMonthly = intel?.profit.currentMonthlyIls ?? data.financial.monthlyEstimatedSavings;
+  const optimalMonthly = intel?.profit.optimalMonthlyIls ?? (data.financial.monthlyEstimatedSavings + data.optimization.estimatedValue);
+  const headroom = intel?.profit.headroomMonthlyIls ?? data.optimization.estimatedValue;
+  const leakage = intel?.profit.maintenanceLeakageMonthlyIls ?? 0;
+  const exportDaily = intel?.profit.exportValueDailyIls ?? 0;
+  const selfConsDaily = intel?.profit.selfConsumptionValueDailyIls ?? data.selfConsumption.estimatedSavingsIls;
+
+  const efficiencyPercent = optimalMonthly > 0
+    ? Math.round((currentMonthly / optimalMonthly) * 100)
+    : 100;
+
+  // Dynamic subtitle
+  const subtitle = leakage > 0
+    ? `You're saving ${formatCurrency(currentMonthly)}/month. With maintenance optimization, you could reach ${formatCurrency(optimalMonthly)}/month.`
+    : `You're saving ${formatCurrency(currentMonthly)}/month. Your system is near optimal.`;
+
+  // Map intelligence opportunities
+  const opportunities = (intel?.opportunities ?? []).map(toOpportunityVm);
 
   return {
     header: {
       title: "Savings",
-      subtitle: "Deterministic financial and optimization signals from canonical aggregate data."
+      subtitle,
     },
     context: {
       siteId: data.siteId,
@@ -107,17 +172,26 @@ export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPag
       providers: {
         weather: data.providers.weather,
         solar: data.providers.solar,
-        engine: data.providers.engine
-      }
+        engine: data.providers.engine,
+      },
     },
     financial: {
       dailyEstimatedSavingsText: formatCurrency(data.financial.dailyEstimatedSavings),
       monthlyEstimatedSavingsText: formatCurrency(data.financial.monthlyEstimatedSavings),
-      yearlyOptimizationPotentialText: formatCurrency(data.financial.yearlyOptimizationPotential)
+      yearlyOptimizationPotentialText: formatCurrency(data.financial.yearlyOptimizationPotential),
+    },
+    profitVsLoss: {
+      currentMonthly: formatCurrency(currentMonthly),
+      optimalMonthly: formatCurrency(optimalMonthly),
+      headroom: formatCurrency(headroom),
+      maintenanceLeakage: formatCurrency(leakage),
+      exportValueDaily: formatCurrency(exportDaily),
+      selfConsumptionValueDaily: formatCurrency(selfConsDaily),
+      efficiencyPercent,
     },
     optimization: {
       estimatedValueText: formatCurrency(data.optimization.estimatedValue),
-      opportunityScoreText: formatScore(data.optimization.opportunityScore)
+      opportunityScoreText: formatScore(data.optimization.opportunityScore),
     },
     benchmark: {
       expectedProductionText: formatKwh(data.benchmark.expectedProductionKwh),
@@ -127,20 +201,22 @@ export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPag
       productionDeviationText: formatPercent(data.benchmark.productionDeviationPercent),
       exportDeviationText: formatPercent(data.benchmark.exportDeviationPercent),
       performanceStatus: data.benchmark.performanceStatus,
-      insight: data.benchmark.insight
+      insight: data.benchmark.insight,
     },
     selfConsumption: {
       scoreText: formatScore(data.selfConsumption.selfConsumptionScore),
+      scoreValue: data.selfConsumption.selfConsumptionScore,
       estimatedSavingsText: formatCurrency(data.selfConsumption.estimatedSavingsIls),
       recommendedWindowText: formatTimeRange(
-        formatDate(data.selfConsumption.recommendedUsageWindow.start),
-        formatDate(data.selfConsumption.recommendedUsageWindow.end)
+        data.selfConsumption.recommendedUsageWindow.start,
+        data.selfConsumption.recommendedUsageWindow.end
       ),
-      actions: data.selfConsumption.actions
+      actions: data.selfConsumption.actions,
     },
     recommendations: {
       valueRelated: recommendationItems.filter((item) => item.isValueRelated),
-      other: recommendationItems.filter((item) => !item.isValueRelated)
-    }
+      other: recommendationItems.filter((item) => !item.isValueRelated),
+    },
+    opportunities,
   };
 }
