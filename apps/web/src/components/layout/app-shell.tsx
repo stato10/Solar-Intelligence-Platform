@@ -8,11 +8,13 @@ import { SiteSelector } from "./site-selector";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
-  { href: "/onboarding", label: "Setup Site" },
+  { href: "/onboarding", label: "Setup" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/maintenance", label: "Maintenance" },
   { href: "/savings", label: "Savings" },
   { href: "/alerts", label: "Alerts" },
+  { href: "/automation", label: "Automation" },
+  { href: "/opportunities", label: "Upgrades" },
   { href: "/settings", label: "Settings" }
 ] as const;
 

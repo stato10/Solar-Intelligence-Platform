@@ -77,13 +77,15 @@ export class DashboardService {
             temperature: weatherSnapshot.current.temperature,
             cloudCover: weatherSnapshot.current.cloudCover,
             windSpeed: weatherSnapshot.current.windSpeed,
-            precipitation: weatherSnapshot.current.precipitation
+            precipitation: weatherSnapshot.current.precipitation,
+            ghi: weatherSnapshot.current.ghi
           }
         : {
             temperature: 25,
             cloudCover: 50,
             windSpeed: 3,
-            precipitation: 0
+            precipitation: 0,
+            ghi: 1000
           };
 
       const solarForEngine = solarBaseline
@@ -133,7 +135,20 @@ export class DashboardService {
       };
 
       // ─── Step 4b: Attach Intelligence Layer (additive, non-breaking) ────
-      const response = this.withIntelligence(baseResponse);
+      const response = this.withIntelligence({
+        ...baseResponse,
+        engineContext: {
+          ghi: weatherForEngine.ghi ?? 1000,
+          cloudCover: weatherForEngine.cloudCover,
+          temperature: weatherForEngine.temperature,
+          pm10: 45, // Hardcoded for MVP until OpenWeather dust integration
+          daysWithoutRain: 5 // Hardcoded for MVP until trend history is aggregated
+        },
+        engineTariff: {
+          importRate: payload.tariff?.importRate ?? 0.6,
+          exportRate: payload.tariff?.exportRate ?? 0.2
+        }
+      });
 
       // ─── Step 5: Persist to database (fire-and-forget) ────────────
       this.persistSnapshot(

@@ -1,4 +1,4 @@
-import { Activity, ArrowDownRight, ArrowUpRight, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { Target, Users, Activity, ArrowDownRight, ArrowUpRight, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import type { PerformanceVm } from "@/lib/view-models/dashboard";
 import type { SemanticStatus } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
@@ -32,9 +32,9 @@ function DeviationIcon({ value }: { value: string }) {
 
 export function PerformanceStatsGrid({ performance }: PerformanceStatsGridProps) {
   const cards = [
-    { ...performance.expected, icon: ArrowUpRight },
+    { ...performance.optimal, icon: Target },
+    { ...performance.areaAverage, icon: Users },
     { ...performance.actual, icon: Activity },
-    { ...performance.deviation, icon: ArrowDownRight },
   ];
 
   const perfBadge = performance.performanceStatus === "good"

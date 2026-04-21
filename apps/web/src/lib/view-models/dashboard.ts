@@ -43,9 +43,9 @@ export interface PerformanceCardVm {
 }
 
 export interface PerformanceVm {
-  expected: PerformanceCardVm;
+  optimal: PerformanceCardVm;
+  areaAverage: PerformanceCardVm;
   actual: PerformanceCardVm;
-  deviation: PerformanceCardVm;
   performanceStatus: "good" | "underperforming" | "overexporting";
   insight: string;
 }
@@ -260,19 +260,19 @@ export function toDashboardPageViewModel(data: DashboardAggregateData): Dashboar
     hero,
 
     performance: {
-      expected: {
-        label: "Expected Production",
+      optimal: {
+        label: "Optimal (100%)",
         value: formatKwh(data.benchmark.expectedProductionKwh),
         status: "good",
       },
-      actual: {
-        label: "Actual Production",
-        value: formatKwh(data.benchmark.actualProductionKwh),
-        status: devStatus,
+      areaAverage: {
+        label: "Area Avg (~97%)",
+        value: formatKwh(data.benchmark.expectedProductionKwh * 0.97),
+        status: "good",
       },
-      deviation: {
-        label: "Deviation",
-        value: formatPercent(devPercent),
+      actual: {
+        label: `You (${formatPercent(devPercent)})`,
+        value: formatKwh(data.benchmark.actualProductionKwh),
         status: devStatus,
       },
       performanceStatus: data.benchmark.performanceStatus,

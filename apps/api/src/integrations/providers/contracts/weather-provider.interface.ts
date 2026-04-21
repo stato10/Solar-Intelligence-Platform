@@ -26,6 +26,7 @@ export interface WeatherHourlyEntry {
   snowfall: number;
   humidity: number;
   uvIndex?: number;
+  ghi?: number;               // W/m² — global horizontal irradiance
   directRadiation?: number;   // W/m² — direct solar irradiance
   diffuseRadiation?: number;  // W/m² — diffuse solar irradiance
   weatherCode?: number;       // WMO weather interpretation code
@@ -58,6 +59,7 @@ export interface WeatherSnapshotOutput {
   humidity?: number;
   snowfall?: number;
   uvIndex?: number;
+  ghi?: number;
   hourlyForecast?: WeatherHourlyEntry[];
   dailyForecast?: WeatherDailyEntry[];
 }
