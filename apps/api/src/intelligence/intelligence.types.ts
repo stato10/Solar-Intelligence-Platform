@@ -165,6 +165,19 @@ export interface IntelligenceInput {
     estimatedSavingsIls: number;
     actions: string[];
   };
+  // Internal context for engines
+  engineContext?: {
+    ghi?: number;
+    cloudCover?: number;
+    temperature?: number;
+    pm10?: number;
+    daysWithoutRain?: number;
+    actualKwh?: number; // to signal real vs estimated
+  };
+  engineTariff?: {
+    importRate: number;
+    exportRate: number;
+  };
 }
 
 export function roundCurrency(value: number): number {

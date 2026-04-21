@@ -22,6 +22,7 @@ interface OpenMeteoHourly {
   weather_code?: number[];
   direct_radiation?: number[];
   diffuse_radiation?: number[];
+  shortwave_radiation?: number[];
 }
 
 interface OpenMeteoDaily {
@@ -89,7 +90,8 @@ export class OpenMeteoWeatherProvider
       "uv_index",
       "weather_code",
       "direct_radiation",
-      "diffuse_radiation"
+      "diffuse_radiation",
+      "shortwave_radiation"
     ].join(",");
 
     const dailyParams = [
@@ -140,6 +142,7 @@ export class OpenMeteoWeatherProvider
       humidity: this.safeGet(response.hourly?.relative_humidity_2m, currentIdx),
       snowfall: this.safeGet(response.hourly?.snowfall, currentIdx),
       uvIndex: this.safeGet(response.hourly?.uv_index, currentIdx),
+      ghi: this.safeGet(response.hourly?.shortwave_radiation, currentIdx),
       alerts: [], // Open-Meteo doesn't provide alert objects — alerts come from OpenWeather
       hourlyForecast,
       dailyForecast
@@ -162,6 +165,7 @@ export class OpenMeteoWeatherProvider
         snowfall: hourly.snowfall?.[i] ?? 0,
         humidity: hourly.relative_humidity_2m?.[i] ?? 50,
         uvIndex: hourly.uv_index?.[i],
+        ghi: hourly.shortwave_radiation?.[i],
         directRadiation: hourly.direct_radiation?.[i],
         diffuseRadiation: hourly.diffuse_radiation?.[i],
         weatherCode: hourly.weather_code?.[i]

@@ -38,6 +38,7 @@ export interface CanonicalWeatherSnapshot {
     humidity: number;
     snowfall: number;
     uvIndex: number;
+    ghi: number;
   };
   hourlyForecast: WeatherHourlyEntry[];
   dailyForecast: WeatherDailyEntry[];
@@ -83,7 +84,8 @@ export class WeatherIngestionService {
           precipitation: this.normalizer.normalizePrecipitation(rawSnapshot.precipitation),
           humidity: this.normalizer.normalizeHumidity(rawSnapshot.humidity),
           snowfall: this.normalizer.normalizeSnowfall(rawSnapshot.snowfall),
-          uvIndex: this.normalizer.normalizeUvIndex(rawSnapshot.uvIndex)
+          uvIndex: this.normalizer.normalizeUvIndex(rawSnapshot.uvIndex),
+          ghi: this.normalizer.safeNumber(rawSnapshot.ghi)
         },
         hourlyForecast: this.normalizer.normalizeArray(rawSnapshot.hourlyForecast),
         dailyForecast: this.normalizer.normalizeArray(rawSnapshot.dailyForecast),
