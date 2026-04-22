@@ -12,6 +12,28 @@ import {
 } from "@/lib/utils/formatters";
 
 // ---------------------------------------------------------------------------
+// Shared UI contracts (spec: docs/redesign/01-state-contracts.md)
+// ---------------------------------------------------------------------------
+/**
+ * Five-value product state used to route hero copy, action groupings,
+ * and empty-state treatments across every page. Superset of SemanticStatus
+ * so existing components keep working.
+ */
+export type SystemState =
+  | "healthy"       // all metrics within expected ranges
+  | "optimization"  // no faults, but measurable upside remains
+  | "warning"       // soft degradation, action recommended
+  | "critical"      // active loss, action required
+  | "no-data";      // site not yet connected / ingestion gap
+
+/**
+ * Threshold in N.IS/month below which a healthy system is not flagged as
+ * having meaningful optimization headroom. Kept low enough to surface the
+ * "you still have room to grow" message when relevant.
+ */
+const OPTIMIZATION_HEADROOM_MIN_ILS = 10;
+
+// ---------------------------------------------------------------------------
 // Section 1 — Hero Insight
 // ---------------------------------------------------------------------------
 export interface HeroInsightVm {
@@ -23,8 +45,16 @@ export interface HeroInsightVm {
   moneyImpact: string;
   /** Period label for the money figure */
   moneyPeriod: string;
-  /** Semantic status for visual color coding */
+  /** Semantic status for visual color coding (legacy 3-value) */
   status: SemanticStatus;
+  /**
+   * Five-value system state used by the redesigned hero and action lanes.
+   * Maps onto but is richer than `status`. Safe to ignore for legacy
+   * consumers; `status` still drives existing styling paths.
+   */
+  systemState: SystemState;
+  /** Optimization headroom in N.IS/month, used by optimization/healthy hero copy */
+  optimizationHeadroomIls: number;
   /** Status label for badge */
   statusLabel: string;
   /** Primary CTA text */
@@ -129,6 +159,24 @@ export interface DashboardPageViewModel {
 }
 
 // ---------------------------------------------------------------------------
+// SystemState derivation (spec: docs/redesign/01-state-contracts.md §1)
+// ---------------------------------------------------------------------------
+/**
+ * Resolve the five-value SystemState from the legacy SemanticStatus plus the
+ * optimization headroom signal. Precedence: critical > warning > optimization > healthy.
+ * `no-data` is handled at the page boundary (when the aggregate is absent).
+ */
+function deriveSystemState(
+  legacyStatus: SemanticStatus,
+  optimizationHeadroomIls: number,
+): SystemState {
+  if (legacyStatus === "critical") return "critical";
+  if (legacyStatus === "warning") return "warning";
+  if (optimizationHeadroomIls >= OPTIMIZATION_HEADROOM_MIN_ILS) return "optimization";
+  return "healthy";
+}
+
+// ---------------------------------------------------------------------------
 // Intelligence-first Hero derivation
 // ---------------------------------------------------------------------------
 function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm {
@@ -141,12 +189,18 @@ function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm
     recoverable: "recoverable value",
   };
 
+  const legacyStatus = status.level as SemanticStatus;
+  const optimizationHeadroomIls = intel.profit?.headroomMonthlyIls ?? 0;
+  const systemState = deriveSystemState(legacyStatus, optimizationHeadroomIls);
+
   return {
     headline: status.headline,
     explanation: status.primaryCause,
     moneyImpact: formatCurrency(status.moneyImpactIls),
     moneyPeriod: PERIOD_LABELS[status.moneyPeriod] ?? status.moneyPeriod,
-    status: status.level as SemanticStatus,
+    status: legacyStatus,
+    systemState,
+    optimizationHeadroomIls,
     statusLabel: status.statusLabel,
     ctaLabel: status.cta.label,
     ctaType: status.cta.type as HeroInsightVm["ctaType"],
@@ -160,14 +214,18 @@ function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm
 function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
   const devPercent = data.benchmark.productionDeviationPercent;
   const cleaningRec = data.soiling.cleaningRecommended;
+  const optimizationHeadroomIls = data.optimization.estimatedValue ?? 0;
 
   if (cleaningRec && Math.abs(devPercent) > 5) {
+    const legacyStatus: SemanticStatus = "warning";
     return {
       headline: "Cleaning recommended — production is below expected",
       explanation: `Your system is underperforming by ${formatPercent(Math.abs(devPercent))}. Dust accumulation is the likely cause based on soiling analysis.`,
       moneyImpact: formatCurrency(data.optimization.estimatedValue),
       moneyPeriod: "recoverable value",
-      status: "warning",
+      status: legacyStatus,
+      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+      optimizationHeadroomIls,
       statusLabel: "Attention Needed",
       ctaLabel: "Schedule Cleaning",
       ctaType: "cleaning",
@@ -175,12 +233,15 @@ function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
   }
 
   if (Math.abs(devPercent) > 10) {
+    const legacyStatus: SemanticStatus = "critical";
     return {
       headline: "Significant production deviation detected",
       explanation: `Production is ${devPercent < 0 ? "below" : "above"} expected by ${formatPercent(Math.abs(devPercent))}. ${data.benchmark.insight}`,
       moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings),
       moneyPeriod: "monthly savings at risk",
-      status: "critical",
+      status: legacyStatus,
+      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+      optimizationHeadroomIls,
       statusLabel: "Action Required",
       ctaLabel: "Review Optimization",
       ctaType: "optimization",
@@ -188,24 +249,30 @@ function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
   }
 
   if (cleaningRec) {
+    const legacyStatus: SemanticStatus = "warning";
     return {
       headline: "Panel cleaning is recommended",
       explanation: data.soiling.explanation,
       moneyImpact: formatCurrency(data.optimization.estimatedValue),
       moneyPeriod: "optimization potential",
-      status: "warning",
+      status: legacyStatus,
+      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+      optimizationHeadroomIls,
       statusLabel: "Maintenance Suggested",
       ctaLabel: "Schedule Cleaning",
       ctaType: "cleaning",
     };
   }
 
+  const legacyStatus: SemanticStatus = "good";
   return {
     headline: "Your system is performing well",
     explanation: `Production is within expected range. ${data.benchmark.insight}`,
     moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings),
     moneyPeriod: "monthly estimated savings",
-    status: "good",
+    status: legacyStatus,
+    systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+    optimizationHeadroomIls,
     statusLabel: "On Track",
     ctaLabel: "View Details",
     ctaType: "general",
