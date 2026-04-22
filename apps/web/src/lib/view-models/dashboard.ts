@@ -31,6 +31,8 @@ export interface HeroInsightVm {
   ctaLabel: string;
   /** Type of CTA for future lead routing */
   ctaType: "cleaning" | "optimization" | "monitoring" | "battery" | "ev" | "automation" | "general";
+  /** Underlying reason for issues if any */
+  primaryCause?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,6 +150,7 @@ function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm
     statusLabel: status.statusLabel,
     ctaLabel: status.cta.label,
     ctaType: status.cta.type as HeroInsightVm["ctaType"],
+    primaryCause: status.primaryCause,
   };
 }
 

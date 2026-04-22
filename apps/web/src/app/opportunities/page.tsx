@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
 import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
 import { toOpportunitiesPageViewModel } from "@/lib/view-models/opportunities";
+import { MarketplaceCarousel } from "@/components/dashboard/MarketplaceCarousel";
 import { OpportunityCard } from "./_components/opportunity-card";
 import { ShoppingBag, Construction, Zap } from "lucide-react";
 import type { DashboardAggregateData } from "@/lib/contracts";
@@ -10,6 +11,7 @@ export default async function OpportunitiesPage() {
   let errorMessage: string | null = null;
   let vm: ReturnType<typeof toOpportunitiesPageViewModel> | null = null;
   let accessToken: string | undefined;
+  let rawOpportunities: any[] = [];
 
   try {
     const cookieStore = await cookies();
@@ -21,7 +23,7 @@ export default async function OpportunitiesPage() {
       : await fetchDashboardAggregate();
 
     // Call the dynamic marketplace engine to get the leads
-    const rawOpportunities = await fetchMarketplaceOpportunities(data, undefined, accessToken);
+    rawOpportunities = await fetchMarketplaceOpportunities(data, undefined, accessToken);
 
     vm = toOpportunitiesPageViewModel(data, rawOpportunities);
   } catch (err) {
@@ -75,6 +77,15 @@ export default async function OpportunitiesPage() {
             />
           ))}
         </div>
+      )}
+
+      {/* ─── Real Marketplace Carousel ──────────────────────────────────── */}
+      {vm.opportunities.length > 0 && (
+        <MarketplaceCarousel 
+          opportunities={rawOpportunities} 
+          siteId={vm.context.siteId} 
+          accessToken={accessToken} 
+        />
       )}
 
       {/* ─── Footer ───────────────────────────────────────────────── */}

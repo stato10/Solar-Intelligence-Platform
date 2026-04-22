@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
-import { OpportunityActionCard } from "./OpportunityActionCard";
+import { MarketplaceActionCard } from "./MarketplaceActionCard";
 
 interface HeroInsightCardProps {
   hero: HeroInsightVm;
@@ -77,37 +77,40 @@ export function HeroInsightCard({ hero, opportunities = [], siteId, siteName, ac
         </div>
 
         {/* Headline */}
-        <h1 className="max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
-          {hero.headline}
+        <h1 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mt-2 text-white">
+          {hero.status === "good" ? hero.headline : `💸 You are losing ${hero.moneyImpact}/month`}
         </h1>
 
         {/* Explanation */}
-        <p className="mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
-          {hero.explanation}
+        <p className="mt-4 max-w-2xl text-base text-slate-300 md:text-lg font-medium">
+          {hero.status === "good" 
+            ? hero.explanation 
+            : `Most of it is caused by ${hero.explanation || "dust buildup and environmental factors"}.`}
         </p>
 
-        {/* Money impact — the most important number */}
-        <div className="mt-6 flex flex-wrap items-end gap-6">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              {hero.moneyPeriod}
-            </p>
-            <p className={cn("mt-1 text-4xl font-bold tracking-tight md:text-5xl", config.accentClass)}>
-              {hero.moneyImpact}
-            </p>
+        {/* Secondary context / Sub-Headline if not good */}
+        {hero.status !== "good" && (
+          <div className="mt-4 flex flex-wrap items-end gap-6">
+            <div>
+              <p className="text-[12px] font-medium uppercase tracking-wider text-slate-400">
+                AI Detected Financial Leakage
+              </p>
+              <p className={cn("mt-1 text-4xl font-black tracking-tight", config.accentClass)}>
+                {hero.moneyImpact}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Primary CTA placeholder or action card */}
         <div className="mt-6">
           {hero.ctaType === "cleaning" && opportunities.find(o => o.topic === "cleaning") ? (
-            <OpportunityActionCard
-              title="Panel Cleaning Service"
-              message="Dust accumulation is causing significant production loss."
-              type="service"
-              topic="cleaning"
-              estimatedValue={hero.moneyImpact}
-              actionLabel="Request Cleaning Service"
+            <MarketplaceActionCard
+              title="Panel Cleaning Required"
+              cause="dust buildup on your panels"
+              monthlyLossIls={parseFloat(hero.moneyImpact.replace(/[^\d.]/g, '')) || 96}
+              type="cleaning"
+              actionLabel="Show Cleaning Providers"
               payload={{
                 siteId: siteId ?? "",
                 sourceType: "cleaning_recommendation",

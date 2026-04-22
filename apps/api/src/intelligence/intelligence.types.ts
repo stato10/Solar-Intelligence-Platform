@@ -90,6 +90,16 @@ export interface DashboardIntelligence {
   alerts: IntelligenceAlert[];
   opportunities: IntelligenceOpportunity[];
   generatedAt: string;
+  // Extended fields for detail views and engines
+  lossBreakdown?: any;
+  estimation?: any;
+  engineRecommendations?: any;
+  simulations?: any;
+  debug?: {
+    expected: number;
+    estimated: number;
+    factors: any;
+  };
 }
 
 /**
