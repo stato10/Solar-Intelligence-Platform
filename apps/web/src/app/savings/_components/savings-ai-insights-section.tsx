@@ -7,18 +7,56 @@ interface SavingsAiInsightsSectionProps {
   errorMessage: string | null;
 }
 
+import { Sparkles, ArrowRight, Zap, Target } from "lucide-react";
+
 function SavingsLineItemRow({ item }: { item: SavingsLineItem }) {
   const rangeText = formatBenefitRangeIlsMonthly(item.expectedBenefitRangeIlsMonthly);
+  
+  // Decide on an icon dynamically based on the title context
+  const getIcon = () => {
+    const titleLower = item.title.toLowerCase();
+    if (titleLower.includes('behavioral') || titleLower.includes('usage')) return <Zap className="h-4 w-4 text-amber-400" />;
+    if (titleLower.includes('maintenance') || titleLower.includes('soiling')) return <Sparkles className="h-4 w-4 text-sky-400" />;
+    return <Target className="h-4 w-4 text-indigo-400" />;
+  };
+
   return (
-    <li className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
-      <p className="font-medium">{item.title}</p>
-      <p className="text-xs text-muted-foreground">{item.message}</p>
-      {rangeText ? <p className="mt-1 text-xs text-muted-foreground">Estimated benefit: {rangeText}</p> : null}
-      <p className="mt-1 text-xs text-muted-foreground">{item.reason.text}</p>
-      <p className="mt-1 text-[11px] text-muted-foreground">
-        Sources: {formatSourceRefsForDisplay(item.reason.sourceRefs)}
-      </p>
-    </li>
+    <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-5 hover:border-slate-700 transition-colors shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex items-center justify-center rounded-lg bg-slate-800 p-2.5 shadow-inner">
+          {getIcon()}
+        </div>
+        
+        <div className="flex-1 space-y-4">
+          {/* Issue & Impact */}
+          <div>
+            <h4 className="text-base font-bold text-slate-100">{item.title}</h4>
+            <p className="text-sm text-slate-400 mt-1 leading-relaxed">{item.reason.text}</p>
+          </div>
+          
+          {/* Action & Value Box */}
+          <div className="flex flex-col sm:flex-row gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800/80">
+            <div className="flex-1">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1.5">
+                <ArrowRight className="h-3 w-3" /> Recommended Action
+              </span>
+              <span className="text-sm font-medium text-slate-300">{item.message}</span>
+            </div>
+            
+            {rangeText && (
+              <div className="sm:border-l sm:border-slate-800 pl-0 sm:pl-4">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Est. Financial Gain
+                </span>
+                <span className="text-sm font-bold text-emerald-400">
+                  {rangeText} / month
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -32,17 +70,17 @@ function ExplanationBlock({
   items: SavingsLineItem[];
 }) {
   return (
-    <article className="glass-card rounded-2xl p-5">
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</p>
-      <p className="mt-2 text-sm">{summary}</p>
+    <article className="glass-card rounded-2xl p-6">
+      <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">{title}</p>
+      <p className="mt-2 text-sm text-slate-300">{summary}</p>
       {items.length ? (
-        <ul className="mt-3 space-y-2 text-sm">
+        <div className="mt-5 space-y-4">
           {items.map((item) => (
             <SavingsLineItemRow key={item.id} item={item} />
           ))}
-        </ul>
+        </div>
       ) : (
-        <p className="mt-2 text-sm text-muted-foreground">No line items in this section.</p>
+        <p className="mt-4 text-sm text-muted-foreground italic">No active items for this section.</p>
       )}
     </article>
   );

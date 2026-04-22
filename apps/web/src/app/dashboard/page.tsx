@@ -16,6 +16,10 @@ import { MaintenancePanel } from "@/components/dashboard/MaintenancePanel";
 import { SavingsPanel } from "@/components/dashboard/SavingsPanel";
 import { UsageWindowCard } from "@/components/dashboard/UsageWindowCard";
 import { AiInsightsPanel } from "@/components/dashboard/AiInsightsPanel";
+import { LossIntelligenceCard } from "@/components/dashboard/LossIntelligenceCard";
+import { WhatIfSimulator } from "@/components/dashboard/WhatIfSimulator";
+import { HardwareConnectCta } from "@/components/dashboard/HardwareConnectCta";
+import { OnboardingDialog } from "@/components/dashboard/OnboardingDialog";
 
 export default async function DashboardPage() {
   let dashboard: DashboardAggregateData | null = null;
@@ -77,46 +81,80 @@ export default async function DashboardPage() {
     );
   }
 
+  const lossBreakdown = dashboard?.intelligence?.lossBreakdown;
+  const headroomMonthlyIls = dashboard?.intelligence?.profit?.headroomMonthlyIls ?? 0;
+  const currentMonthlyIls = dashboard?.intelligence?.profit?.currentMonthlyIls ?? 0;
+  const maintenanceLeakage = lossBreakdown?.totalMoneyLossIls ?? 0;
+  const mode = lossBreakdown?.mode ?? "forecast";
+
   return (
-    <section className="space-y-6 pb-12">
-      {/* 1. Hero Insight (Above the fold) */}
-      <HeroInsightCard 
-        hero={dashboardVm.hero} 
-        opportunities={opportunities} 
-        siteId={dashboardVm.siteId}
-        siteName={dashboardVm.siteName}
-        accessToken={accessToken}
-      />
+    <div className="relative pb-12">
+      <OnboardingDialog />
+      <div id="connect" className="scroll-mt-24"></div>
 
-      {/* 2. Performance Stats Grid */}
-      <PerformanceStatsGrid performance={dashboardVm.performance} />
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8">
+        
+        {/* LEFT COLUMN: The Main Action Engine */}
+        <section className="space-y-6">
+          {/* 1. Hero Insight (Above the fold) */}
+          <HeroInsightCard 
+            hero={dashboardVm.hero} 
+            opportunities={opportunities} 
+            siteId={dashboardVm.siteId}
+            siteName={dashboardVm.siteName}
+            accessToken={accessToken}
+          />
 
-      {/* 3 & 4. Maintenance and Savings (Below the fold, 2-column) */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <MaintenancePanel maintenance={dashboardVm.maintenance} />
-        <SavingsPanel savings={dashboardVm.savings} />
-      </div>
+          {/* 2. Loss Tracking Engine Hook */}
+          <LossIntelligenceCard lossBreakdown={lossBreakdown} />
+          
+          {mode !== "real" && (
+            <HardwareConnectCta />
+          )}
 
-      {/* 5. Usage Optimization Window */}
-      <UsageWindowCard 
-        usageWindow={dashboardVm.usageWindow} 
-        opportunities={opportunities} 
-        siteId={dashboardVm.siteId}
-        accessToken={accessToken}
-      />
+          {/* AI Decisions Context */}
+          <div className="pt-4">
+            <h2 className="mb-4 text-lg font-semibold tracking-tight text-white">AI Analysis & Decisions</h2>
+            <EnergyDecisionsSection 
+              decisions={aiInsights?.energyDecisions ?? []} 
+              opportunities={opportunities}
+              siteId={dashboardVm.siteId}
+              accessToken={accessToken}
+            />
+          </div>
 
-      {/* 6. AI Insights Panel (Collapsible) */}
-      <div className="pt-2">
-        <h2 className="mb-4 text-lg font-semibold tracking-tight">AI Analysis & Decisions</h2>
-        <div className="space-y-6">
-          <EnergyDecisionsSection 
-            decisions={aiInsights?.energyDecisions ?? []} 
-            opportunities={opportunities}
+          <div className="grid gap-6 md:grid-cols-2 pt-4">
+            <MaintenancePanel maintenance={dashboardVm.maintenance} />
+            <SavingsPanel savings={dashboardVm.savings} />
+          </div>
+        </section>
+
+        {/* RIGHT COLUMN: The Decision Cockpit */}
+        <aside className="space-y-6">
+          {/* 1. Performance Overview */}
+          <PerformanceStatsGrid performance={dashboardVm.performance} />
+
+          {/* 2. What-If Simulator (Crucial placement next to the Hero loss) */}
+          <WhatIfSimulator 
+            currentMonthlyIls={currentMonthlyIls}
+            maintenanceLeakageMonthlyIls={maintenanceLeakage}
+            headroomMonthlyIls={headroomMonthlyIls}
+          />
+
+          {/* 3. Deep Context */}
+          <UsageWindowCard 
+            usageWindow={dashboardVm.usageWindow} 
+            opportunities={opportunities} 
             siteId={dashboardVm.siteId}
             accessToken={accessToken}
           />
-          <AiInsightsPanel data={aiInsights as AiInsightContractOutputV3 | null} errorMessage={aiInsightsError} />
-        </div>
+
+          <AiInsightsPanel 
+            data={aiInsights as AiInsightContractOutputV3 | null} 
+            errorMessage={aiInsightsError} 
+          />
+        </aside>
+
       </div>
 
       {/* Footer metadata */}
@@ -129,6 +167,6 @@ export default async function DashboardPage() {
           <span>Engine: {dashboardVm.providers.engine}</span>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

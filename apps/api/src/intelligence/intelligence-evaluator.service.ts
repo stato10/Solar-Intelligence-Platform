@@ -79,7 +79,6 @@ export class IntelligenceEvaluatorService {
       actualProduction = estimation.estimatedKwh;
     }
 
-    // Default safe tariff
     const tariffs = data.engineTariff ?? { importRate: 0.6, exportRate: 0.2 };
 
     let lossBreakdown = null;
@@ -88,30 +87,30 @@ export class IntelligenceEvaluatorService {
         expectedKwh: expected,
         actualKwh: actualProduction,
         mode,
-        selfConsumptionRatio: (profit.selfConsumptionValueDailyIls / (profit.selfConsumptionValueDailyIls + profit.exportValueDailyIls)) || 0.7,
+        selfConsumptionRatio: 0.7, // Hardcoded fallback for now, avoiding circular financial dependency
         tariff: { currency: "ILS", ...tariffs },
         factors: estimation.factors,
         hasHistoricalData: true
       });
     } catch (e) {
-      this.logger.warn("Failed to calculate explicit loss breakdown");
+      this.logger.error("Calculation failed for explicit loss breakdown", e instanceof Error ? e.stack : e);
+      lossBreakdown = {
+        error: true,
+        message: "Failed to resolve calculation engine. Standard fallback active.",
+        mode: "forecast"
+      } as any;
     }
 
-    const engineRecommendations = this.recommendationEngine.generateRecommendations(
-      lossBreakdown,
-      null, // Need financial impact first, but financial depends on loss
-      data.selfConsumption.selfConsumptionScore
-    );
-
+    // Multi-scenario engine providing local context for the Simulator
     const simulations = this.financialEngine.simulate(
       profit.currentMonthlyIls,
-      lossBreakdown?.totalMoneyLossIls ?? profit.maintenanceLeakageMonthlyIls,
+      lossBreakdown?.totalMoneyLossIls ?? 0, // Strict engine coupling (Removed old logic)
       profit.headroomMonthlyIls * 12,
       { cleaning: true, battery: true, automation: false }
     );
 
-    // Reconstruct recommendations with simulations context if applicable
-    const enrichedRecommendations = this.recommendationEngine.generateRecommendations(
+    // Single unified call mapping directly to structural actions
+    const engineRecommendations = this.recommendationEngine.generateRecommendations(
       lossBreakdown,
       simulations,
       data.selfConsumption.selfConsumptionScore
@@ -123,10 +122,10 @@ export class IntelligenceEvaluatorService {
       alerts,
       opportunities,
       generatedAt: data.generatedAt,
-      // Extensions:
+      // Extensions - Never breaking existing contracts:
       lossBreakdown,
       estimation,
-      engineRecommendations: enrichedRecommendations,
+      engineRecommendations,
       simulations,
       debug: {
         expected,

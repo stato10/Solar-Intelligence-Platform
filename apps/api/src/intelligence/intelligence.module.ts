@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { EngineModule } from "../engine/engine.module";
 import { CurrentStatusService } from "./current-status.service";
 import { IntelligenceEvaluatorService } from "./intelligence-evaluator.service";
 import { MaintenanceIntelligenceService } from "./maintenance-intelligence.service";
@@ -13,6 +14,7 @@ import { WeatherRiskService } from "./weather-risk.service";
  * `intelligence` field.
  */
 @Module({
+  imports: [EngineModule],
   providers: [
     CurrentStatusService,
     ProfitLossService,

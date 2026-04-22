@@ -31,26 +31,31 @@ export function SiteSelector() {
         return;
       }
 
-      const userSites = await fetchUserSites(token);
-      setSites(userSites);
+      try {
+        const userSites = await fetchUserSites(token);
+        setSites(userSites);
 
-      // Restore active site from cookie or default to first
-      let currentActiveId = getCookieValue("sip.activeSiteId");
-      
-      if (!currentActiveId && userSites.length > 0) {
-        currentActiveId = userSites[0].id;
-        // set default securely and silently
-        setActiveSite(currentActiveId).catch(() => {});
+        // Restore active site from cookie or default to first
+        let currentActiveId = getCookieValue("sip.activeSiteId");
+        
+        if (!currentActiveId && userSites.length > 0) {
+          currentActiveId = userSites[0].id;
+          // set default securely and silently
+          setActiveSite(currentActiveId).catch(() => {});
+        }
+        
+        // Safety check: is the active site actually in the list?
+        if (currentActiveId && !userSites.find(s => s.id === currentActiveId) && userSites.length > 0) {
+          currentActiveId = userSites[0].id;
+          setActiveSite(currentActiveId).catch(() => {});
+        }
+        
+        setActiveSiteId(currentActiveId);
+      } catch (error) {
+        console.warn("Could not load user sites via SiteSelector:", error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Safety check: is the active site actually in the list?
-      if (currentActiveId && !userSites.find(s => s.id === currentActiveId) && userSites.length > 0) {
-        currentActiveId = userSites[0].id;
-        setActiveSite(currentActiveId).catch(() => {});
-      }
-      
-      setActiveSiteId(currentActiveId);
-      setIsLoading(false);
     }
     loadSites();
   }, []);

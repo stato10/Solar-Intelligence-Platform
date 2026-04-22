@@ -2,7 +2,7 @@ import { Clock, Sun, ListChecks } from "lucide-react";
 import type { UsageWindowVm } from "@/lib/view-models/dashboard";
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
 import { cn } from "@/lib/utils";
-import { OpportunityActionCard } from "./OpportunityActionCard";
+import { MarketplaceActionCard } from "./MarketplaceActionCard";
 
 interface UsageWindowCardProps {
   usageWindow: UsageWindowVm;
@@ -98,12 +98,11 @@ export function UsageWindowCard({ usageWindow, opportunities = [], siteId, acces
       {/* Automation Opportunity Card or Placeholder CTA */}
       <div className="mt-6 border-t border-border/50 pt-4">
         {opportunities.find(o => o.topic === "switcher") ? (
-          <OpportunityActionCard
+          <MarketplaceActionCard
             title="Automate Heavy Appliances"
-            message="Smart plugs and switchers can automatically run your boiler or dishwasher during peak production."
+            cause="inefficient usage during peak hours"
+            monthlyLossIls={parseFloat(usageWindow.estimatedSavings.replace(/[^\d.]/g, '')) || 15}
             type="automation"
-            topic="switcher"
-            estimatedValue={usageWindow.estimatedSavings}
             actionLabel="Explore Automation Solutions"
             payload={{
               siteId: siteId ?? "",

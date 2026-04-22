@@ -124,6 +124,11 @@ export interface DashboardIntelligence {
   alerts: IntelligenceAlertItem[];
   opportunities: IntelligenceOpportunityItem[];
   generatedAt: string;
+  lossBreakdown?: any;
+  estimation?: any;
+  engineRecommendations?: any[];
+  simulations?: any;
+  debug?: any;
 }
 
 export interface DashboardAggregateData {
