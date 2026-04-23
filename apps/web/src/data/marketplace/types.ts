@@ -11,6 +11,15 @@
  * `GET /marketplace/catalog` endpoint exists, the response type is
  * identical and the only frontend change is swapping the static import
  * for a fetched source.
+ *
+ * Money contract:
+ *   - `estimatedMonthlyGain` / `estimatedYearlyGain` are *numbers only*.
+ *     They're priced in the catalog's source currency (`priceBand.currency`
+ *     for numeric bands; defaults to ILS for legacy entries). The renderer
+ *     picks the user's currency via `useCurrency()` and formats through
+ *     `formatCurrency` / `formatMoneyPerPeriod` — no "N.IS" strings.
+ *   - `priceBand` is the canonical price display; `priceRange` is a legacy
+ *     pre-formatted string still accepted for backwards compatibility.
  */
 
 // ---------------------------------------------------------------------------
@@ -44,6 +53,34 @@ export type CatalogConfidence = "high" | "medium" | "low";
 
 export type CatalogCtaKind = "quote" | "configure" | "book" | "external";
 
+// ---------------------------------------------------------------------------
+// Price band (currency-aware, user-formatable)
+// ---------------------------------------------------------------------------
+/**
+ * Catalog items may either:
+ *   - expose a structured numeric price band (`{ kind: "numeric", ... }`),
+ *     which the renderer formats through `formatPriceBand()` using the
+ *     user's currency via `useCurrency()`, or
+ *   - fall back to a free-form literal (`{ kind: "literal", text }`) for
+ *     cases like "Quote on request" that we can't localize.
+ *
+ * Re-exported from `@/lib/utils/formatters` under a catalog-scoped alias
+ * so JSON authors only need to import from this module.
+ */
+export type CatalogPriceBand =
+  | {
+      kind: "numeric";
+      min: number;
+      max?: number;
+      currency: "ILS" | "USD" | "EUR" | "GBP" | "CAD" | "AUD";
+      unit?: "month" | "year" | "week" | "day" | "visit" | "hour" | "session" | "install";
+      prefix?: "from" | "up-to";
+    }
+  | {
+      kind: "literal";
+      text: string;
+    };
+
 /**
  * A catalog item is the unit rendered by every marketplace surface —
  * opportunity sections, dashboard carousel, savings lanes, maintenance
@@ -64,10 +101,26 @@ export interface CatalogItem {
   /** Absolute or app-relative URL. Missing assets fall back to the
    *  category default in the component. */
   image: string;
-  /** Pre-formatted price band string, e.g. "N.IS 4,800 – 6,200". */
-  priceRange: string;
-  /** At least one of `estimatedMonthlyGain` / `estimatedYearlyGain` must
-   *  be set. Kept in N.IS per the voice-and-copy doc. */
+  /**
+   * Structured price. Preferred for any new entry — the renderer
+   * formats through `formatPriceBand()` so it reflects the user's
+   * currency/locale.
+   */
+  priceBand?: CatalogPriceBand;
+  /**
+   * Legacy pre-formatted price string. Kept optional for migration; the
+   * renderer falls back to this when `priceBand` is absent. New entries
+   * must use `priceBand` instead.
+   *
+   * @deprecated Use `priceBand` so money respects `useCurrency()`.
+   */
+  priceRange?: string;
+  /**
+   * Estimated monthly / yearly gain in the *catalog's* source currency
+   * (`priceBand.currency` when present, otherwise ILS). At least one of
+   * the two must be set. The renderer converts through `formatCurrency()`
+   * with the user's active currency at display time.
+   */
   estimatedMonthlyGain?: number;
   estimatedYearlyGain?: number;
   confidence: CatalogConfidence;
@@ -201,11 +254,14 @@ export function isValidCatalogItem(item: unknown): item is CatalogItem {
     it.whyRecommendedTags.length <= 3;
   const appliesOk =
     Array.isArray(it.appliesTo) && it.appliesTo.length >= 1;
+  const priceOk =
+    (typeof it.priceBand === "object" && it.priceBand !== null) ||
+    typeof it.priceRange === "string";
   return (
     typeof it.id === "string" &&
     typeof it.title === "string" &&
     typeof it.brand === "string" &&
-    typeof it.priceRange === "string" &&
+    priceOk &&
     typeof it.ctaLabel === "string" &&
     typeof it.ctaKind === "string" &&
     typeof it.confidence === "string" &&

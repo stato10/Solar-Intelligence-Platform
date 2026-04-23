@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Adapter: `EnergyDecisionItem` → `AiInsightCard`.
  *
@@ -30,6 +32,11 @@ import {
 } from "@/lib/view-models/energy-decisions";
 import { AiInsightCard } from "./AiInsightCard";
 import { OpportunityActionCard } from "./OpportunityActionCard";
+import { useCurrency } from "@/hooks/use-currency";
+import {
+  formatCurrency,
+  type CurrencyCode,
+} from "@/lib/utils/formatters";
 
 const TOPIC_ICONS: Record<EnergyDecisionTopic, LucideIcon> = {
   "self-consumption-vs-export": Zap,
@@ -60,12 +67,21 @@ interface EnergyDecisionInsightCardProps {
  * Format the engine benefit range into a single human-readable money line.
  * Returns `undefined` when there is no range to display so the card can
  * omit the money row entirely.
+ *
+ * The engine stores benefit ranges in ILS today; we format through
+ * `formatCurrency()` so the display currency tracks the user's tariff.
  */
-function formatBenefit(decision: EnergyDecisionItem): string | undefined {
+function formatBenefit(
+  decision: EnergyDecisionItem,
+  currency: CurrencyCode,
+  locale: string,
+): string | undefined {
   const range = decision.estimatedBenefitRangeIlsMonthly;
   if (!range) return undefined;
-  if (range.min === range.max) return `₪${range.min} / month`;
-  return `₪${range.min}–₪${range.max} / month`;
+  const min = formatCurrency(range.min, { currency, locale, decimals: 0 });
+  if (range.min === range.max) return `${min} / month`;
+  const max = formatCurrency(range.max, { currency, locale, decimals: 0 });
+  return `${min}–${max} / month`;
 }
 
 /**
@@ -104,10 +120,11 @@ export function EnergyDecisionInsightCard({
   accessToken,
   compact,
 }: EnergyDecisionInsightCardProps) {
+  const { currency, locale } = useCurrency();
   const confidence = normalizeConfidence(decision.confidence);
   const severity = resolveSeverity(decision);
   const icon = TOPIC_ICONS[decision.topic] ?? Lightbulb;
-  const money = formatBenefit(decision);
+  const money = formatBenefit(decision, currency, locale);
 
   const matched = matchOpportunity(decision, opportunities);
 

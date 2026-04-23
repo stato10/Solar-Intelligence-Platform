@@ -1,13 +1,12 @@
 "use client";
 
 /**
- * Client-side wrapper around a single Opportunities section. Owns:
- *   - the success-chip state (shown for 4s after a CTA completes,
- *     per docs/redesign/15-conversion-flow.md §6), and
- *   - the temporary CTA → lead-intent bridge.
+ * Client-side wrapper around a single Opportunities section.
  *
- * When the shared `useConversionFlow` hook lands in the next commit,
- * this wrapper swaps its handler for it with zero card-side changes.
+ * As of Sprint 2 Commit 4 every CTA routes through the shared
+ * `useConversionFlow()` hook (docs/redesign/15-conversion-flow.md).
+ * This component's only responsibility now is layout + "request
+ * sent" success chips that fade out after 4 seconds (spec §6).
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -17,41 +16,13 @@ import {
   OpportunityMarketplaceCard,
   type OpportunityMarketplaceCardProps,
 } from "./opportunity-marketplace-card";
-import type { LeadSourceType } from "@/lib/contracts/marketplace";
-import { createLeadIntent } from "@/lib/api/marketplace";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-/** Maps a catalog category to the engine's existing `LeadSourceType`
- *  enum. The conversion flow will replace this with richer routing in
- *  the next commit; for now it preserves backward-compat with the
- *  current `/leads/intents` endpoint. */
-function toLeadSourceType(item: CatalogItem): LeadSourceType {
-  switch (item.category) {
-    case "cleaning":
-    case "robotic-cleaner":
-      return "cleaning_recommendation";
-    case "battery":
-      return "battery_recommendation";
-    case "ev-charger":
-      return "ev_recommendation";
-    case "smart-switch":
-    case "boiler-controller":
-      return "automation_recommendation";
-    case "provider-service":
-      // Providers route to the closest matching lead type via
-      // `appliesTo`. Fall back to automation as the safest bucket.
-      if (item.appliesTo.includes("soiling")) return "cleaning_recommendation";
-      if (item.appliesTo.includes("battery_opportunity"))
-        return "battery_recommendation";
-      if (item.appliesTo.includes("ev_opportunity"))
-        return "ev_recommendation";
-      return "automation_recommendation";
-    default:
-      return "automation_recommendation";
-  }
-}
+import {
+  useConversionFlow,
+  useConversionFlowState,
+  type ConversionContext,
+} from "@/hooks/use-conversion-flow";
+import { toRecommendationType } from "@/lib/view-models/marketplace-catalog";
+import { track } from "@/lib/analytics/client";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -80,51 +51,79 @@ export function OpportunitySection({
   accessToken,
   mutedItemIds,
 }: OpportunitySectionProps) {
-  const [successItemId, setSuccessItemId] = useState<string | null>(null);
-  const [errorText, setErrorText] = useState<string | null>(null);
+  const { start } = useConversionFlow();
+  const flowState = useConversionFlowState();
 
-  // Auto-dismiss the success chip after 4s (spec §6).
+  // Track the last item whose flow completed so we can render the
+  // contextual success chip on the originating card (spec §6).
+  const [successItemId, setSuccessItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (
+      flowState.step === "confirmation" &&
+      flowState.context?.catalogItemId &&
+      items.some((it) => it.id === flowState.context?.catalogItemId)
+    ) {
+      setSuccessItemId(flowState.context.catalogItemId);
+    }
+  }, [flowState.step, flowState.context, items]);
+
   useEffect(() => {
     if (!successItemId) return;
     const t = window.setTimeout(() => setSuccessItemId(null), 4000);
     return () => window.clearTimeout(t);
   }, [successItemId]);
 
+  // Impression event fires once per mount per section (spec 17 §3.2).
+  useEffect(() => {
+    track(
+      "opportunities_section_impression",
+      { section: id, itemCount: items.length },
+      { surface: "opportunities_section", siteId },
+    );
+  }, [id, items.length, siteId]);
+
   const handleCta = useCallback<
     NonNullable<OpportunityMarketplaceCardProps["onCtaClick"]>
   >(
-    async (item) => {
-      setErrorText(null);
-      try {
-        await createLeadIntent(
-          {
-            siteId,
-            sourceType: toLeadSourceType(item),
-            sourceReference: item.id,
-            title: `${item.ctaLabel} — ${item.title}`,
-            estimatedValue: item.estimatedMonthlyGain ?? item.estimatedYearlyGain,
-            metadataJson: {
-              catalogItemId: item.id,
-              category: item.category,
-              brand: item.brand,
-              section: id,
-              ctaKind: item.ctaKind,
-              confidence: item.confidence,
-              whyRecommendedTags: item.whyRecommendedTags,
-            },
-          },
-          accessToken,
-        );
-        setSuccessItemId(item.id);
-      } catch (err) {
-        setErrorText(
-          err instanceof Error
-            ? err.message
-            : "We couldn't send that. Try again.",
-        );
-      }
+    (item) => {
+      // Resolve the recommendation type from the item's `appliesTo`
+      // set. Falls back to the section-implied type when the set is
+      // empty, but the catalog validator guarantees ≥ 1 entry.
+      const rec =
+        item.appliesTo[0] ??
+        toRecommendationType(item.category) ??
+        "automation_opportunity";
+
+      const context: ConversionContext = {
+        sourceSurface: "opportunities_section",
+        recommendationType: rec,
+        catalogItemId: item.id,
+        catalogItemTitle: item.title,
+        catalogItemBrand: item.brand,
+        monthlyGainNis: item.estimatedMonthlyGain,
+        yearlyGainNis: item.estimatedYearlyGain,
+        priceRange: item.priceRange,
+        confidence: item.confidence,
+        priority: item.confidence === "high" ? "high" : "medium",
+        ctaKind: item.ctaKind,
+        siteId,
+        accessToken,
+      };
+      track(
+        "catalog_item_clicked",
+        {
+          itemId: item.id,
+          category: item.category,
+          recommendationType: rec,
+          confidence: item.confidence,
+          sourceSurface: "opportunities_section",
+        },
+        { surface: "opportunities_section", siteId },
+      );
+      start(context);
     },
-    [accessToken, id, siteId],
+    [accessToken, siteId, start],
   );
 
   const muted = mutedItemIds ?? defaultMutedIds(items);
@@ -149,15 +148,6 @@ export function OpportunitySection({
           {items.length} {items.length === 1 ? "result" : "results"}
         </span>
       </header>
-
-      {errorText ? (
-        <p
-          role="alert"
-          className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-xs text-rose-500"
-        >
-          {errorText}
-        </p>
-      ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
@@ -184,11 +174,12 @@ export function OpportunitySection({
 }
 
 /**
- * Fallback muted-items selector. Doc 07 §8: low-confidence **and**
- * low-priority (we only have confidence here) items get pushed down
- * and dimmed. We approximate with confidence alone until engine
+ * Fallback muted-items selector. Doc 07 §8: low-confidence items get
+ * pushed down and dimmed. We key off confidence alone until engine
  * priority reaches the catalog layer.
  */
 function defaultMutedIds(items: readonly CatalogItem[]): ReadonlySet<string> {
-  return new Set(items.filter((it) => it.confidence === "low").map((it) => it.id));
+  return new Set(
+    items.filter((it) => it.confidence === "low").map((it) => it.id),
+  );
 }

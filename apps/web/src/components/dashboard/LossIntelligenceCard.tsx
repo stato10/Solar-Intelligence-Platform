@@ -1,6 +1,10 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ArrowDownRight, Info, ShieldAlert, BadgeInfo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/utils/formatters";
+import { useCurrency } from "@/hooks/use-currency";
 
 interface LossBreakdown {
   mode: "forecast" | "estimated" | "real";
@@ -31,6 +35,9 @@ export function LossIntelligenceCard({ lossBreakdown, className = "" }: LossInte
   }
 
   const { mode, totalMoneyLossIls, selfConsumptionLossIls, exportLossIls, confidence } = lossBreakdown;
+  const { currency, locale } = useCurrency();
+  const money = (value: number) =>
+    formatCurrency(Math.round(value), { currency, locale, decimals: 0 });
 
   // Determine styling based on Mode
   const isEstimated = mode === "estimated";
@@ -80,7 +87,7 @@ export function LossIntelligenceCard({ lossBreakdown, className = "" }: LossInte
             <p className="text-sm font-medium text-slate-400 uppercase tracking-widest">Calculated Deficit</p>
             <div className="flex items-baseline gap-2">
               <span className="text-5xl font-black tracking-tighter text-white">
-                ₪{Math.round(totalMoneyLossIls)}
+                {money(totalMoneyLossIls)}
               </span>
               <span className="text-lg font-medium text-slate-500">/mo</span>
             </div>
@@ -112,7 +119,7 @@ export function LossIntelligenceCard({ lossBreakdown, className = "" }: LossInte
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-slate-300">Self-Consumption Valuation</span>
-                <span className="font-mono text-rose-400">-₪{Math.round(selfConsumptionLossIls)}</span>
+                <span className="font-mono text-rose-400">-{money(selfConsumptionLossIls)}</span>
               </div>
               <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden">
                 <div 
@@ -126,7 +133,7 @@ export function LossIntelligenceCard({ lossBreakdown, className = "" }: LossInte
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-slate-300">Export Valuation</span>
-                <span className="font-mono text-rose-400">-₪{Math.round(exportLossIls)}</span>
+                <span className="font-mono text-rose-400">-{money(exportLossIls)}</span>
               </div>
               <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden">
                 <div 
