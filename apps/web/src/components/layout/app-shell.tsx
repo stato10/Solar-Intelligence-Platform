@@ -157,8 +157,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Page Content */}
-        <div className="w-full px-4 py-8 sm:px-6 lg:px-8 shrink-0 flex-1 2xl:max-w-[1600px]">
+        {/* Page Content — centered within the post-sidebar area so wide
+            monitors do not leave the right half empty. */}
+        <div className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-8 sm:px-6 lg:px-8 2xl:max-w-[1800px]">
           {children}
         </div>
       </main>
