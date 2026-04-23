@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SiteSelector } from "./site-selector";
+import { SidebarSystemStatus } from "./SidebarSystemStatus";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -60,9 +61,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Global Context (Site Selector) */}
-        <div className="px-4 py-4">
+        {/* Global Context (Site Selector + ambient status chip).
+            Layer 1 of the progressive-disclosure architecture
+            (docs/redesign/12-empty-states.md §3): the chip tells the user
+            at a glance whether what they are seeing is real, estimated,
+            stale, or absent — without disrupting the dashboard. */}
+        <div className="px-4 py-4 space-y-2">
           <SiteSelector />
+          <SidebarSystemStatus />
         </div>
 
         {/* Navigation */}
