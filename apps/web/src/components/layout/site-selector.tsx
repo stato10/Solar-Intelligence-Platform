@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, MapPin } from "lucide-react";
 import { fetchUserSites } from "@/lib/api/sites";
+import { ApiHttpError } from "@/lib/api/client";
 import type { Site } from "@/lib/contracts/onboarding";
 import { setActiveSite } from "@/app/actions";
 
@@ -14,6 +15,21 @@ function getCookieValue(name: string) {
   const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   if (match) return match[2];
   return null;
+}
+
+/**
+ * Clear a stale access token from both localStorage and the mirrored cookie
+ * so subsequent client fetches don't keep producing 401s and tripping the
+ * Next.js dev overlay. Safe no-op on the server.
+ */
+function clearStaleAccessToken() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  } catch {
+    // localStorage can throw in private mode; ignore.
+  }
+  document.cookie = `${ACCESS_TOKEN_KEY}=; path=/; max-age=0; samesite=lax`;
 }
 
 export function SiteSelector() {
@@ -37,22 +53,30 @@ export function SiteSelector() {
 
         // Restore active site from cookie or default to first
         let currentActiveId = getCookieValue("sip.activeSiteId");
-        
+
         if (!currentActiveId && userSites.length > 0) {
           currentActiveId = userSites[0].id;
           // set default securely and silently
           setActiveSite(currentActiveId).catch(() => {});
         }
-        
+
         // Safety check: is the active site actually in the list?
-        if (currentActiveId && !userSites.find(s => s.id === currentActiveId) && userSites.length > 0) {
+        if (currentActiveId && !userSites.find((s) => s.id === currentActiveId) && userSites.length > 0) {
           currentActiveId = userSites[0].id;
           setActiveSite(currentActiveId).catch(() => {});
         }
-        
+
         setActiveSiteId(currentActiveId);
       } catch (error) {
-        console.warn("Could not load user sites via SiteSelector:", error);
+        // A 401 here means the token in localStorage is stale (e.g. after a
+        // dev rebuild or a JWT secret rotation). Clear it so the sidebar
+        // short-circuits silently on subsequent mounts and the dev overlay
+        // stops flagging the already-handled rejection.
+        if (error instanceof ApiHttpError && error.status === 401) {
+          clearStaleAccessToken();
+        } else {
+          console.warn("Could not load user sites via SiteSelector:", error);
+        }
       } finally {
         setIsLoading(false);
       }
