@@ -6,7 +6,6 @@ import {
 } from "@/lib/api/dashboard";
 import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
 import { toOpportunitiesCatalogViewModel } from "@/lib/view-models/marketplace-catalog";
-import { MarketplaceCarousel } from "@/components/dashboard/MarketplaceCarousel";
 import { OpportunitySection } from "./_components/opportunity-section";
 import type { DashboardAggregateData } from "@/lib/contracts";
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
@@ -110,15 +109,6 @@ export default async function OpportunitiesPage() {
           />
         ))
       )}
-
-      {/* ─── Dashboard-style carousel as a discovery tail ─────────── */}
-      {!vm.isEmpty ? (
-        <MarketplaceCarousel
-          opportunities={rawOpportunities}
-          siteId={aggregate.siteId}
-          accessToken={accessToken}
-        />
-      ) : null}
 
       {/* ─── Footer ────────────────────────────────────────────────── */}
       <footer className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border/50 pt-6 text-xs text-muted-foreground">
