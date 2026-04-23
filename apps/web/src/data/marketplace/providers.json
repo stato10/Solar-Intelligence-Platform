@@ -7,7 +7,13 @@
       "title": "Rooftop cleaning — central Israel",
       "brand": "Verified cleaning technician",
       "image": "/marketplace/provider-cleaning.jpg",
-      "priceRange": "From N.IS 250 / visit",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 250,
+        "currency": "ILS",
+        "unit": "visit",
+        "prefix": "from"
+      },
       "estimatedMonthlyGain": 18,
       "confidence": "high",
       "serviceArea": "Tel Aviv + Gush Dan",
@@ -24,7 +30,10 @@
       "title": "Battery installation — certified installer",
       "brand": "Verified battery installer",
       "image": "/marketplace/provider-battery.jpg",
-      "priceRange": "Quote on request",
+      "priceBand": {
+        "kind": "literal",
+        "text": "Quote on request"
+      },
       "estimatedYearlyGain": 2200,
       "confidence": "medium",
       "serviceArea": "Haifa + North",
@@ -41,7 +50,13 @@
       "title": "Home automation specialist",
       "brand": "Verified automation specialist",
       "image": "/marketplace/provider-automation.jpg",
-      "priceRange": "From N.IS 450 / hour",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 450,
+        "currency": "ILS",
+        "unit": "hour",
+        "prefix": "from"
+      },
       "estimatedMonthlyGain": 45,
       "confidence": "medium",
       "serviceArea": "Nationwide",

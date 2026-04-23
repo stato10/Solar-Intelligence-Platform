@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Battery, Sparkles, Zap } from "lucide-react";
+import { formatCurrency } from "@/lib/utils/formatters";
+import { useCurrency } from "@/hooks/use-currency";
 
 interface SimulationParams {
   cleaning: boolean;
@@ -56,6 +58,10 @@ export function WhatIfSimulator({
   const yearlyGain = deltaMonthly * 12;
   const roiYears = deltaMonthly > 0 ? (hardwareCost / yearlyGain).toFixed(1) : null;
 
+  const { currency, locale } = useCurrency();
+  const money = (value: number) =>
+    formatCurrency(Math.round(value), { currency, locale, decimals: 0 });
+
   return (
     <Card className={`overflow-hidden border-orange-500/20 bg-gradient-to-br from-slate-900 to-slate-950 text-slate-100 shadow-xl ${className}`}>
       <CardHeader className="pb-3 border-b border-slate-800 bg-slate-900/50">
@@ -78,7 +84,7 @@ export function WhatIfSimulator({
             active={params.cleaning}
             icon={<Sparkles className="w-4 h-4" />}
             title="Clean Solar Panels" 
-            desc={`Recover ~₪${Math.round(maintenanceLeakageMonthlyIls)}/mo in dust losses`}
+            desc={`Recover ~${money(maintenanceLeakageMonthlyIls)}/mo in dust losses`}
             onToggle={() => setParams(p => ({ ...p, cleaning: !p.cleaning }))}
           />
           <ToggleRow 
@@ -101,7 +107,7 @@ export function WhatIfSimulator({
         <div className="p-5 bg-black/20 flex items-center justify-between">
           <div className="space-y-1">
             <div className="text-sm font-medium text-slate-400">Current Profit</div>
-            <div className="text-2xl font-bold text-slate-300">₪{Math.round(currentMonthlyIls)}<span className="text-sm font-normal text-slate-500">/mo</span></div>
+            <div className="text-2xl font-bold text-slate-300">{money(currentMonthlyIls)}<span className="text-sm font-normal text-slate-500">/mo</span></div>
           </div>
           
           <ArrowRight className={`w-6 h-6 transition-colors duration-300 ${deltaMonthly > 0 ? "text-emerald-400" : "text-slate-700"}`} />
@@ -109,16 +115,16 @@ export function WhatIfSimulator({
           <div className="space-y-1 text-right">
             <div className="text-sm font-medium text-emerald-400 flex items-center justify-end gap-2">
               Projected
-              {deltaMonthly > 0 && <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full font-bold">+₪{Math.round(deltaMonthly)}</span>}
+              {deltaMonthly > 0 && <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full font-bold">+{money(deltaMonthly)}</span>}
             </div>
-            <div className="text-3xl font-black text-white">₪{Math.round(afterMonthlyIls)}<span className="text-sm font-bold text-slate-400">/mo</span></div>
+            <div className="text-3xl font-black text-white">{money(afterMonthlyIls)}<span className="text-sm font-bold text-slate-400">/mo</span></div>
           </div>
         </div>
         
         {/* ROI Info Bar */}
         {deltaMonthly > 0 && (
           <div className="bg-emerald-950/30 text-emerald-300 p-3 text-sm flex items-center justify-between border-t border-emerald-900/40">
-            <span>Estimated Annual Gain: <strong>₪{Math.round(yearlyGain)}</strong></span>
+            <span>Estimated Annual Gain: <strong>{money(yearlyGain)}</strong></span>
             <span>Est. ROI: <strong>{roiYears} Years</strong></span>
           </div>
         )}

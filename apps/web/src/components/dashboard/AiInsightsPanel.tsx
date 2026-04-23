@@ -4,6 +4,7 @@ import { Sparkles, Terminal } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { AiInsightContractOutputV3, InsightItem, EnergyDecisionItem, ProductRecommendationItem } from "@/lib/contracts";
 import { formatBenefitRangeIlsMonthly, formatSourceRefsForDisplay } from "@/lib/view-models/ai-insights";
+import { useCurrency } from "@/hooks/use-currency";
 
 interface AiInsightsPanelProps {
   data: AiInsightContractOutputV3 | null;
@@ -38,12 +39,13 @@ function InsightList({ items }: { items: InsightItem[] | EnergyDecisionItem[] })
 }
 
 function ProductList({ items }: { items: ProductRecommendationItem[] }) {
+  const { currency, locale } = useCurrency();
   if (!items.length) return <p className="text-sm text-muted-foreground">No products suggested at this time.</p>;
   
   return (
     <ul className="space-y-3">
       {items.map((p) => {
-        const rangeText = formatBenefitRangeIlsMonthly(p.expectedBenefitRangeIlsMonthly);
+        const rangeText = formatBenefitRangeIlsMonthly(p.expectedBenefitRangeIlsMonthly, { currency, locale });
         return (
           <li key={p.id} className="rounded-xl border border-border/80 bg-card/60 px-4 py-3">
             <div className="flex items-start justify-between">

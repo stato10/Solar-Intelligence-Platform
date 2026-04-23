@@ -1,4 +1,5 @@
 import type { AggregateSourceRef, BenefitRange } from "@/lib/contracts/ai-insight-v2";
+import { formatCurrency, type CurrencyCode } from "@/lib/utils/formatters";
 
 const SOURCE_REF_LABELS: Partial<Record<AggregateSourceRef, string>> = {
   "soiling.score": "Soiling score",
@@ -36,11 +37,21 @@ const SOURCE_REF_LABELS: Partial<Record<AggregateSourceRef, string>> = {
   "providers.engine": "Engine provider"
 };
 
-export function formatBenefitRangeIlsMonthly(range: BenefitRange | undefined): string | null {
+/**
+ * Format an engine benefit range (stored in ILS today) for display.
+ * Callers pass the user's active currency/locale so the range respects
+ * `useCurrency()`. Omitting the options keeps legacy ILS rendering.
+ */
+export function formatBenefitRangeIlsMonthly(
+  range: BenefitRange | undefined,
+  options: { currency?: CurrencyCode; locale?: string } = {},
+): string | null {
   if (!range) return null;
-  const min = Math.round(range.min);
-  const max = Math.round(range.max);
-  return `${min}–${max} ₪/month`;
+  const currency = options.currency ?? "ILS";
+  const locale = options.locale;
+  const min = formatCurrency(Math.round(range.min), { currency, locale, decimals: 0 });
+  const max = formatCurrency(Math.round(range.max), { currency, locale, decimals: 0 });
+  return `${min}–${max} / month`;
 }
 
 export function labelForSourceRef(ref: AggregateSourceRef): string {

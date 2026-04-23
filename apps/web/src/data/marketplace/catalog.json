@@ -6,7 +6,13 @@
       "title": "Professional panel cleaning",
       "brand": "Local cleaning provider",
       "image": "/marketplace/cleaning-standard.jpg",
-      "priceRange": "From N.IS 250 / visit",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 250,
+        "currency": "ILS",
+        "unit": "visit",
+        "prefix": "from"
+      },
       "estimatedMonthlyGain": 18,
       "estimatedYearlyGain": 216,
       "confidence": "high",
@@ -22,7 +28,12 @@
       "title": "Automated rooftop cleaning unit",
       "brand": "Ecoppia (placeholder)",
       "image": "/marketplace/robotic-cleaner.jpg",
-      "priceRange": "N.IS 9,800 – 14,500",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 9800,
+        "max": 14500,
+        "currency": "ILS"
+      },
       "estimatedMonthlyGain": 30,
       "estimatedYearlyGain": 360,
       "confidence": "medium",
@@ -38,7 +49,12 @@
       "title": "Residential battery 10kWh",
       "brand": "SolarEdge (placeholder)",
       "image": "/marketplace/battery-solaredge.jpg",
-      "priceRange": "N.IS 24,000 – 32,000",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 24000,
+        "max": 32000,
+        "currency": "ILS"
+      },
       "estimatedMonthlyGain": 210,
       "estimatedYearlyGain": 2520,
       "confidence": "medium",
@@ -54,7 +70,12 @@
       "title": "Residential battery 7.6kWh",
       "brand": "BYD (placeholder)",
       "image": "/marketplace/battery-byd.jpg",
-      "priceRange": "N.IS 18,500 – 24,000",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 18500,
+        "max": 24000,
+        "currency": "ILS"
+      },
       "estimatedMonthlyGain": 170,
       "estimatedYearlyGain": 2040,
       "confidence": "medium",
@@ -70,7 +91,12 @@
       "title": "Smart EV charger 7.4kW",
       "brand": "Wallbox Pulsar (placeholder)",
       "image": "/marketplace/ev-charger.jpg",
-      "priceRange": "N.IS 3,200 – 4,500",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 3200,
+        "max": 4500,
+        "currency": "ILS"
+      },
       "estimatedMonthlyGain": 95,
       "estimatedYearlyGain": 1140,
       "confidence": "medium",
@@ -86,7 +112,12 @@
       "title": "Smart switch with energy metering",
       "brand": "Shelly (placeholder)",
       "image": "/marketplace/smart-switch.jpg",
-      "priceRange": "From N.IS 180",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 180,
+        "currency": "ILS",
+        "prefix": "from"
+      },
       "estimatedMonthlyGain": 28,
       "estimatedYearlyGain": 336,
       "confidence": "high",
@@ -102,7 +133,12 @@
       "title": "Solar-aware boiler controller",
       "brand": "Enless (placeholder)",
       "image": "/marketplace/boiler-controller.jpg",
-      "priceRange": "N.IS 950 – 1,400",
+      "priceBand": {
+        "kind": "numeric",
+        "min": 950,
+        "max": 1400,
+        "currency": "ILS"
+      },
       "estimatedMonthlyGain": 55,
       "estimatedYearlyGain": 660,
       "confidence": "high",

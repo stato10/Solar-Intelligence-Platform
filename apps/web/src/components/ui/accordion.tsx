@@ -23,6 +23,13 @@ interface AccordionRootProps {
   defaultValue?: string | string[];
   className?: string;
   children: React.ReactNode;
+  /**
+   * Accepted for API parity with Radix Accordion. This implementation's
+   * `type="single"` mode already allows collapsing the open item by clicking
+   * it again, so the flag is accepted-but-implicit. Left optional so callers
+   * that copy Radix patterns keep compiling.
+   */
+  collapsible?: boolean;
 }
 
 function Accordion({ type = "single", defaultValue, className, children }: AccordionRootProps) {

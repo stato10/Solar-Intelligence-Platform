@@ -1,6 +1,7 @@
 import type { AiInsightContractOutput, AiInsightContractOutputV3 } from "@/lib/contracts";
 import { AiInlineEmpty, AiInlineError, AiStateCard } from "@/components/ai/ai-inline-error";
 import { formatBenefitRangeIlsMonthly, formatSourceRefsForDisplay } from "@/lib/view-models/ai-insights";
+import type { CurrencyCode } from "@/lib/utils/formatters";
 
 const DASHBOARD_STATE_LIMIT = 3;
 const PRODUCT_PREVIEW_LIMIT = 2;
@@ -8,9 +9,16 @@ const PRODUCT_PREVIEW_LIMIT = 2;
 interface DashboardAiInsightsSectionProps {
   data: Pick<AiInsightContractOutput | AiInsightContractOutputV3, "currentStateInsights" | "productRecommendations" | "meta"> | null;
   errorMessage: string | null;
+  /**
+   * User's active currency for money display. Defaults to ILS for
+   * backwards compatibility. The dashboard page resolves this from
+   * the active site's tariff before passing it down.
+   */
+  currency?: CurrencyCode;
+  locale?: string;
 }
 
-export function DashboardAiInsightsSection({ data, errorMessage }: DashboardAiInsightsSectionProps) {
+export function DashboardAiInsightsSection({ data, errorMessage, currency, locale }: DashboardAiInsightsSectionProps) {
   if (errorMessage) {
     return (
       <AiStateCard title="AI insights">
@@ -63,7 +71,7 @@ export function DashboardAiInsightsSection({ data, errorMessage }: DashboardAiIn
           </p>
           <ul className="mt-2 space-y-2 text-sm">
             {productPreview.map((p) => {
-              const rangeText = formatBenefitRangeIlsMonthly(p.expectedBenefitRangeIlsMonthly);
+              const rangeText = formatBenefitRangeIlsMonthly(p.expectedBenefitRangeIlsMonthly, { currency, locale });
               return (
                 <li key={p.id} className="rounded-xl border border-border/80 bg-card/60 px-3 py-2.5">
                   <p className="font-medium">{p.name}</p>

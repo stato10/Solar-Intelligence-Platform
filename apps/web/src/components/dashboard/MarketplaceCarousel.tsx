@@ -38,6 +38,12 @@ import type {
   CatalogItem,
 } from "@/data/marketplace/types";
 import { selectCarouselItems } from "@/lib/view-models/marketplace-catalog";
+import {
+  formatMoneyPerPeriod,
+  formatPriceBand,
+  type PriceBand,
+} from "@/lib/utils/formatters";
+import { useCurrency } from "@/hooks/use-currency";
 
 // ---------------------------------------------------------------------------
 // Category → icon map (kept in sync with OpportunityMarketplaceCard).
@@ -175,12 +181,24 @@ export function MarketplaceCarousel({
 // ---------------------------------------------------------------------------
 function CarouselCard({ item }: { item: CatalogItem }) {
   const Icon = CATEGORY_ICON[item.category] ?? Sparkles;
+  const { currency, locale } = useCurrency();
   const gain =
     typeof item.estimatedMonthlyGain === "number"
-      ? `N.IS ${Math.round(item.estimatedMonthlyGain).toLocaleString()} / month`
+      ? formatMoneyPerPeriod(Math.round(item.estimatedMonthlyGain), "month", {
+          currency,
+          locale,
+          decimals: 0,
+        })
       : typeof item.estimatedYearlyGain === "number"
-      ? `N.IS ${Math.round(item.estimatedYearlyGain).toLocaleString()} / year`
+      ? formatMoneyPerPeriod(Math.round(item.estimatedYearlyGain), "year", {
+          currency,
+          locale,
+          decimals: 0,
+        })
       : null;
+  const price = item.priceBand
+    ? formatPriceBand(item.priceBand as PriceBand, currency)
+    : item.priceRange ?? null;
 
   return (
     <article
@@ -231,9 +249,11 @@ function CarouselCard({ item }: { item: CatalogItem }) {
               {gain}
             </p>
           ) : null}
-          <p className="font-mono text-xs tabular-nums text-muted-foreground">
-            {item.priceRange}
-          </p>
+          {price ? (
+            <p className="font-mono text-xs tabular-nums text-muted-foreground">
+              {price}
+            </p>
+          ) : null}
         </div>
 
         <a

@@ -1,31 +1,35 @@
+/**
+ * Legacy onboarding-only tariff helper. New surfaces (Settings → Tariffs)
+ * should use `tariff-defaults.ts` directly so they get country names,
+ * richer metadata, and a typed `CurrencyCode`.
+ *
+ * We keep this thin shim so onboarding step-2 continues to work and the
+ * two surfaces stay in sync.
+ */
+
+import {
+  getTariffDefaultsForCountry,
+  type CountryTariffDefaults,
+} from "./tariff-defaults";
+
 export interface TariffDefaults {
   selfConsumptionRate: number;
   exportRate: number;
   currency: string;
 }
 
-export function getDefaultTariff(countryCode?: string | null): TariffDefaults {
-  const code = (countryCode || "").toUpperCase().trim();
+const GLOBAL_FALLBACK: TariffDefaults = {
+  selfConsumptionRate: 0.2,
+  exportRate: 0.05,
+  currency: "USD",
+};
 
-  switch (code) {
-    case "IL": // Israel
-      return { selfConsumptionRate: 0.62, exportRate: 0.28, currency: "ILS" };
-    case "US": // USA
-      return { selfConsumptionRate: 0.15, exportRate: 0.05, currency: "USD" };
-    case "DE": // Germany
-      return { selfConsumptionRate: 0.35, exportRate: 0.08, currency: "EUR" };
-    case "GB": // UK
-      return { selfConsumptionRate: 0.34, exportRate: 0.05, currency: "GBP" };
-    case "AU": // Australia
-      return { selfConsumptionRate: 0.30, exportRate: 0.05, currency: "AUD" };
-    case "ES": // Spain
-      return { selfConsumptionRate: 0.25, exportRate: 0.08, currency: "EUR" };
-    case "IT": // Italy
-      return { selfConsumptionRate: 0.28, exportRate: 0.10, currency: "EUR" };
-    case "FR": // France
-      return { selfConsumptionRate: 0.25, exportRate: 0.10, currency: "EUR" };
-    default:
-      // Global fallback
-      return { selfConsumptionRate: 0.20, exportRate: 0.05, currency: "USD" };
-  }
+export function getDefaultTariff(countryCode?: string | null): TariffDefaults {
+  const entry: CountryTariffDefaults | null = getTariffDefaultsForCountry(countryCode);
+  if (!entry) return GLOBAL_FALLBACK;
+  return {
+    selfConsumptionRate: entry.importRate,
+    exportRate: entry.exportRate,
+    currency: entry.currency,
+  };
 }

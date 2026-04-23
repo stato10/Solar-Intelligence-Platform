@@ -40,6 +40,12 @@ import {
   type CatalogCtaKind,
   type CatalogItem,
 } from "@/data/marketplace/types";
+import {
+  formatMoneyPerPeriod,
+  formatPriceBand,
+  type PriceBand,
+} from "@/lib/utils/formatters";
+import { useCurrency } from "@/hooks/use-currency";
 
 // ---------------------------------------------------------------------------
 // Styling tables — kept at module scope so React doesn't re-create them.
@@ -84,15 +90,43 @@ const CTA_TONE: Record<CatalogCtaKind, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Money formatting
+// Money formatting — money is rendered through `useCurrency()` so each
+// user sees values in their tariff currency. Catalog gains are stored as
+// raw numbers in the catalog's source currency (ILS today).
 // ---------------------------------------------------------------------------
-/** Formats the gain line: prefers monthly, falls back to yearly. */
-function formatGainLine(item: CatalogItem): string | null {
+function formatGainLine(
+  item: CatalogItem,
+  currency: "ILS" | "USD" | "EUR" | "GBP" | "CAD" | "AUD",
+  locale: string,
+): string | null {
   if (typeof item.estimatedMonthlyGain === "number") {
-    return `N.IS ${Math.round(item.estimatedMonthlyGain).toLocaleString()} / month`;
+    return formatMoneyPerPeriod(
+      Math.round(item.estimatedMonthlyGain),
+      "month",
+      { currency, locale, decimals: 0 },
+    );
   }
   if (typeof item.estimatedYearlyGain === "number") {
-    return `N.IS ${Math.round(item.estimatedYearlyGain).toLocaleString()} / year`;
+    return formatMoneyPerPeriod(
+      Math.round(item.estimatedYearlyGain),
+      "year",
+      { currency, locale, decimals: 0 },
+    );
+  }
+  return null;
+}
+
+/** Resolves the price display from either structured `priceBand` or
+ *  legacy `priceRange` string. */
+function formatPriceDisplay(
+  item: CatalogItem,
+  displayCurrency: "ILS" | "USD" | "EUR" | "GBP" | "CAD" | "AUD",
+): string | null {
+  if (item.priceBand) {
+    return formatPriceBand(item.priceBand as PriceBand, displayCurrency);
+  }
+  if (typeof item.priceRange === "string" && item.priceRange.length > 0) {
+    return item.priceRange;
   }
   return null;
 }
@@ -127,11 +161,13 @@ export function OpportunityMarketplaceCard({
 }: OpportunityMarketplaceCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imgBroken, setImgBroken] = useState(false);
+  const { currency, locale } = useCurrency();
 
   const Icon = CATEGORY_ICON[item.category] ?? Sparkles;
   const confidence = CONFIDENCE_STYLE[item.confidence];
   const ctaTone = CTA_TONE[item.ctaKind] ?? CTA_TONE.external;
-  const gainLine = formatGainLine(item);
+  const gainLine = formatGainLine(item, currency, locale);
+  const priceLine = formatPriceDisplay(item, currency);
 
   const handleClick = async () => {
     if (!onCtaClick || isSubmitting) return;
@@ -218,14 +254,16 @@ export function OpportunityMarketplaceCard({
               </dd>
             </div>
           ) : null}
-          <div>
-            <dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Price
-            </dt>
-            <dd className="font-mono text-sm tabular-nums text-foreground">
-              {item.priceRange}
-            </dd>
-          </div>
+          {priceLine ? (
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Price
+              </dt>
+              <dd className="font-mono text-sm tabular-nums text-foreground">
+                {priceLine}
+              </dd>
+            </div>
+          ) : null}
           {item.serviceArea ? (
             <div>
               <dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1">

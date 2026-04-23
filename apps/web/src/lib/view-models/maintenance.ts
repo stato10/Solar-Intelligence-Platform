@@ -4,6 +4,7 @@ import type {
   DashboardRiskAlert,
   IntelligenceAlertItem,
 } from "@/lib/contracts";
+import type { RecommendationType } from "@/data/marketplace/types";
 import {
   formatPercent,
   formatCurrency,
@@ -11,6 +12,7 @@ import {
   formatScore,
   formatTimeRange,
   formatDateTime,
+  type CurrencyCode,
 } from "@/lib/utils/formatters";
 
 // ---------------------------------------------------------------------------
@@ -37,12 +39,34 @@ export interface MaintenanceRecommendationVm {
   isMaintenanceLikely: boolean;
 }
 
+// ConcernCard contract — doc 03 §6. One card per maintenance signal,
+// sharing the Problem → Impact → Money → Action layout.
+export type ConcernSeverity = "critical" | "warning" | "info";
+export type ConcernIcon = "droplets" | "thermometer" | "shield" | "wrench" | "sparkles";
+
+export interface MaintenanceConcernVm {
+  id: string;
+  title: string;
+  severity: ConcernSeverity;
+  icon: ConcernIcon;
+  impact: string;
+  estimatedMonthlyLoss: number;
+  estimatedMonthlyLossText: string;
+  confidence: "high" | "medium" | "low";
+  recommendedAction: string;
+  recommendationType: RecommendationType;
+  ctaLabel: string;
+  learnMoreText?: string;
+}
+
 export interface MaintenancePageViewModel {
   header: {
     title: string;
     subtitle: string;
     statusLevel: "good" | "warning" | "critical";
+    urgencyLabel: string | null;
   };
+  concerns: MaintenanceConcernVm[];
   context: {
     siteId: string;
     generatedAt: string;
@@ -102,7 +126,10 @@ function toAlertVm(alert: DashboardRiskAlert): MaintenanceRiskAlertVm {
   };
 }
 
-function intelligenceAlertToVm(alert: IntelligenceAlertItem): MaintenanceRiskAlertVm {
+function intelligenceAlertToVm(
+  alert: IntelligenceAlertItem,
+  options: { currency: CurrencyCode; locale: string },
+): MaintenanceRiskAlertVm {
   return {
     id: alert.id,
     riskType: alert.category,
@@ -110,7 +137,9 @@ function intelligenceAlertToVm(alert: IntelligenceAlertItem): MaintenanceRiskAle
     message: alert.message,
     windowText: "",
     actionHint: alert.actionHint,
-    moneyImpact: alert.moneyImpactIls ? formatCurrency(alert.moneyImpactIls) : undefined,
+    moneyImpact: alert.moneyImpactIls
+      ? formatCurrency(alert.moneyImpactIls, { ...options, decimals: 0 })
+      : undefined,
   };
 }
 
@@ -139,9 +168,145 @@ function toRecommendationVm(item: DashboardRecommendation): MaintenanceRecommend
 }
 
 // ---------------------------------------------------------------------------
+// Concern builders — doc 03 §6 contract
+// ---------------------------------------------------------------------------
+function confidenceFromLoss(lossPercent: number): "high" | "medium" | "low" {
+  if (lossPercent >= 8) return "high";
+  if (lossPercent >= 4) return "medium";
+  return "low";
+}
+
+function severityOrder(severity: ConcernSeverity): number {
+  return severity === "critical" ? 0 : severity === "warning" ? 1 : 2;
+}
+
+function buildSoilingConcern(
+  data: DashboardAggregateData,
+  leakageMonthly: number,
+  options: { currency: CurrencyCode; locale: string },
+): MaintenanceConcernVm | null {
+  if (!data.soiling.cleaningRecommended && data.soiling.estimatedLossPercent < 3) {
+    return null;
+  }
+  const lossPercent = data.soiling.estimatedLossPercent;
+  const severity: ConcernSeverity =
+    lossPercent >= 8 ? "critical" : lossPercent >= 4 ? "warning" : "info";
+  // Attribute a proportional share of the maintenance leakage to soiling
+  // when the engine has given us a total; else fall back to a simple
+  // per-percent-point estimate keyed off monthly import spend when
+  // available. Never invent numbers we don't have.
+  const monthlyLoss = leakageMonthly > 0
+    ? leakageMonthly * 0.6
+    : Math.max(0, lossPercent * 12); // last resort, ~₪12 per loss-percent
+  const by = data.soiling.recommendedCleaningDate
+    ? ` by ${formatDate(data.soiling.recommendedCleaningDate)}`
+    : " in the next 7 days";
+  return {
+    id: "concern-soiling",
+    title: "Dust buildup detected",
+    severity,
+    icon: "droplets",
+    impact: `−${lossPercent.toFixed(1)}% efficiency this month`,
+    estimatedMonthlyLoss: monthlyLoss,
+    estimatedMonthlyLossText: formatCurrency(monthlyLoss, {
+      currency: options.currency,
+      locale: options.locale,
+      decimals: 0,
+    }),
+    confidence: confidenceFromLoss(lossPercent),
+    recommendedAction: `Book panel cleaning${by}`,
+    recommendationType: "soiling",
+    ctaLabel: "Book cleaning",
+    learnMoreText: data.soiling.explanation || undefined,
+  };
+}
+
+function buildHeatConcern(
+  data: DashboardAggregateData,
+  leakageMonthly: number,
+  options: { currency: CurrencyCode; locale: string },
+): MaintenanceConcernVm | null {
+  if (data.heat.estimatedLossPercent < 5) return null;
+  const lossPercent = data.heat.estimatedLossPercent;
+  const severity: ConcernSeverity =
+    lossPercent >= 12 ? "critical" : lossPercent >= 8 ? "warning" : "info";
+  const monthlyLoss = leakageMonthly > 0
+    ? leakageMonthly * 0.35
+    : Math.max(0, lossPercent * 10);
+  const window = formatTimeRange(
+    data.heat.peakHeatWindowStart,
+    data.heat.peakHeatWindowEnd,
+  );
+  return {
+    id: "concern-heat",
+    title: "Thermal derating during peak hours",
+    severity,
+    icon: "thermometer",
+    impact: `−${lossPercent.toFixed(1)}% output between ${window}`,
+    estimatedMonthlyLoss: monthlyLoss,
+    estimatedMonthlyLossText: formatCurrency(monthlyLoss, {
+      currency: options.currency,
+      locale: options.locale,
+      decimals: 0,
+    }),
+    confidence: confidenceFromLoss(lossPercent),
+    recommendedAction:
+      "Shift heavy loads into the peak-solar window to offset thermal losses",
+    recommendationType: "automation_opportunity",
+    ctaLabel: "Configure automation",
+  };
+}
+
+function buildRiskConcerns(
+  data: DashboardAggregateData,
+  options: { currency: CurrencyCode; locale: string },
+): MaintenanceConcernVm[] {
+  return data.risks.alerts
+    .filter((a) => a.severity === "high" || a.severity === "moderate")
+    .slice(0, 2)
+    .map<MaintenanceConcernVm>((alert) => {
+      const severity: ConcernSeverity =
+        alert.severity === "high" ? "critical" : "warning";
+      // Alerts don't carry explicit losses; surface the window instead.
+      return {
+        id: `concern-risk-${alert.riskType}-${alert.expectedStart}`,
+        title: `${capitalize(alert.riskType)} risk detected`,
+        severity,
+        icon: "shield",
+        impact: alert.message,
+        estimatedMonthlyLoss: 0,
+        estimatedMonthlyLossText: "—",
+        confidence: alert.severity === "high" ? "high" : "medium",
+        recommendedAction: `Schedule inspection before ${formatDate(alert.expectedStart)}`,
+        recommendationType: "soiling", // routes to provider-service category
+        ctaLabel: "Book inspection",
+        learnMoreText: `Window: ${formatTimeRange(
+          formatDateTime(alert.expectedStart),
+          formatDateTime(alert.expectedEnd),
+        )}`,
+      };
+    });
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+// ---------------------------------------------------------------------------
 // Main mapper
 // ---------------------------------------------------------------------------
-export function toMaintenancePageViewModel(data: DashboardAggregateData): MaintenancePageViewModel {
+export interface MaintenanceViewModelOptions {
+  currency?: CurrencyCode;
+  locale?: string;
+}
+
+export function toMaintenancePageViewModel(
+  data: DashboardAggregateData,
+  options: MaintenanceViewModelOptions = {},
+): MaintenancePageViewModel {
+  const currency: CurrencyCode = options.currency ?? "ILS";
+  const locale = options.locale ?? (currency === "ILS" ? "en-IL" : "en-US");
+  const fmt = { currency, locale } as const;
   const recommendationItems = data.optimization.recommendations.map(toRecommendationVm);
   const maintenanceLikely = recommendationItems.filter((item) => item.isMaintenanceLikely);
   const other = recommendationItems.filter((item) => !item.isMaintenanceLikely);
@@ -149,7 +314,7 @@ export function toMaintenancePageViewModel(data: DashboardAggregateData): Mainte
   const intel = data.intelligence;
   const intelAlerts = (intel?.alerts ?? [])
     .filter((a) => a.category === "maintenance" || a.category === "weather" || a.category === "production")
-    .map(intelligenceAlertToVm);
+    .map((a) => intelligenceAlertToVm(a, fmt));
 
   // Determine status from intelligence or fallback logic
   const statusLevel = intel?.status.level ?? (
@@ -171,58 +336,41 @@ export function toMaintenancePageViewModel(data: DashboardAggregateData): Mainte
   const leakageMonthly = intel?.profit.maintenanceLeakageMonthlyIls ?? 0;
   const recoverable = data.optimization.estimatedValue;
 
-  // Build action cards based on actual signals
+  // Legacy actionCards field — kept for contract stability but no longer
+  // populated after Sprint 3 (doc 03 §10): the ConcernCards are the CTA
+  // surface. Page no longer renders this array.
   const actionCards: MaintenancePageViewModel["actionCards"] = [];
 
-  if (data.soiling.cleaningRecommended) {
-    actionCards.push({
-      id: "action-cleaning",
-      title: "Schedule Panel Cleaning",
-      description: `Dust is causing ~${data.soiling.estimatedLossPercent.toFixed(1)}% loss. Cleaning can recover ${formatCurrency(recoverable)}.`,
-      ctaLabel: "Request Cleaning",
-      icon: "droplets",
-      enabled: true,
-    });
-  }
-
-  if (data.heat.estimatedLossPercent > 5) {
-    actionCards.push({
-      id: "action-cooling",
-      title: "Explore Cooling Solutions",
-      description: `Heat is reducing output by ~${data.heat.estimatedLossPercent.toFixed(1)}% during peak hours.`,
-      ctaLabel: "Learn More",
-      icon: "thermometer",
-      enabled: true,
-    });
-  }
-
-  if (data.risks.alerts.some((a) => a.severity === "high")) {
-    actionCards.push({
-      id: "action-weather",
-      title: "Review Weather Protection",
-      description: "Active high-severity weather alerts may affect your system.",
-      ctaLabel: "View Alerts",
-      icon: "shield",
-      enabled: true,
-    });
-  }
-
-  // Always show a general maintenance action
-  actionCards.push({
-    id: "action-inspection",
-    title: "Schedule Inspection",
-    description: "Regular inspections help detect issues early and extend system life.",
-    ctaLabel: "Schedule",
-    icon: "wrench",
-    enabled: true,
+  // Build ConcernCards per doc 03 §6. Soiling + heat are derived from
+  // the dashboard aggregate; high/moderate weather risks surface as
+  // inspection concerns. Sorting: severity then loss descending.
+  const concerns: MaintenanceConcernVm[] = [];
+  const soilingConcern = buildSoilingConcern(data, leakageMonthly, fmt);
+  if (soilingConcern) concerns.push(soilingConcern);
+  const heatConcern = buildHeatConcern(data, leakageMonthly, fmt);
+  if (heatConcern) concerns.push(heatConcern);
+  concerns.push(...buildRiskConcerns(data, fmt));
+  concerns.sort((a, b) => {
+    const byS = severityOrder(a.severity) - severityOrder(b.severity);
+    if (byS !== 0) return byS;
+    return b.estimatedMonthlyLoss - a.estimatedMonthlyLoss;
   });
+
+  const urgencyLabel: string | null =
+    statusLevel === "critical"
+      ? "Immediate action"
+      : statusLevel === "warning"
+        ? "Action recommended"
+        : null;
 
   return {
     header: {
       title: "Maintenance",
       subtitle,
       statusLevel: statusLevel as "good" | "warning" | "critical",
+      urgencyLabel,
     },
+    concerns,
     context: {
       siteId: data.siteId,
       generatedAt: formatDate(data.generatedAt),
@@ -234,11 +382,11 @@ export function toMaintenancePageViewModel(data: DashboardAggregateData): Mainte
       },
     },
     moneyImpact: {
-      leakageMonthly: formatCurrency(leakageMonthly),
+      leakageMonthly: formatCurrency(leakageMonthly, { ...fmt, decimals: 0 }),
       leakageExplanation: leakageMonthly > 0
-        ? `You're losing approximately ${formatCurrency(leakageMonthly)}/month due to maintenance issues.`
+        ? `You're losing approximately ${formatCurrency(leakageMonthly, { ...fmt, decimals: 0 })}/month due to maintenance issues.`
         : "No measurable leakage from maintenance issues.",
-      recoverable: formatCurrency(recoverable),
+      recoverable: formatCurrency(recoverable, { ...fmt, decimals: 0 }),
     },
     soiling: {
       score: data.soiling.score,
