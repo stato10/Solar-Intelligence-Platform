@@ -30,8 +30,8 @@ interface ActionLaneProps {
    * Layout for the children area:
    *   "grid"  — 2-up grid on md+, 1-up below (default for high/medium).
    *   "stack" — single column, children stretch full-width. Use this for
-   *             a self-laid-out section (e.g. EnergyDecisionsSection) so
-   *             it does not get squeezed into half the lane.
+   *             a self-laid-out section so it does not get squeezed into
+   *             half the lane.
    *   "rows"  — tight vertical list, used by the low-priority lane.
    * If omitted, resolves to "rows" for `low` and "grid" otherwise. A single
    * child on a non-low lane auto-upgrades to "stack" so it does not leave
