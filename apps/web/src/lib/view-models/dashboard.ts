@@ -163,13 +163,20 @@ export interface DashboardPageViewModel {
 // ---------------------------------------------------------------------------
 /**
  * Resolve the five-value SystemState from the legacy SemanticStatus plus the
- * optimization headroom signal. Precedence: critical > warning > optimization > healthy.
- * `no-data` is handled at the page boundary (when the aggregate is absent).
+ * optimization headroom signal. Precedence: `critical > warning > optimization
+ * > healthy`. `no-data` overrides everything (see `forceNoData`).
+ *
+ * Callers that know the site is unconnected (no `activeSiteId` cookie, no
+ * ingestion for ≥24h, etc.) must pass `forceNoData = true`; the detection
+ * itself lives at the page boundary because it depends on auth / cookies
+ * the view-model layer cannot see.
  */
 function deriveSystemState(
   legacyStatus: SemanticStatus,
   optimizationHeadroomIls: number,
+  forceNoData = false,
 ): SystemState {
+  if (forceNoData) return "no-data";
   if (legacyStatus === "critical") return "critical";
   if (legacyStatus === "warning") return "warning";
   if (optimizationHeadroomIls >= OPTIMIZATION_HEADROOM_MIN_ILS) return "optimization";
@@ -179,7 +186,10 @@ function deriveSystemState(
 // ---------------------------------------------------------------------------
 // Intelligence-first Hero derivation
 // ---------------------------------------------------------------------------
-function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm {
+function deriveHeroFromIntelligence(
+  intel: DashboardIntelligence,
+  forceNoData = false,
+): HeroInsightVm {
   const status = intel.status;
   const PERIOD_LABELS: Record<string, string> = {
     daily: "daily impact",
@@ -191,7 +201,7 @@ function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm
 
   const legacyStatus = status.level as SemanticStatus;
   const optimizationHeadroomIls = intel.profit?.headroomMonthlyIls ?? 0;
-  const systemState = deriveSystemState(legacyStatus, optimizationHeadroomIls);
+  const systemState = deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData);
 
   return {
     headline: status.headline,
@@ -211,7 +221,10 @@ function deriveHeroFromIntelligence(intel: DashboardIntelligence): HeroInsightVm
 // ---------------------------------------------------------------------------
 // Fallback: client-side Hero derivation (for old cached snapshots)
 // ---------------------------------------------------------------------------
-function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
+function deriveHeroFallback(
+  data: DashboardAggregateData,
+  forceNoData = false,
+): HeroInsightVm {
   const devPercent = data.benchmark.productionDeviationPercent;
   const cleaningRec = data.soiling.cleaningRecommended;
   const optimizationHeadroomIls = data.optimization.estimatedValue ?? 0;
@@ -224,7 +237,7 @@ function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
       moneyImpact: formatCurrency(data.optimization.estimatedValue),
       moneyPeriod: "recoverable value",
       status: legacyStatus,
-      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
       optimizationHeadroomIls,
       statusLabel: "Attention Needed",
       ctaLabel: "Schedule Cleaning",
@@ -240,7 +253,7 @@ function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
       moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings),
       moneyPeriod: "monthly savings at risk",
       status: legacyStatus,
-      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
       optimizationHeadroomIls,
       statusLabel: "Action Required",
       ctaLabel: "Review Optimization",
@@ -256,7 +269,7 @@ function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
       moneyImpact: formatCurrency(data.optimization.estimatedValue),
       moneyPeriod: "optimization potential",
       status: legacyStatus,
-      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+      systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
       optimizationHeadroomIls,
       statusLabel: "Maintenance Suggested",
       ctaLabel: "Schedule Cleaning",
@@ -271,7 +284,7 @@ function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
     moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings),
     moneyPeriod: "monthly estimated savings",
     status: legacyStatus,
-    systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls),
+    systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
     optimizationHeadroomIls,
     statusLabel: "On Track",
     ctaLabel: "View Details",
@@ -282,15 +295,31 @@ function deriveHeroFallback(data: DashboardAggregateData): HeroInsightVm {
 // ---------------------------------------------------------------------------
 // Main mapper
 // ---------------------------------------------------------------------------
-export function toDashboardPageViewModel(data: DashboardAggregateData): DashboardPageViewModel {
+/**
+ * Options accepted by the dashboard mapper.
+ *
+ * `forceNoData` promotes the hero to `systemState === "no-data"` regardless of
+ * what the engine returned — callers pass this when auth/ingestion signals
+ * that live outside the aggregate (no `activeSiteId` cookie, no telemetry in
+ * 24h, etc.) prove the user isn't actually connected yet.
+ */
+export interface DashboardViewModelOptions {
+  forceNoData?: boolean;
+}
+
+export function toDashboardPageViewModel(
+  data: DashboardAggregateData,
+  options: DashboardViewModelOptions = {},
+): DashboardPageViewModel {
+  const { forceNoData = false } = options;
   const devPercent = data.benchmark.productionDeviationPercent;
   const devStatus = deviationToStatus(devPercent);
   const intel = data.intelligence;
 
   // Prefer backend intelligence for hero; fall back to client-side derivation
   const hero = intel
-    ? deriveHeroFromIntelligence(intel)
-    : deriveHeroFallback(data);
+    ? deriveHeroFromIntelligence(intel, forceNoData)
+    : deriveHeroFallback(data, forceNoData);
 
   // Build intelligence-enriched alerts for the maintenance summary
   const intelligenceAlerts = intel?.alerts ?? [];

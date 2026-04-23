@@ -11,6 +11,8 @@ import { DashboardEmptyState, DashboardErrorState } from "./_components/dashboar
 
 // Primary column
 import { HeroInsightCard } from "@/components/dashboard/HeroInsightCard";
+import { ZeroDataHero } from "@/components/dashboard/ZeroDataHero";
+import { EstimatedSurface } from "@/components/dashboard/EstimatedBadge";
 import { ActionLane } from "@/components/dashboard/ActionLane";
 import { LossIntelligenceCard } from "@/components/dashboard/LossIntelligenceCard";
 import { EnergyDecisionInsightCard } from "@/components/dashboard/EnergyDecisionInsightCard";
@@ -26,7 +28,12 @@ import { HardwareConnectCta } from "@/components/dashboard/HardwareConnectCta";
 
 import { OnboardingDialog } from "@/components/dashboard/OnboardingDialog";
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  // Next.js 15+: `searchParams` is a Promise (async dynamic params).
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   let dashboard: DashboardAggregateData | null = null;
   let dashboardVm: ReturnType<typeof toDashboardPageViewModel> | null = null;
   let errorMessage: string | null = null;
@@ -34,19 +41,34 @@ export default async function DashboardPage() {
   let aiInsightsError: string | null = null;
   let opportunities: MarketplaceOpportunity[] = [];
   let accessToken: string | undefined;
+  // --- Zero-data detection (spec: docs/redesign/12-empty-states.md §3) -------
+  // A user enters the zero-data experience when there is no active site
+  // selected — the page falls back to the canned demo aggregate in that case
+  // and we know the user hasn't connected real hardware. The `?nodata=1`
+  // query param forces the state for visual QA without touching cookies.
+  let forceNoData = false;
 
   try {
     const cookieStore = await cookies();
     accessToken = cookieStore.get("sip.accessToken")?.value;
     const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
 
+    const params = (await searchParams) ?? {};
+    const nodataParam = params["nodata"];
+    const nodataForced =
+      nodataParam === "1" ||
+      nodataParam === "true" ||
+      (Array.isArray(nodataParam) && nodataParam.includes("1"));
+
+    forceNoData = !activeSiteId || nodataForced;
+
     if (activeSiteId) {
       dashboard = await fetchDashboardBySiteId(activeSiteId, accessToken);
     } else {
       dashboard = await fetchDashboardAggregate(); // Default demo 
     }
-    dashboardVm = toDashboardPageViewModel(dashboard);
-    
+    dashboardVm = toDashboardPageViewModel(dashboard, { forceNoData });
+
     try {
       aiInsights = await fetchAiInsightsV3(dashboard, accessToken);
     } catch (aiError) {
@@ -98,14 +120,19 @@ export default async function DashboardPage() {
   // only joins the Now lane when the system is actively at risk — on a
   // healthy dashboard it would read as noise (spec 02 §6 "Modify").
   const systemState = dashboardVm.hero.systemState;
+  const isNoData = systemState === "no-data";
   const showLossInNow = systemState === "critical" || systemState === "warning";
   const decisionsByPriority = partitionDecisionsByPriority(
     aiInsights?.energyDecisions,
   );
+  // In `no-data` mode the decision lanes are intentionally suppressed:
+  // every "action" would be based on forecasted / canned data and would read
+  // as noise next to the dominant "Connect your inverter" CTA. Spec 12 §3.
   const hasNowActions =
-    showLossInNow || decisionsByPriority.high.length > 0;
-  const hasRecommendedActions = decisionsByPriority.medium.length > 0;
-  const hasExploreActions = decisionsByPriority.low.length > 0;
+    !isNoData && (showLossInNow || decisionsByPriority.high.length > 0);
+  const hasRecommendedActions =
+    !isNoData && decisionsByPriority.medium.length > 0;
+  const hasExploreActions = !isNoData && decisionsByPriority.low.length > 0;
 
   return (
     <div className="relative pb-12">
@@ -116,14 +143,18 @@ export default async function DashboardPage() {
 
         {/* LEFT COLUMN — priority stream: hero → lanes → supporting data → AI */}
         <section className="space-y-8">
-          {/* 1. Hero */}
-          <HeroInsightCard
-            hero={dashboardVm.hero}
-            opportunities={opportunities}
-            siteId={dashboardVm.siteId}
-            siteName={dashboardVm.siteName}
-            accessToken={accessToken}
-          />
+          {/* 1. Hero — swaps to ZeroDataHero when the user is unconnected. */}
+          {isNoData ? (
+            <ZeroDataHero />
+          ) : (
+            <HeroInsightCard
+              hero={dashboardVm.hero}
+              opportunities={opportunities}
+              siteId={dashboardVm.siteId}
+              siteName={dashboardVm.siteName}
+              accessToken={accessToken}
+            />
+          )}
 
           {/* 2. Now — high priority actions (only when at risk or when we
                have a high-priority behavioral decision to act on today). */}
@@ -188,40 +219,64 @@ export default async function DashboardPage() {
             </ActionLane>
           ) : null}
 
-          {/* 5. Supporting data row — compact financial + maintenance snapshot */}
+          {/* 5. Supporting data row — compact financial + maintenance snapshot.
+               Wrapped in EstimatedSurface while in zero-data so numbers read
+               as forecasts, not as committed facts. */}
           <section
             aria-label="Supporting data"
             className="grid gap-4 md:grid-cols-2"
           >
-            <MaintenancePanel maintenance={dashboardVm.maintenance} />
-            <SavingsPanel savings={dashboardVm.savings} />
+            <EstimatedSurface active={isNoData}>
+              <MaintenancePanel maintenance={dashboardVm.maintenance} />
+            </EstimatedSurface>
+            <EstimatedSurface active={isNoData}>
+              <SavingsPanel savings={dashboardVm.savings} />
+            </EstimatedSurface>
           </section>
 
-          {/* 6. AI deep-dive — collapsed by default, demoted below the fold */}
-          <AiDeepDiveAccordion
-            data={aiInsights as AiInsightContractOutputV3 | null}
-            errorMessage={aiInsightsError}
-          />
+          {/* 6. AI deep-dive — collapsed by default, demoted below the fold.
+               Suppressed in zero-data: there is no real telemetry for the
+               engine to dive into, so the accordion would only advertise an
+               empty panel. */}
+          {!isNoData ? (
+            <AiDeepDiveAccordion
+              data={aiInsights as AiInsightContractOutputV3 | null}
+              errorMessage={aiInsightsError}
+            />
+          ) : null}
         </section>
 
-        {/* RIGHT COLUMN — numeric cockpit + connect-system CTA */}
-        <aside className="space-y-4">
-          <PerformanceStatsGrid performance={dashboardVm.performance} />
+        {/* RIGHT COLUMN — numeric cockpit + connect-system CTA.
+             In zero-data mode the whole aside is dimmed (spec 12 §3) so the
+             dominant action remains the Connect CTA in the hero. */}
+        <aside
+          className={`space-y-4 ${isNoData ? "opacity-75" : ""}`.trim()}
+          data-estimated={isNoData ? "true" : undefined}
+        >
+          <EstimatedSurface active={isNoData}>
+            <PerformanceStatsGrid performance={dashboardVm.performance} />
+          </EstimatedSurface>
 
-          <WhatIfSimulator
-            currentMonthlyIls={currentMonthlyIls}
-            maintenanceLeakageMonthlyIls={maintenanceLeakage}
-            headroomMonthlyIls={headroomMonthlyIls}
-          />
+          <EstimatedSurface active={isNoData}>
+            <WhatIfSimulator
+              currentMonthlyIls={currentMonthlyIls}
+              maintenanceLeakageMonthlyIls={maintenanceLeakage}
+              headroomMonthlyIls={headroomMonthlyIls}
+            />
+          </EstimatedSurface>
 
-          <UsageWindowCard
-            usageWindow={dashboardVm.usageWindow}
-            opportunities={opportunities}
-            siteId={dashboardVm.siteId}
-            accessToken={accessToken}
-          />
+          <EstimatedSurface active={isNoData}>
+            <UsageWindowCard
+              usageWindow={dashboardVm.usageWindow}
+              opportunities={opportunities}
+              siteId={dashboardVm.siteId}
+              accessToken={accessToken}
+            />
+          </EstimatedSurface>
 
-          {mode !== "real" && <HardwareConnectCta />}
+          {/* HardwareConnectCta is always present while unconnected; it is the
+               primary destination of the zero-data hero. */}
+          {(isNoData || mode !== "real") && <HardwareConnectCta />}
         </aside>
 
       </div>
