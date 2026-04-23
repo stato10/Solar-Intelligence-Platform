@@ -6,13 +6,14 @@ import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashb
 import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
 import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
-import { EnergyDecisionsSection } from "@/components/dashboard/EnergyDecisionsSection";
+import { partitionDecisionsByPriority } from "@/lib/view-models/energy-decisions";
 import { DashboardEmptyState, DashboardErrorState } from "./_components/dashboard-state";
 
 // Primary column
 import { HeroInsightCard } from "@/components/dashboard/HeroInsightCard";
 import { ActionLane } from "@/components/dashboard/ActionLane";
 import { LossIntelligenceCard } from "@/components/dashboard/LossIntelligenceCard";
+import { EnergyDecisionInsightCard } from "@/components/dashboard/EnergyDecisionInsightCard";
 import { MaintenancePanel } from "@/components/dashboard/MaintenancePanel";
 import { SavingsPanel } from "@/components/dashboard/SavingsPanel";
 import { AiDeepDiveAccordion } from "@/components/dashboard/AiDeepDiveAccordion";
@@ -92,13 +93,19 @@ export default async function DashboardPage() {
   const mode = lossBreakdown?.mode ?? "forecast";
 
   // --- Action lane routing (spec: docs/redesign/02-dashboard.md §8) ----------
-  // Until EnergyDecisionsSection is split by ActionPriority in the next step,
-  // we route the whole section into Recommended and surface LossIntelligenceCard
-  // in Now only when the system is actively at risk.
+  // Decisions are partitioned into Now / Recommended / Explore-later by
+  // the view-model layer; see 01-state-contracts.md §2. LossIntelligenceCard
+  // only joins the Now lane when the system is actively at risk — on a
+  // healthy dashboard it would read as noise (spec 02 §6 "Modify").
   const systemState = dashboardVm.hero.systemState;
   const showLossInNow = systemState === "critical" || systemState === "warning";
-  const hasEnergyDecisions =
-    (aiInsights?.energyDecisions?.length ?? 0) > 0;
+  const decisionsByPriority = partitionDecisionsByPriority(
+    aiInsights?.energyDecisions,
+  );
+  const hasNowActions =
+    showLossInNow || decisionsByPriority.high.length > 0;
+  const hasRecommendedActions = decisionsByPriority.medium.length > 0;
+  const hasExploreActions = decisionsByPriority.low.length > 0;
 
   return (
     <div className="relative pb-12">
@@ -118,32 +125,70 @@ export default async function DashboardPage() {
             accessToken={accessToken}
           />
 
-          {/* 2. Now — high priority actions (only when at risk) */}
-          {showLossInNow ? (
+          {/* 2. Now — high priority actions (only when at risk or when we
+               have a high-priority behavioral decision to act on today). */}
+          {hasNowActions ? (
             <ActionLane
               priority="high"
               subtitle="Needs attention within 48 hours."
             >
-              <LossIntelligenceCard lossBreakdown={lossBreakdown} />
+              {showLossInNow ? (
+                <LossIntelligenceCard lossBreakdown={lossBreakdown} />
+              ) : null}
+              {decisionsByPriority.high.map((decision) => (
+                <EnergyDecisionInsightCard
+                  key={decision.id}
+                  decision={decision}
+                  priority="high"
+                  opportunities={opportunities}
+                  siteId={dashboardVm.siteId}
+                  accessToken={accessToken}
+                />
+              ))}
             </ActionLane>
           ) : null}
 
-          {/* 3. Recommended — medium priority (AI energy decisions) */}
-          {hasEnergyDecisions ? (
+          {/* 3. Recommended — medium priority (forecasted ROI upgrades). */}
+          {hasRecommendedActions ? (
             <ActionLane
               priority="medium"
               subtitle="Worth looking at this week."
             >
-              <EnergyDecisionsSection
-                decisions={aiInsights?.energyDecisions ?? []}
-                opportunities={opportunities}
-                siteId={dashboardVm.siteId}
-                accessToken={accessToken}
-              />
+              {decisionsByPriority.medium.map((decision) => (
+                <EnergyDecisionInsightCard
+                  key={decision.id}
+                  decision={decision}
+                  priority="medium"
+                  opportunities={opportunities}
+                  siteId={dashboardVm.siteId}
+                  accessToken={accessToken}
+                />
+              ))}
             </ActionLane>
           ) : null}
 
-          {/* 4. Supporting data row — compact financial + maintenance snapshot */}
+          {/* 4. Explore later — low-priority / low-confidence suggestions.
+               Rendered as a tight `rows` lane so they read as secondary. */}
+          {hasExploreActions ? (
+            <ActionLane
+              priority="low"
+              subtitle="Long-payback ideas and low-confidence suggestions."
+            >
+              {decisionsByPriority.low.map((decision) => (
+                <EnergyDecisionInsightCard
+                  key={decision.id}
+                  decision={decision}
+                  priority="low"
+                  opportunities={opportunities}
+                  siteId={dashboardVm.siteId}
+                  accessToken={accessToken}
+                  compact
+                />
+              ))}
+            </ActionLane>
+          ) : null}
+
+          {/* 5. Supporting data row — compact financial + maintenance snapshot */}
           <section
             aria-label="Supporting data"
             className="grid gap-4 md:grid-cols-2"
@@ -152,7 +197,7 @@ export default async function DashboardPage() {
             <SavingsPanel savings={dashboardVm.savings} />
           </section>
 
-          {/* 5. AI deep-dive — collapsed by default, demoted below the fold */}
+          {/* 6. AI deep-dive — collapsed by default, demoted below the fold */}
           <AiDeepDiveAccordion
             data={aiInsights as AiInsightContractOutputV3 | null}
             errorMessage={aiInsightsError}
