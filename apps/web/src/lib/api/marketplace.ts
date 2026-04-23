@@ -1,5 +1,4 @@
-import { postJson } from "./client";
-import { getApiBaseUrl } from "./env";
+import { ApiHttpError, postJson } from "./client";
 import type { CreateLeadIntentPayload, LeadIntent, MarketplaceOpportunity } from "../contracts/marketplace";
 
 export async function fetchMarketplaceOpportunities(
@@ -8,7 +7,7 @@ export async function fetchMarketplaceOpportunities(
   accessToken?: string
 ): Promise<MarketplaceOpportunity[]> {
   try {
-    // Opportunities require authentication
+    // Opportunities require authentication — silently no-op for anon users.
     if (!accessToken) return [];
 
     const res = await postJson<{ aggregate: unknown; aiInsights?: unknown }, { success: boolean; data: MarketplaceOpportunity[] }>(
@@ -21,8 +20,19 @@ export async function fetchMarketplaceOpportunities(
     }
     return res.data;
   } catch (error) {
-    // Log message only to avoid Next.js dev overlay catching the full Error object
-    console.warn("Failed to load opportunities dynamically (e.g. not logged in)");
+    // Expected auth failures (expired/invalid token) are silent: the Next.js
+    // dev overlay surfaces every `console.warn` as an error, so noisy logs
+    // here pollute the developer experience for a non-issue. Other failures
+    // still warn with a plain string (never the Error object, which would
+    // also trip the overlay).
+    if (error instanceof ApiHttpError && (error.status === 401 || error.status === 403)) {
+      return [];
+    }
+    console.warn(
+      `Failed to load opportunities dynamically: ${
+        error instanceof Error ? error.message : "unknown error"
+      }`
+    );
     return [];
   }
 }
