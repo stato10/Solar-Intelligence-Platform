@@ -1,0 +1,55 @@
+{
+  "providers": [
+    {
+      "id": "provider-cleaning-central",
+      "providerId": "prov-cleaning-central",
+      "category": "provider-service",
+      "title": "Rooftop cleaning — central Israel",
+      "brand": "Verified cleaning technician",
+      "image": "/marketplace/provider-cleaning.jpg",
+      "priceRange": "From N.IS 250 / visit",
+      "estimatedMonthlyGain": 18,
+      "confidence": "high",
+      "serviceArea": "Tel Aviv + Gush Dan",
+      "verified": true,
+      "whyRecommendedTags": ["Soiling recovery"],
+      "appliesTo": ["soiling"],
+      "ctaLabel": "Book visit",
+      "ctaKind": "book"
+    },
+    {
+      "id": "provider-battery-installer",
+      "providerId": "prov-battery-north",
+      "category": "provider-service",
+      "title": "Battery installation — certified installer",
+      "brand": "Verified battery installer",
+      "image": "/marketplace/provider-battery.jpg",
+      "priceRange": "Quote on request",
+      "estimatedYearlyGain": 2200,
+      "confidence": "medium",
+      "serviceArea": "Haifa + North",
+      "verified": true,
+      "whyRecommendedTags": ["Battery ROI", "Local installer"],
+      "appliesTo": ["battery_opportunity"],
+      "ctaLabel": "Request quote",
+      "ctaKind": "quote"
+    },
+    {
+      "id": "provider-automation-specialist",
+      "providerId": "prov-automation-central",
+      "category": "provider-service",
+      "title": "Home automation specialist",
+      "brand": "Verified automation specialist",
+      "image": "/marketplace/provider-automation.jpg",
+      "priceRange": "From N.IS 450 / hour",
+      "estimatedMonthlyGain": 45,
+      "confidence": "medium",
+      "serviceArea": "Nationwide",
+      "verified": true,
+      "whyRecommendedTags": ["Setup complexity", "Professional install"],
+      "appliesTo": ["automation_opportunity", "low_self_consumption"],
+      "ctaLabel": "Book consult",
+      "ctaKind": "book"
+    }
+  ]
+}
