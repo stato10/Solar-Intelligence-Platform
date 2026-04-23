@@ -16,47 +16,49 @@ export function HardwareConnectCta({ className = "" }: { className?: string }) {
       <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-violet-500/10 blur-3xl rounded-full pointer-events-none" />
       
       <CardHeader className="pb-3 border-b border-indigo-500/10 bg-black/20 z-10 relative">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg shrink-0">
             <Lock className="w-5 h-5" />
           </div>
-          <div>
-            <CardTitle className="text-xl font-bold tracking-tight text-white">
+          <div className="min-w-0">
+            <CardTitle className="text-base font-bold tracking-tight text-white sm:text-lg">
               Unlock Real-Time Monitoring
             </CardTitle>
-            <CardDescription className="text-indigo-200/70 mt-1">
+            <CardDescription className="text-indigo-200/70 mt-1 text-xs sm:text-sm">
               Verify AI estimations with physical hardware metrics.
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-6 relative z-10">
-        <div className="grid gap-4 mb-6">
+      <CardContent className="p-5 relative z-10 sm:p-6">
+        <div className="grid gap-3 mb-5">
           <div className="flex gap-3 text-slate-300">
-            <BarChart3 className="w-5 h-5 text-indigo-400 shrink-0" />
-            <p className="text-sm">
-              <strong className="text-white">Track your REAL losses in real-time</strong> instead of relying strictly on regional weather modeling.
+            <BarChart3 className="w-4 h-4 mt-0.5 text-indigo-400 shrink-0" />
+            <p className="text-xs sm:text-sm leading-snug">
+              <strong className="text-white">Track your REAL losses in real-time</strong> instead of relying on regional weather modeling.
             </p>
           </div>
           <div className="flex gap-3 text-slate-300">
-            <ActivitySquare className="w-5 h-5 text-indigo-400 shrink-0" />
-            <p className="text-sm">
-              <strong className="text-white">Get automated maintenance alerts</strong> dispatched directly to technicians before your monthly bill spikes.
+            <ActivitySquare className="w-4 h-4 mt-0.5 text-indigo-400 shrink-0" />
+            <p className="text-xs sm:text-sm leading-snug">
+              <strong className="text-white">Get automated maintenance alerts</strong> dispatched before your monthly bill spikes.
             </p>
           </div>
         </div>
 
         {!connecting ? (
-          <div className="bg-black/30 p-4 rounded-xl border border-indigo-500/10 flex flex-col md:flex-row items-center justify-between gap-4 transition-all">
-            <div className="space-y-1 text-center md:text-left">
-              <p className="text-sm font-semibold text-slate-300">Supported Integrations</p>
-              <p className="text-xs text-slate-500">SolarEdge · Enphase · SMA · Fronius</p>
-            </div>
-            <Button onClick={() => setConnecting(true)} className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold group shadow-lg shadow-indigo-900/50">
+          <div className="bg-black/30 p-4 rounded-xl border border-indigo-500/10 flex flex-col gap-3 transition-all">
+            <Button onClick={() => setConnecting(true)} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold group shadow-lg shadow-indigo-900/50">
               <Zap className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform text-indigo-200" />
               Connect System safely
             </Button>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Supported integrations
+              </p>
+              <p className="text-xs text-slate-500">SolarEdge · Enphase · SMA · Fronius</p>
+            </div>
           </div>
         ) : (
           <div className="bg-black/40 p-4 rounded-xl border border-indigo-500/30 animate-in fade-in slide-in-from-bottom-2 duration-300">
