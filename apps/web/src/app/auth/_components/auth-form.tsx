@@ -6,11 +6,56 @@ import { LockKeyhole, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AuthUser } from "@/lib/contracts";
 import { AuthApiError, loginAuth, registerAuth } from "@/lib/api/auth";
+import { fetchUserSites } from "@/lib/api/sites";
+import { setActiveSite } from "@/app/actions";
 
 type AuthMode = "login" | "register";
 
 const ACCESS_TOKEN_KEY = "sip.accessToken";
 const AUTH_USER_KEY = "sip.authUser";
+const ACTIVE_SITE_COOKIE = "sip.activeSiteId";
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * After login, restore an existing site session when possible so returning
+ * users land on their real dashboard — not an empty onboarding wizard that
+ * makes it look like their system was never saved.
+ */
+async function routeAfterAuth(
+  mode: AuthMode,
+  accessToken: string,
+  router: ReturnType<typeof useRouter>,
+) {
+  if (mode === "register") {
+    router.push("/onboarding");
+    return;
+  }
+
+  try {
+    const sites = await fetchUserSites(accessToken);
+    if (sites.length === 0) {
+      router.push("/onboarding");
+      return;
+    }
+
+    const cookieSiteId = readCookie(ACTIVE_SITE_COOKIE);
+    const preferred =
+      (cookieSiteId && sites.find((site) => site.id === cookieSiteId)) ||
+      sites[0];
+
+    await setActiveSite(preferred.id).catch(() => {});
+    router.push("/dashboard");
+  } catch {
+    // Sites lookup failed — still authenticated; send them to onboarding
+    // rather than a blank dashboard error.
+    router.push("/onboarding");
+  }
+}
 
 export function AuthForm() {
   const router = useRouter();
@@ -83,8 +128,7 @@ export function AuthForm() {
       }
 
       persistSession(result.accessToken, result.user);
-      // The unified wizard at /onboarding supersedes the legacy step pages.
-      router.push("/onboarding");
+      await routeAfterAuth(mode, result.accessToken, router);
     } catch (error) {
       if (error instanceof AuthApiError) {
         setErrorMessage(error.message);

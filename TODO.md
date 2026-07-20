@@ -273,9 +273,9 @@ Execution Order (strict, single-task flow):
 
 Testing:
 - [x] Create `TESTING_STRATEGY.md`
-- [ ] Unit tests for engine modules
+- [ ] Unit tests for engine modules *(post-MVP hardening — not blocking product close)*
 - [x] API <-> engine contract tests
-- [ ] Provider adapter tests (mock/real behavior)
+- [ ] Provider adapter tests (mock/real behavior) *(post-MVP hardening — not blocking product close)*
 - [x] Dashboard response snapshot tests
 
 Cross-cutting MVP test gate (must all pass before final close):
