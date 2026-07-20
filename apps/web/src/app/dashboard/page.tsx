@@ -1,9 +1,8 @@
-import { cookies } from "next/headers";
 import type { AiInsightContractOutputV3, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsightsV3, type AiInsightsV3Context } from "@/lib/api/ai-insights";
 import { ApiHttpError } from "@/lib/api/client";
-import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
-import { fetchDeviceProfileBySite, fetchTariffBySite } from "@/lib/api/settings-persist";
+import { getSessionCookies, getSessionDashboard, getSessionTariff } from "@/lib/api/session-data";
+import { fetchDeviceProfileBySite } from "@/lib/api/settings-persist";
 import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
 import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
@@ -71,9 +70,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   let substate: OnboardingSubstate = "live";
 
   try {
-    const cookieStore = await cookies();
-    accessToken = cookieStore.get("sip.accessToken")?.value;
-    activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
+    const session = await getSessionCookies();
+    accessToken = session.accessToken;
+    activeSiteId = session.activeSiteId;
 
     const params = (await searchParams) ?? {};
     const nodataParam = params["nodata"];
@@ -89,8 +88,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           ? substateParam[0]
           : undefined;
 
-    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
-    dashboard = await fetchDashboardForSession(activeSiteId, accessToken, geo);
+    // Request-scoped: shares work with any other page render in this tick.
+    dashboard = await getSessionDashboard();
 
     // Detect the natural substate from signals the data layer gave us.
     const naturalSubstate = deriveOnboardingSubstate({
@@ -125,14 +124,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       forceNoData: shouldReplaceHero(substate),
     });
 
-    // Real site context (device profile + tariff) for the AI request —
-    // best-effort: any failure falls back to the demo defaults inside
-    // fetchAiInsightsV3 rather than blocking insights entirely.
+    // Profile + tariff in parallel; tariff is request-cached with layout.
     let aiContext: AiInsightsV3Context | undefined;
     if (activeSiteId && accessToken) {
       const [profileResult, tariffResult] = await Promise.allSettled([
         fetchDeviceProfileBySite(activeSiteId, accessToken),
-        fetchTariffBySite(activeSiteId, accessToken),
+        getSessionTariff(),
       ]);
       aiContext = {
         deviceProfile: profileResult.status === "fulfilled" ? profileResult.value : null,
@@ -140,6 +137,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       };
     }
 
+    // AI first (needs aggregate + context); marketplace depends on AI when
+    // available but must not block the page if it fails.
     try {
       aiInsights = await fetchAiInsightsV3(dashboard, accessToken, aiContext);
     } catch (aiError) {
@@ -150,9 +149,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       }
     }
 
-    // Opportunities are completely non-breaking and additive
     try {
-      opportunities = await fetchMarketplaceOpportunities(dashboard, aiInsights ?? undefined, accessToken);
+      opportunities = await fetchMarketplaceOpportunities(
+        dashboard,
+        aiInsights ?? undefined,
+        accessToken,
+      );
     } catch {
       console.warn("Failed to load opportunities dynamically, continuing without them");
     }
@@ -396,17 +398,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       </div>
 
-      {/* Footer metadata */}
-      <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row">
-        <p>Generated: {dashboardVm.generatedAt}</p>
-        <div className="flex gap-4">
-          <span>
-            Providers: {dashboardVm.providers.weather} (Weather) ·{" "}
-            {dashboardVm.providers.solar} (Solar)
-          </span>
-          <span>Engine: {dashboardVm.providers.engine}</span>
-        </div>
-      </div>
+      {/* Subtle data provenance — demoted so it doesn't compete with the product UI */}
+      <p
+        className="mt-10 text-center text-[11px] text-muted-foreground/60"
+        title={`Weather: ${dashboardVm.providers.weather} · Solar: ${dashboardVm.providers.solar} · Engine: ${dashboardVm.providers.engine}`}
+      >
+        Live data · {dashboardVm.generatedAt}
+      </p>
     </div>
   );
 }

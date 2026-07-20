@@ -1,8 +1,7 @@
-import { cookies } from "next/headers";
 import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsights } from "@/lib/api/ai-insights";
 import { ApiHttpError } from "@/lib/api/client";
-import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
+import { getSessionCookies, getSessionDashboard } from "@/lib/api/session-data";
 import { toSavingsPageViewModel } from "@/lib/view-models/savings";
 import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
 import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
@@ -30,12 +29,8 @@ export default async function SavingsPage() {
   let aiInsightsError: string | null = null;
 
   try {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get("sip.accessToken")?.value;
-    const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
-    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
-
-    aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
+    const { accessToken } = await getSessionCookies();
+    aggregate = await getSessionDashboard();
 
     vm = toSavingsPageViewModel(aggregate);
 

@@ -1,6 +1,5 @@
-import { cookies } from "next/headers";
 import Link from "next/link";
-import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
+import { getSessionCookies, getSessionDashboard } from "@/lib/api/session-data";
 import { toAutomationPageViewModel } from "@/lib/view-models/automation";
 import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
 import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
@@ -24,12 +23,9 @@ export default async function AutomationPage() {
   let navBadges: NavBadgeCounts | null = null;
 
   try {
-    const cookieStore = await cookies();
-    accessToken = cookieStore.get("sip.accessToken")?.value;
-    const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
-    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
-
-    const data = await fetchDashboardForSession(activeSiteId, accessToken, geo);
+    const session = await getSessionCookies();
+    accessToken = session.accessToken;
+    const data = await getSessionDashboard();
 
     vm = toAutomationPageViewModel(data);
     navBadges = deriveNavBadgeCounts(data);

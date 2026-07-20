@@ -1,3 +1,5 @@
+import { AlertTriangle, Inbox } from "lucide-react";
+
 interface DashboardErrorStateProps {
   message: string;
 }
@@ -8,18 +10,23 @@ interface DashboardEmptyStateProps {
 
 export function DashboardErrorState({ message }: DashboardErrorStateProps) {
   return (
-    <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-      Failed to load dashboard: {message}
-    </div>
+    <article className="glass-card state-danger rounded-2xl p-8 text-center">
+      <AlertTriangle className="mx-auto h-8 w-8 text-rose-400" aria-hidden />
+      <p className="mt-3 text-sm font-medium text-foreground">
+        Failed to load dashboard
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+    </article>
   );
 }
 
 export function DashboardEmptyState({
-  message = "Dashboard data is currently unavailable. Please try again shortly."
+  message = "Dashboard data is currently unavailable. Please try again shortly.",
 }: DashboardEmptyStateProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
-      {message}
-    </div>
+    <article className="glass-card rounded-2xl p-8 text-center">
+      <Inbox className="mx-auto h-8 w-8 text-muted-foreground/50" aria-hidden />
+      <p className="mt-3 text-sm text-muted-foreground">{message}</p>
+    </article>
   );
 }

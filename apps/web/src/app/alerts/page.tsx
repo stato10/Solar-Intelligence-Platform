@@ -1,9 +1,9 @@
-import { cookies } from "next/headers";
-import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
+import { getSessionDashboard } from "@/lib/api/session-data";
 import { toAlertsPageViewModel } from "@/lib/view-models/alerts";
 import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
 import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
 import type { NavBadgeCounts } from "@/components/layout/NavBadgesBridge";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { AlertsList } from "./_components/alerts-list";
 import { ShieldAlert, Bell, CheckCircle2 } from "lucide-react";
 
@@ -13,12 +13,7 @@ export default async function AlertsPage() {
   let navBadges: NavBadgeCounts | null = null;
 
   try {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get("sip.accessToken")?.value;
-    const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
-    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
-
-    const aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
+    const aggregate = await getSessionDashboard();
 
     vm = toAlertsPageViewModel(aggregate);
     navBadges = deriveNavBadgeCounts(aggregate);
@@ -48,65 +43,49 @@ export default async function AlertsPage() {
     );
   }
 
-  const STATUS_GRADIENT = vm.header.highCount > 0
-    ? "from-rose-500/15 via-rose-400/5 to-transparent"
-    : vm.header.totalCount > 0
-      ? "from-amber-500/15 via-amber-400/5 to-transparent"
-      : "from-emerald-500/15 via-emerald-400/5 to-transparent";
-
   const StatusIcon = vm.header.highCount > 0
     ? ShieldAlert
     : vm.header.totalCount > 0
       ? Bell
       : CheckCircle2;
 
-  const statusColor = vm.header.highCount > 0
-    ? "text-rose-600 dark:text-rose-400"
-    : vm.header.totalCount > 0
-      ? "text-amber-600 dark:text-amber-400"
-      : "text-emerald-600 dark:text-emerald-400";
+  const tone =
+    vm.header.highCount > 0
+      ? "danger"
+      : vm.header.totalCount > 0
+        ? "warning"
+        : "success";
 
   return (
     <section className="space-y-6 pb-12">
       {navBadges ? <NavBadgesBridge {...navBadges} /> : null}
-      {/* ─── Hero Section ─────────────────────────────────────────── */}
-      <article className="glass-card relative overflow-hidden rounded-3xl p-8 md:p-10">
-        <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${STATUS_GRADIENT}`} />
-        <div className="relative">
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Alerts & Notifications
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            {vm.header.title}
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-            {vm.header.subtitle}
-          </p>
-
-          <div className="mt-6 flex items-center gap-4">
-            <div className={`flex items-center gap-2 rounded-xl bg-card/60 border border-border/80 px-4 py-2.5 ${statusColor}`}>
-              <StatusIcon className="h-5 w-5" />
-              <span className="text-2xl font-bold">{vm.header.totalCount}</span>
-              <span className="text-xs text-muted-foreground">active alerts</span>
+      <PageHeader
+        eyebrow="Alerts & notifications"
+        title={vm.header.title}
+        subtitle={vm.header.subtitle}
+        icon={StatusIcon}
+        tone={tone}
+        aside={
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-card/60 px-4 py-2.5">
+              <span className="text-2xl font-bold tabular-nums">{vm.header.totalCount}</span>
+              <span className="text-xs text-muted-foreground">active</span>
             </div>
-            {vm.header.highCount > 0 && (
-              <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-2.5 text-rose-600 dark:text-rose-400">
-                <ShieldAlert className="h-5 w-5" />
-                <span className="text-2xl font-bold">{vm.header.highCount}</span>
-                <span className="text-xs">high severity</span>
+            {vm.header.highCount > 0 ? (
+              <div className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-rose-400">
+                <span className="text-2xl font-bold tabular-nums">{vm.header.highCount}</span>
+                <span className="text-xs">high</span>
               </div>
-            )}
+            ) : null}
           </div>
-        </div>
-      </article>
+        }
+      />
 
-      {/* ─── Alerts List (Client Component w/ filters) ────────────── */}
       <AlertsList alerts={vm.alerts} categoryCounts={vm.categoryCounts} />
 
-      {/* ─── Footer ───────────────────────────────────────────────── */}
-      <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border/50 pt-6 text-xs text-muted-foreground sm:flex-row">
-        <p>Site: {vm.context.siteId} | Generated: {vm.context.generatedAt}</p>
-      </div>
+      <p className="text-center text-[11px] text-muted-foreground/70">
+        Updated {vm.context.generatedAt}
+      </p>
     </section>
   );
 }
