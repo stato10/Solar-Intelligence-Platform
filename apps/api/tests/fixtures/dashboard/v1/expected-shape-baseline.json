@@ -180,5 +180,10 @@
     "recommendedCleaningDate": "string",
     "score": "number"
   },
-  "source": "string"
+  "source": "string",
+  "tariff": {
+    "currency": "string",
+    "exportRate": "number",
+    "importRate": "number"
+  }
 }

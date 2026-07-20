@@ -279,15 +279,15 @@ Testing:
 - [x] Dashboard response snapshot tests
 
 Cross-cutting MVP test gate (must all pass before final close):
-- [ ] `npm run lint:api`
-- [ ] `npm run build:api`
-- [ ] `npm run lint:web`
-- [ ] `npm run build:web`
-- [ ] `python apps/engine/tests/run_golden.py`
-- [ ] `python apps/api/tests/run_engine_contract_smoke.py`
-- [ ] `python apps/api/tests/run_dashboard_contract_smoke.py`
-- [ ] `python apps/api/tests/run_dashboard_snapshot.py`
-- [ ] Auth + onboarding + dashboard + AI (v2/v3) end-to-end smoke (manual scripted run)
+- [x] `npm run lint:api`
+- [x] `npm run build:api`
+- [x] `npm run lint:web`
+- [x] `npm run build:web`
+- [x] `python apps/engine/tests/run_golden.py`
+- [x] `python apps/api/tests/run_engine_contract_smoke.py`
+- [x] `python apps/api/tests/run_dashboard_contract_smoke.py`
+- [x] `python apps/api/tests/run_dashboard_snapshot.py`
+- [x] Auth + onboarding + dashboard + AI (v2/v3) end-to-end smoke (manual scripted run)
 
 Risk Management:
 - [x] Create `RISK_REGISTER.md`
