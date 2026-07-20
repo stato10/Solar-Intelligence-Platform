@@ -164,10 +164,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-800/60 px-5">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 rounded-lg"
+            className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             aria-label="Solar Intelligence — go to dashboard"
           >
-            <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/25">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/25">
               <SunMedium className="size-5" aria-hidden />
             </div>
             <div className="flex flex-col leading-tight">
@@ -216,7 +216,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   className={cn(
                     "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                     isActive
-                      ? "bg-indigo-500/10 text-indigo-300"
+                      ? "bg-primary/10 text-primary"
                       : "text-slate-400 hover:bg-slate-900 hover:text-slate-100",
                   )}
                 >
@@ -224,14 +224,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {isActive ? (
                     <span
                       aria-hidden
-                      className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-indigo-400"
+                      className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-primary"
                     />
                   ) : null}
                   <Icon
                     className={cn(
                       "size-4 shrink-0 transition-colors",
                       isActive
-                        ? "text-indigo-300"
+                        ? "text-primary"
                         : "text-slate-500 group-hover:text-slate-200",
                     )}
                     aria-hidden
@@ -262,7 +262,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className={cn(
                 "group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                 pathname === "/onboarding"
-                  ? "bg-indigo-500/5 text-indigo-300"
+                  ? "bg-primary/10 text-primary"
                   : "text-slate-500 hover:bg-slate-900/50 hover:text-slate-300",
               )}
             >
@@ -308,7 +308,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 Currently viewing
               </span>
-              <span className="text-sm font-bold text-slate-200">System Dashboard</span>
+              <span className="text-sm font-bold text-slate-200">
+                {NAV_ITEMS.find((item) => pathname?.startsWith(item.href))?.label
+                  ?? (pathname === "/onboarding" ? "System Setup" : "Solar Intelligence")}
+              </span>
             </div>
           </div>
         </header>

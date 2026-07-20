@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { AuthTokenCookieSync } from "@/components/auth/auth-token-cookie-sync";
-import { fetchTariffBySite } from "@/lib/api/settings-persist";
+import { getSessionTariff } from "@/lib/api/session-data";
 import { AppShell } from "@/components/layout/app-shell";
 import { GeolocationBridge } from "@/components/layout/GeolocationBridge";
 import { Toaster } from "@/components/ui/toaster";
@@ -27,16 +26,12 @@ export const metadata: Metadata = {
 
 /**
  * Resolve the currency the signed-in user should see money in: the active
- * site's Tariff currency. Best-effort — any failure (anonymous visitor, API
- * down, no tariff yet) falls back to ILS so the UI never breaks.
+ * site's Tariff currency. Shares the request-scoped tariff fetch with pages
+ * via `getSessionTariff` so layout + dashboard don't double-hit the API.
  */
 async function resolveSessionCurrency(): Promise<string | undefined> {
   try {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get("sip.accessToken")?.value;
-    const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
-    if (!accessToken || !activeSiteId) return undefined;
-    const tariff = await fetchTariffBySite(activeSiteId, accessToken);
+    const tariff = await getSessionTariff();
     return tariff?.currency ?? undefined;
   } catch {
     return undefined;

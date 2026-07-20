@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
 import type { DashboardAggregateData } from "@/lib/contracts";
 import type {
   DeviceProfile,
@@ -7,16 +5,18 @@ import type {
   SolarSystem,
   Tariff,
 } from "@/lib/contracts/onboarding";
+import { getSessionCookies, getSessionDashboard, getSessionTariff } from "@/lib/api/session-data";
 import {
   fetchDeviceProfileBySite,
   fetchSite,
   fetchSolarSystemBySite,
-  fetchTariffBySite,
 } from "@/lib/api/settings-persist";
 import { SettingsShell, type SettingsShellInitialValues } from "./_components/settings-shell";
 import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
 import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
+import { PageHeader } from "@/components/layout/PageHeader";
 import type { CurrencyCode } from "@/lib/utils/formatters";
+import { Settings } from "lucide-react";
 
 /** ISO timestamp → `<input type="date">` value (yyyy-MM-dd). */
 function toDateInputValue(iso: string | null | undefined): string {
@@ -66,10 +66,11 @@ async function loadSettingsRecords(
   }
   // Fire reads in parallel; tolerate individual failures so a stale
   // tariff row doesn't nuke the whole page.
+  // Tariff is request-cached with the root layout CurrencyProvider.
   const [siteR, systemR, tariffR, deviceR] = await Promise.allSettled([
     fetchSite(siteId, accessToken),
     fetchSolarSystemBySite(siteId, accessToken),
-    fetchTariffBySite(siteId, accessToken),
+    getSessionTariff(),
     fetchDeviceProfileBySite(siteId, accessToken),
   ]);
   return {
@@ -91,15 +92,29 @@ export default async function SettingsPage() {
   };
 
   try {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get("sip.accessToken")?.value;
-    const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
-    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
+    const { accessToken, activeSiteId } = await getSessionCookies();
 
-    aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
+    // Aggregate (for nav badges) and settings records in parallel —
+    // settings no longer waits on the heavy dashboard round-trip.
+    const [aggregateResult, recordsResult] = await Promise.allSettled([
+      getSessionDashboard(),
+      loadSettingsRecords(activeSiteId, accessToken),
+    ]);
 
-    const siteId = activeSiteId ?? aggregate.siteId;
-    records = await loadSettingsRecords(siteId, accessToken);
+    if (aggregateResult.status === "fulfilled") {
+      aggregate = aggregateResult.value;
+    }
+    if (recordsResult.status === "fulfilled") {
+      records = recordsResult.value;
+    } else if (!activeSiteId && aggregate) {
+      records = await loadSettingsRecords(aggregate.siteId, accessToken);
+    }
+
+    if (aggregateResult.status === "rejected" && recordsResult.status === "rejected") {
+      throw aggregateResult.reason instanceof Error
+        ? aggregateResult.reason
+        : new Error("Failed to load settings");
+    }
   } catch (err) {
     errorMessage = err instanceof Error ? err.message : "Failed to load settings";
   }
@@ -110,20 +125,13 @@ export default async function SettingsPage() {
   return (
     <section className="space-y-6 pb-12">
       {aggregate ? <NavBadgesBridge {...deriveNavBadgeCounts(aggregate)} /> : null}
-      <header className="glass-card relative overflow-hidden rounded-3xl p-6 md:p-8">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.12),transparent_45%),radial-gradient(circle_at_25%_75%,rgba(59,130,246,0.1),transparent_42%)]" />
-        <div className="relative">
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Control center
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-            Settings
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Every control here affects a visible outcome elsewhere in the product — recommendations, money math, automation, alerts.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Control center"
+        title="Settings"
+        subtitle="Every control here affects a visible outcome elsewhere in the product — recommendations, money math, automation, and alerts."
+        icon={Settings}
+        tone="primary"
+      />
 
       {errorMessage ? (
         <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-4 text-sm text-rose-500">

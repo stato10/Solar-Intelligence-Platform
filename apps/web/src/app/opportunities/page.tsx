@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { ShoppingBag, Sparkles, PlugZap } from "lucide-react";
-import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
+import { getSessionCookies, getSessionDashboard } from "@/lib/api/session-data";
 import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
 import { toOpportunitiesCatalogViewModel } from "@/lib/view-models/marketplace-catalog";
 import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
@@ -30,13 +30,10 @@ export default async function OpportunitiesPage() {
   let serviceArea: string | undefined;
 
   try {
-    const cookieStore = await cookies();
-    accessToken = cookieStore.get("sip.accessToken")?.value;
-    const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
-    serviceArea = cookieStore.get("sip.serviceArea")?.value;
-    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
-
-    aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
+    const session = await getSessionCookies();
+    accessToken = session.accessToken;
+    serviceArea = (await cookies()).get("sip.serviceArea")?.value;
+    aggregate = await getSessionDashboard();
 
     rawOpportunities = await fetchMarketplaceOpportunities(
       aggregate,
