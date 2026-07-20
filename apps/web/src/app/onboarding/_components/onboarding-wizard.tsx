@@ -871,7 +871,18 @@ export function OnboardingWizard() {
                 We have everything we need to analyze your system, track savings, and give you clear recommendations.
               </p>
             </div>
-            <Button size="lg" onClick={() => router.push("/dashboard")} className="w-full max-w-xs gap-2">
+            <Button
+              size="lg"
+              onClick={async () => {
+                const siteId = step1Snapshot?.siteId;
+                if (siteId) {
+                  await setActiveSite(siteId).catch(() => {});
+                }
+                router.push("/dashboard");
+                router.refresh();
+              }}
+              className="w-full max-w-xs gap-2"
+            >
               Go to Dashboard
               <ChevronRight className="h-4 w-4" />
             </Button>
