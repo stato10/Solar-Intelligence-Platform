@@ -103,15 +103,18 @@ export function ConcernCard({ concern, siteId, accessToken }: ConcernCardProps) 
   }, [concern.id, concern.severity, concern.estimatedMonthlyLoss, siteId]);
 
   // Reflect "request sent" chip whenever this concern's CTA completed.
+  const flowConfirmedForConcern =
+    flowState.step === "confirmation" &&
+    flowState.context?.sourceSurface === "maintenance_concern" &&
+    flowState.context.catalogItemId === concern.id;
+
   useEffect(() => {
-    if (
-      flowState.step === "confirmation" &&
-      flowState.context?.sourceSurface === "maintenance_concern" &&
-      flowState.context.catalogItemId === concern.id
-    ) {
-      setRequestSent(true);
-    }
-  }, [flowState.step, flowState.context, concern.id]);
+    if (!flowConfirmedForConcern) return;
+    // Deferred so the state write happens in a timer callback, not
+    // synchronously in the effect body (react-hooks/set-state-in-effect).
+    const t = window.setTimeout(() => setRequestSent(true), 0);
+    return () => window.clearTimeout(t);
+  }, [flowConfirmedForConcern]);
 
   useEffect(() => {
     if (!requestSent) return;

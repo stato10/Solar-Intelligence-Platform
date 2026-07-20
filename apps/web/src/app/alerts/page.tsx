@@ -1,24 +1,27 @@
 import { cookies } from "next/headers";
-import type { DashboardAggregateData } from "@/lib/contracts";
-import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
+import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
 import { toAlertsPageViewModel } from "@/lib/view-models/alerts";
+import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
+import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
+import type { NavBadgeCounts } from "@/components/layout/NavBadgesBridge";
 import { AlertsList } from "./_components/alerts-list";
 import { ShieldAlert, Bell, CheckCircle2 } from "lucide-react";
 
 export default async function AlertsPage() {
   let vm: ReturnType<typeof toAlertsPageViewModel> | null = null;
   let errorMessage: string | null = null;
+  let navBadges: NavBadgeCounts | null = null;
 
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("sip.accessToken")?.value;
     const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
+    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
 
-    const aggregate = activeSiteId
-      ? await fetchDashboardBySiteId(activeSiteId, accessToken)
-      : await fetchDashboardAggregate();
+    const aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
 
     vm = toAlertsPageViewModel(aggregate);
+    navBadges = deriveNavBadgeCounts(aggregate);
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : "Unknown error";
   }
@@ -65,6 +68,7 @@ export default async function AlertsPage() {
 
   return (
     <section className="space-y-6 pb-12">
+      {navBadges ? <NavBadgesBridge {...navBadges} /> : null}
       {/* ─── Hero Section ─────────────────────────────────────────── */}
       <article className="glass-card relative overflow-hidden rounded-3xl p-8 md:p-10">
         <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${STATUS_GRADIENT}`} />

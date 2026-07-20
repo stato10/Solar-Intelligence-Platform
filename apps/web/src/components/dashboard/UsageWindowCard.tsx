@@ -1,4 +1,4 @@
-import { Clock, Sun, ListChecks } from "lucide-react";
+import { Sun, ListChecks } from "lucide-react";
 import type { UsageWindowVm } from "@/lib/view-models/dashboard";
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
 import { cn } from "@/lib/utils";

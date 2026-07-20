@@ -187,7 +187,7 @@ export function OnboardingStep1Form() {
     setPending(true);
 
     try {
-      const domainUserId = await resolveDomainUserId(authUser, accessToken);
+      const domainUserId = await resolveDomainUserId(authUser);
       const createdSite = await createSite(
         {
           userId: domainUserId,

@@ -7,6 +7,23 @@ export class SnapshotWriterService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Checks whether a site row exists — used to guard snapshot writes for
+   * stateless aggregate calls that reference non-persisted site ids.
+   */
+  async siteExists(siteId: string): Promise<boolean> {
+    try {
+      const site = await this.prisma.site.findUnique({
+        where: { id: siteId },
+        select: { id: true }
+      });
+      return site !== null;
+    } catch (error) {
+      this.logger.error(`Failed to check site existence for ${siteId}`, error);
+      return false;
+    }
+  }
+
   // ─── Current Snapshot ───────────────────────────────────────────────
 
   /**

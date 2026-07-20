@@ -10,6 +10,8 @@ import {
   formatDate,
   formatScore,
   formatTimeRange,
+  resolveAggregateCurrency,
+  type CurrencyFormatOptions,
 } from "@/lib/utils/formatters";
 
 // ---------------------------------------------------------------------------
@@ -121,13 +123,16 @@ function toRecommendationVm(item: DashboardRecommendation): SavingsRecommendatio
   };
 }
 
-function toOpportunityVm(item: IntelligenceOpportunityItem): UpgradeOpportunityVm {
+function toOpportunityVm(
+  item: IntelligenceOpportunityItem,
+  fmt: CurrencyFormatOptions,
+): UpgradeOpportunityVm {
   return {
     id: item.id,
     type: item.type,
     title: item.title,
     description: item.description,
-    estimatedValue: formatCurrency(item.estimatedValueIls),
+    estimatedValue: formatCurrency(item.estimatedValueIls, fmt),
     confidence: item.confidence,
     priority: item.priority,
   };
@@ -137,6 +142,7 @@ function toOpportunityVm(item: IntelligenceOpportunityItem): UpgradeOpportunityV
 // Main mapper
 // ---------------------------------------------------------------------------
 export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPageViewModel {
+  const fmt = resolveAggregateCurrency(data);
   const recommendationItems = data.optimization.recommendations.map(toRecommendationVm);
   const intel = data.intelligence;
 
@@ -154,11 +160,11 @@ export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPag
 
   // Dynamic subtitle
   const subtitle = leakage > 0
-    ? `You're saving ${formatCurrency(currentMonthly)}/month. With maintenance optimization, you could reach ${formatCurrency(optimalMonthly)}/month.`
-    : `You're saving ${formatCurrency(currentMonthly)}/month. Your system is near optimal.`;
+    ? `You're saving ${formatCurrency(currentMonthly, fmt)}/month. With maintenance optimization, you could reach ${formatCurrency(optimalMonthly, fmt)}/month.`
+    : `You're saving ${formatCurrency(currentMonthly, fmt)}/month. Your system is near optimal.`;
 
   // Map intelligence opportunities
-  const opportunities = (intel?.opportunities ?? []).map(toOpportunityVm);
+  const opportunities = (intel?.opportunities ?? []).map((item) => toOpportunityVm(item, fmt));
 
   return {
     header: {
@@ -176,21 +182,21 @@ export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPag
       },
     },
     financial: {
-      dailyEstimatedSavingsText: formatCurrency(data.financial.dailyEstimatedSavings),
-      monthlyEstimatedSavingsText: formatCurrency(data.financial.monthlyEstimatedSavings),
-      yearlyOptimizationPotentialText: formatCurrency(data.financial.yearlyOptimizationPotential),
+      dailyEstimatedSavingsText: formatCurrency(data.financial.dailyEstimatedSavings, fmt),
+      monthlyEstimatedSavingsText: formatCurrency(data.financial.monthlyEstimatedSavings, fmt),
+      yearlyOptimizationPotentialText: formatCurrency(data.financial.yearlyOptimizationPotential, fmt),
     },
     profitVsLoss: {
-      currentMonthly: formatCurrency(currentMonthly),
-      optimalMonthly: formatCurrency(optimalMonthly),
-      headroom: formatCurrency(headroom),
-      maintenanceLeakage: formatCurrency(leakage),
-      exportValueDaily: formatCurrency(exportDaily),
-      selfConsumptionValueDaily: formatCurrency(selfConsDaily),
+      currentMonthly: formatCurrency(currentMonthly, fmt),
+      optimalMonthly: formatCurrency(optimalMonthly, fmt),
+      headroom: formatCurrency(headroom, fmt),
+      maintenanceLeakage: formatCurrency(leakage, fmt),
+      exportValueDaily: formatCurrency(exportDaily, fmt),
+      selfConsumptionValueDaily: formatCurrency(selfConsDaily, fmt),
       efficiencyPercent,
     },
     optimization: {
-      estimatedValueText: formatCurrency(data.optimization.estimatedValue),
+      estimatedValueText: formatCurrency(data.optimization.estimatedValue, fmt),
       opportunityScoreText: formatScore(data.optimization.opportunityScore),
     },
     benchmark: {
@@ -206,7 +212,7 @@ export function toSavingsPageViewModel(data: DashboardAggregateData): SavingsPag
     selfConsumption: {
       scoreText: formatScore(data.selfConsumption.selfConsumptionScore),
       scoreValue: data.selfConsumption.selfConsumptionScore,
-      estimatedSavingsText: formatCurrency(data.selfConsumption.estimatedSavingsIls),
+      estimatedSavingsText: formatCurrency(data.selfConsumption.estimatedSavingsIls, fmt),
       recommendedWindowText: formatTimeRange(
         data.selfConsumption.recommendedUsageWindow.start,
         data.selfConsumption.recommendedUsageWindow.end

@@ -7,6 +7,6 @@ export const SITES_REPOSITORY = Symbol("SITES_REPOSITORY");
 export interface SitesRepository {
   findAll(): Promise<SiteEntity[]>;
   findById(id: string): Promise<SiteEntity | null>;
-  create(payload: CreateSiteDto): Promise<SiteEntity>;
+  create(payload: CreateSiteDto & { userId: string }): Promise<SiteEntity>;
   update(id: string, payload: UpdateSiteDto): Promise<SiteEntity>;
 }

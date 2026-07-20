@@ -24,6 +24,7 @@ import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import {
   defaultLocaleForCurrency,
+  toSupportedCurrencyCode,
   type CurrencyCode,
 } from "@/lib/utils/formatters";
 
@@ -44,19 +45,7 @@ const CurrencyContext = createContext<CurrencyValue>({
  * the raw code via its own fallback path if needed.
  */
 export function toSupportedCurrency(raw: string | null | undefined): CurrencyCode {
-  if (!raw) return "ILS";
-  const normalized = raw.toUpperCase();
-  switch (normalized) {
-    case "ILS":
-    case "USD":
-    case "EUR":
-    case "GBP":
-    case "CAD":
-    case "AUD":
-      return normalized;
-    default:
-      return "ILS";
-  }
+  return toSupportedCurrencyCode(raw);
 }
 
 export function CurrencyProvider({

@@ -33,7 +33,7 @@ interface StaleTelemetryBannerProps {
 
 export function StaleTelemetryBanner({
   lastSeenIso,
-  reconnectHref = "/settings/integrations",
+  reconnectHref = "/settings#integrations",
   className,
 }: StaleTelemetryBannerProps) {
   const lastSeenLabel = formatRelativeTime(lastSeenIso);

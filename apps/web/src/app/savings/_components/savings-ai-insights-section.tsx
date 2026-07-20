@@ -1,6 +1,6 @@
 import type { AiInsightContractOutput, SavingsLineItem } from "@/lib/contracts/ai-insight-v2";
 import { AiInlineEmpty, AiInlineError, AiStateCard } from "@/components/ai/ai-inline-error";
-import { formatBenefitRangeIlsMonthly, formatSourceRefsForDisplay } from "@/lib/view-models/ai-insights";
+import { formatBenefitRangeIlsMonthly } from "@/lib/view-models/ai-insights";
 
 interface SavingsAiInsightsSectionProps {
   data: AiInsightContractOutput | null;

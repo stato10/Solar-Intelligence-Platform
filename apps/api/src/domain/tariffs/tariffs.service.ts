@@ -14,9 +14,9 @@ export class TariffsService {
     private readonly tariffsRepository: TariffsRepository
   ) {}
 
-  async findAll(query: TariffsListQueryDto) {
+  async findAll(query: TariffsListQueryDto, requesterId?: string) {
     const tariffs = await this.tariffsRepository.findAll();
-    const filtered = tariffs.filter((tariff) => {
+    let filtered = tariffs.filter((tariff) => {
       if (query.siteId && tariff.siteId !== query.siteId) {
         return false;
       }
@@ -25,11 +25,19 @@ export class TariffsService {
       }
       return true;
     });
+    if (requesterId !== undefined) {
+      if (query.siteId) {
+        await this.sitesService.findOne(query.siteId, requesterId);
+      } else {
+        const ownedSiteIds = await this.sitesService.getOwnedSiteIds(requesterId);
+        filtered = filtered.filter((tariff) => ownedSiteIds.has(tariff.siteId));
+      }
+    }
     return paginateArray(filtered, query);
   }
 
-  async create(payload: CreateTariffDto) {
-    await this.sitesService.findOne(payload.siteId);
+  async create(payload: CreateTariffDto, requesterId?: string) {
+    await this.sitesService.findOne(payload.siteId, requesterId);
     const existing = await this.tariffsRepository.findBySiteId(payload.siteId);
     if (existing) {
       throw new ConflictException(`Tariff already exists for site ${payload.siteId}`);
@@ -37,18 +45,21 @@ export class TariffsService {
     return this.tariffsRepository.create(payload);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requesterId?: string) {
     const tariff = await this.tariffsRepository.findById(id);
     if (!tariff) {
       throw new NotFoundException(`Tariff ${id} not found`);
     }
+    if (requesterId !== undefined) {
+      await this.sitesService.findOne(tariff.siteId, requesterId);
+    }
     return tariff;
   }
 
-  async update(id: string, payload: UpdateTariffDto) {
-    await this.findOne(id);
+  async update(id: string, payload: UpdateTariffDto, requesterId?: string) {
+    await this.findOne(id, requesterId);
     if (payload.siteId !== undefined) {
-      await this.sitesService.findOne(payload.siteId);
+      await this.sitesService.findOne(payload.siteId, requesterId);
       const existingForSite = await this.tariffsRepository.findBySiteId(
         payload.siteId
       );

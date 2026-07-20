@@ -63,7 +63,7 @@ Backend API:
 Modeling / Calculation Engine:
 - Python
 - FastAPI
-- pandas / numpy where useful
+- pure-Python deterministic math (no numpy/pandas dependency)
 
 Database:
 - PostgreSQL

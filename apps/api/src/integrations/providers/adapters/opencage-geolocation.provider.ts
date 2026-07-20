@@ -92,9 +92,8 @@ export class OpenCageGeolocationProvider
     if (input.countryCode) {
       searchParams.set("countrycode", input.countryCode);
     }
-    if (this.config.noAnnotations) {
-      searchParams.set("no_annotations", "1");
-    }
+    // Annotations are always requested: they carry the IANA timezone, which
+    // the product requires for accurate production-window calculations.
     if (this.config.noRecord) {
       searchParams.set("no_record", "1");
     }
@@ -129,9 +128,7 @@ export class OpenCageGeolocationProvider
       limit: "1"
     });
 
-    if (this.config.noAnnotations) {
-      searchParams.set("no_annotations", "1");
-    }
+    // Annotations carry the IANA timezone — always requested (see forward()).
     if (this.config.noRecord) {
       searchParams.set("no_record", "1");
     }

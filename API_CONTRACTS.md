@@ -6,8 +6,8 @@
 - Rule: no breaking response shape changes within the same API version
 
 ## Base Information
-- Base URL (local): `http://localhost:3000/api/v1`
-- Authentication: `Authorization: Bearer <jwt>`
+- Base URL (local): `http://localhost:${API_PORT}/api/v1` (default `3000`; local dev commonly uses `3002` — see `.env` / `NEXT_PUBLIC_API_BASE_URL`)
+- Authentication: `Authorization: Bearer <jwt>` (JWT issued by `/auth/register` / `/auth/login`)
 - Versioning strategy: strict path versioning (`/api/v1/...`)
 - Content type: `application/json`
 
@@ -28,43 +28,55 @@
   - `version` (`v1`)
 
 ## Endpoints
+
+Auth legend: **[JWT]** = requires `Authorization: Bearer <jwt>`; ownership is
+derived from the token (`sub` claim) — resources belonging to other users
+return `404`.
+
 ### App
 - `GET /api/v1/health`
 
 ### Auth
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
-- `GET /api/v1/auth/me`
+- `GET /api/v1/auth/me` **[JWT]**
 
-### Sites
-- `GET /api/v1/sites`
-- `POST /api/v1/sites`
+### Sites **[JWT, ownership-scoped]**
+- `GET /api/v1/sites` — always filtered to the authenticated user
+- `POST /api/v1/sites` — `userId` is taken from the JWT (body value ignored)
 - `GET /api/v1/sites/:id`
 - `PATCH /api/v1/sites/:id`
 
-### Users
-- `GET /api/v1/users`
-- `POST /api/v1/users`
-- `GET /api/v1/users/:id`
-- `PATCH /api/v1/users/:id`
+### Users **[JWT]**
+- `GET /api/v1/users` — non-admins receive only their own record
+- `POST /api/v1/users` — admin only (self-service accounts use `/auth/register`)
+- `GET /api/v1/users/:id` — self or admin
+- `PATCH /api/v1/users/:id` — self or admin; `role` changes admin-only
 
-### Devices
+### Devices (site device profiles) **[JWT, ownership-scoped via site]**
 - `GET /api/v1/devices`
 - `POST /api/v1/devices`
 - `GET /api/v1/devices/:id`
 - `PATCH /api/v1/devices/:id`
 
-### Tariffs
+### Tariffs **[JWT, ownership-scoped via site]**
 - `GET /api/v1/tariffs`
 - `POST /api/v1/tariffs`
 - `GET /api/v1/tariffs/:id`
 - `PATCH /api/v1/tariffs/:id`
 
-### Solar Systems
+### Solar Systems **[JWT, ownership-scoped via site]**
 - `GET /api/v1/solar-systems`
 - `POST /api/v1/solar-systems`
 - `GET /api/v1/solar-systems/:id`
 - `PATCH /api/v1/solar-systems/:id`
+
+### Marketplace & Leads
+- `POST /api/v1/marketplace/opportunities/derive` — derives marketplace opportunities from a dashboard aggregate (+ optional AI insights)
+- `GET /api/v1/providers` — marketplace provider catalog
+- `GET /api/v1/products` — marketplace product catalog
+- `POST /api/v1/leads/intents` **[JWT]** — capture a lead intent
+- `GET /api/v1/leads/intents/:siteId` **[JWT]** — list lead intents for an owned site
 
 ### Provider Integrations
 - `GET /api/v1/integrations/providers/health`
@@ -81,8 +93,9 @@
 - `POST /api/v1/integrations/engine/calculate/v1`
 
 ### Dashboard
-- `POST /api/v1/dashboard/aggregate`
-- `POST /api/v1/dashboard/demo/seed`
+- `POST /api/v1/dashboard/aggregate` — stateless compute; public (client supplies all inputs; powers the anonymous demo)
+- `GET /api/v1/dashboard/site/:siteId` **[JWT, ownership-scoped]** — site-backed aggregate built from persisted site/system/tariff records
+- `POST /api/v1/dashboard/demo/seed` — idempotent local demo seeding (dev tool)
 
 ### AI Insights
 - `POST /api/v1/ai/insights`
@@ -90,7 +103,13 @@
   - Request body: `CanonicalAggregateAiSource` (same shape as `DashboardAggregateData` — see Dashboard Aggregate Canonical Contract)
   - Response: standard `{ success, data: AiInsightContractOutput, meta }` envelope
   - Contract version: `ai-insight-v2`
-  - Fallback: deterministic when `OPENAI_API_KEY` is absent; OpenAI wiring deferred
+  - Fallback: deterministic when `OPENAI_API_KEY` is absent
+- `POST /api/v1/ai/insights/v3`
+  - Auth: `Bearer <token>` required
+  - Request body: `CanonicalAiInsightRequestV3` — `{ aggregate, userData (device profile flags), apiData (tariffs, peak window, weather context) }`
+  - Response: `{ success, data: AiInsightContractOutputV3, meta }`
+  - Contract version: `ai-insight-v3`
+  - Fallback: deterministic when `OPENAI_API_KEY` is absent
 
 ## Contract Notes
 - API responses should be typed DTOs with stable keys.

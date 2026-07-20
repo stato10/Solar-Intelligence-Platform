@@ -2,8 +2,10 @@ import { cookies } from "next/headers";
 import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsights } from "@/lib/api/ai-insights";
 import { ApiHttpError } from "@/lib/api/client";
-import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
+import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
 import { toMaintenancePageViewModel } from "@/lib/view-models/maintenance";
+import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
+import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
 import { MaintenanceAiInsightsSection } from "./_components/maintenance-ai-insights-section";
 import { MaintenanceAiAccordion } from "./_components/maintenance-ai-accordion";
 import { MaintenanceEmptyState, MaintenanceErrorState } from "./_components/maintenance-state";
@@ -26,10 +28,9 @@ export default async function MaintenancePage() {
     const cookieStore = await cookies();
     accessToken = cookieStore.get("sip.accessToken")?.value;
     const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
+    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
 
-    aggregate = activeSiteId
-      ? await fetchDashboardBySiteId(activeSiteId, accessToken)
-      : await fetchDashboardAggregate();
+    aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
 
     vm = toMaintenancePageViewModel(aggregate);
 
@@ -94,6 +95,7 @@ export default async function MaintenancePage() {
 
   return (
     <section className="space-y-6 pb-12">
+      <NavBadgesBridge {...deriveNavBadgeCounts(aggregate)} />
       {/* ─── Hero ─────────────────────────────────────────────────── */}
       <article className="glass-card relative overflow-hidden rounded-3xl p-8 md:p-10">
         <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${STATUS_GRADIENT[vm.header.statusLevel]}`} />
@@ -184,7 +186,7 @@ export default async function MaintenancePage() {
           <div>
             <h2 className="text-base font-semibold">No maintenance concerns right now</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              All maintenance signals are within normal range. We'll surface new concerns here the moment the engine detects them.
+              All maintenance signals are within normal range. We&apos;ll surface new concerns here the moment the engine detects them.
             </p>
           </div>
         </article>

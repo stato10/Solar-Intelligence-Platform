@@ -77,6 +77,17 @@ export class PvgisSolarProvider extends HttpProviderBase implements SolarProvide
       mountingplace: this.config.mountingPlace
     });
 
+    // Real panel geometry for an accurate baseline. PVGIS `angle` = tilt from
+    // horizontal; `aspect` is relative to south (0 = south, -90 = east, 90 = west)
+    // while our domain stores azimuth from north (180 = south).
+    if (typeof input.tilt === "number" && Number.isFinite(input.tilt)) {
+      searchParams.set("angle", String(input.tilt));
+    }
+    if (typeof input.azimuth === "number" && Number.isFinite(input.azimuth)) {
+      const aspect = ((input.azimuth - 180 + 540) % 360) - 180;
+      searchParams.set("aspect", String(aspect));
+    }
+
     const primaryPath = this.buildProviderUrl(this.baseUrl, this.config.path);
     const fallbackPath = this.buildProviderUrl(
       this.config.fallbackBaseUrl,

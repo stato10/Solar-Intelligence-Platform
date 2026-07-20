@@ -20,9 +20,10 @@ Each task follows:
 
 Before marking task `done`, verify `PHASE_GATE_CHECKLIST.md` and `SYNC_PROTOCOL.md`.
 
-## Runtime Truth Note (Phase 4.9)
-- Active runtime persistence remains in-memory for current scaffold scope.
-- `DB_SCHEMA.md` is treated as the target persistence model for future PostgreSQL hardening tasks.
+## Runtime Truth Note (Current)
+- Active runtime persistence is PostgreSQL via Prisma (`apps/api/prisma/schema.prisma`).
+- All domain routes are JWT-guarded with per-user ownership enforcement.
+- `DB_SCHEMA.md` documents the live model plus remaining target tables (telemetry/history).
 
 ## Phase 0 - Documentation Freeze (In Order)
 - [x] 0.1 Final consistency pass across all `.md` files (single source of truth = web-first)

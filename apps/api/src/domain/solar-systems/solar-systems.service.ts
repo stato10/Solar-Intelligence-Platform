@@ -17,16 +17,24 @@ export class SolarSystemsService {
     private readonly systemsRepository: SolarSystemsRepository
   ) {}
 
-  async findAll(query: SolarSystemsListQueryDto) {
+  async findAll(query: SolarSystemsListQueryDto, requesterId?: string) {
     const systems = await this.systemsRepository.findAll();
-    const filtered = query.siteId
+    let filtered = query.siteId
       ? systems.filter((system) => system.siteId === query.siteId)
       : systems;
+    if (requesterId !== undefined) {
+      if (query.siteId) {
+        await this.sitesService.findOne(query.siteId, requesterId);
+      } else {
+        const ownedSiteIds = await this.sitesService.getOwnedSiteIds(requesterId);
+        filtered = filtered.filter((system) => ownedSiteIds.has(system.siteId));
+      }
+    }
     return paginateArray(filtered, query);
   }
 
-  async create(payload: CreateSolarSystemDto) {
-    await this.sitesService.findOne(payload.siteId);
+  async create(payload: CreateSolarSystemDto, requesterId?: string) {
+    await this.sitesService.findOne(payload.siteId, requesterId);
     const existing = await this.systemsRepository.findBySiteId(payload.siteId);
     if (existing) {
       throw new ConflictException(
@@ -36,18 +44,21 @@ export class SolarSystemsService {
     return this.systemsRepository.create(payload);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, requesterId?: string) {
     const system = await this.systemsRepository.findById(id);
     if (!system) {
       throw new NotFoundException(`Solar system ${id} not found`);
     }
+    if (requesterId !== undefined) {
+      await this.sitesService.findOne(system.siteId, requesterId);
+    }
     return system;
   }
 
-  async update(id: string, payload: UpdateSolarSystemDto) {
-    await this.findOne(id);
+  async update(id: string, payload: UpdateSolarSystemDto, requesterId?: string) {
+    await this.findOne(id, requesterId);
     if (payload.siteId !== undefined) {
-      await this.sitesService.findOne(payload.siteId);
+      await this.sitesService.findOne(payload.siteId, requesterId);
       const existingForSite = await this.systemsRepository.findBySiteId(
         payload.siteId
       );

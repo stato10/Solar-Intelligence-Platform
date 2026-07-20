@@ -84,7 +84,6 @@ export function track(
       props: scrubPii(props),
     };
     if (process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
       console.debug("[analytics]", envelope);
     }
     // Commit 5: forward to `/analytics/events` via a non-blocking

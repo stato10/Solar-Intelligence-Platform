@@ -59,13 +59,13 @@ export function OpportunitySection({
   const [successItemId, setSuccessItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (
-      flowState.step === "confirmation" &&
-      flowState.context?.catalogItemId &&
-      items.some((it) => it.id === flowState.context?.catalogItemId)
-    ) {
-      setSuccessItemId(flowState.context.catalogItemId);
-    }
+    const confirmedItemId =
+      flowState.step === "confirmation" ? flowState.context?.catalogItemId : undefined;
+    if (!confirmedItemId || !items.some((it) => it.id === confirmedItemId)) return;
+    // Deferred so the state write happens in a timer callback, not
+    // synchronously in the effect body (react-hooks/set-state-in-effect).
+    const t = window.setTimeout(() => setSuccessItemId(confirmedItemId), 0);
+    return () => window.clearTimeout(t);
   }, [flowState.step, flowState.context, items]);
 
   useEffect(() => {

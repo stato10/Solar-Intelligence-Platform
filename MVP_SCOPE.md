@@ -77,7 +77,11 @@ Deliver a working product that provides clear daily value to solar users.
 - Smart device automation
 - Battery optimization
 - Complex multi-agent loops
-- Marketplace / installer CRM
+- Installer CRM / order fulfillment
+
+> Note (post-MVP addition): a lightweight marketplace layer (provider/product
+> catalog + lead-intent capture) was approved and implemented in Phase 7.
+> Full installer CRM and order fulfillment remain out of scope.
 
 ---
 

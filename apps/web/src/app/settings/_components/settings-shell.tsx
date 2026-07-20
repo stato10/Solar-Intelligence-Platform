@@ -89,6 +89,22 @@ function valueOrUndefined<T>(v: T | ""): T | undefined {
   return v === "" ? undefined : v;
 }
 
+/**
+ * `<input type="date">` returns yyyy-MM-dd. Convert to ISO-8601 (with
+ * UTC midnight) so it satisfies the backend `@IsDateString()` validator,
+ * or `undefined` if the field is empty / unparsable.
+ */
+function toIsoDateOrUndefined(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  // Already a full ISO timestamp → pass through.
+  if (trimmed.includes("T")) return trimmed;
+  const d = new Date(`${trimmed}T00:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
+}
+
 export function SettingsShell({ initial }: { initial: SettingsShellInitialValues }) {
   const router = useRouter();
   const [activeId, setActiveId] = useState<string>(SECTIONS[0].id);
@@ -151,13 +167,16 @@ export function SettingsShell({ initial }: { initial: SettingsShellInitialValues
           await patchSite(siteId, sitePatch, token);
         }
 
-        // 2) Panels / Orientation / Inverter → SolarSystem
+        // 2) Panels / Orientation / Inverter / Installation → SolarSystem
         if (solarSystemId) {
           const systemPatch = {
             systemSizeKw: valueOrUndefined(values.systemSizeKw),
             tilt: valueOrUndefined(values.tiltDegrees),
             azimuth: valueOrUndefined(values.azimuthDegrees),
+            panelCount: valueOrUndefined(values.panelCount),
+            panelType: values.panelType.trim() || undefined,
             inverterType: values.inverterModel.trim() || undefined,
+            installationDate: toIsoDateOrUndefined(values.installationDate),
           };
           if (Object.values(systemPatch).some((v) => v !== undefined)) {
             await patchSolarSystem(solarSystemId, systemPatch, token);
@@ -237,13 +256,13 @@ export function SettingsShell({ initial }: { initial: SettingsShellInitialValues
   );
 
   // ── pending-backend stubs — wire when endpoints land ───────────────
-  const saveAutomation = useCallback(async (_values: AutomationPrefsFormValues) => {
+  const saveAutomation = useCallback(async () => {
     logControlChange("automation-preferences", "bulk-save");
     // pending-backend: no PATCH /automation-prefs endpoint yet.
     await new Promise((resolve) => setTimeout(resolve, 250));
   }, [logControlChange]);
 
-  const saveNotifications = useCallback(async (_values: NotificationsFormValues) => {
+  const saveNotifications = useCallback(async () => {
     logControlChange("notifications", "bulk-save");
     // pending-backend: no PATCH /notifications endpoint yet.
     await new Promise((resolve) => setTimeout(resolve, 250));

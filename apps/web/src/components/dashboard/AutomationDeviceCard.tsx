@@ -58,15 +58,18 @@ export function AutomationDeviceCard({ device, siteId, accessToken }: Automation
   const Icon = ICON_BY_TYPE[device.iconType] ?? Cpu;
   const fmt = { currency, locale, decimals: 0 } as const;
 
+  const flowConfirmedForDevice =
+    flowState.step === "confirmation" &&
+    flowState.context?.sourceSurface === "automation_device" &&
+    flowState.context.catalogItemId === device.id;
+
   useEffect(() => {
-    if (
-      flowState.step === "confirmation" &&
-      flowState.context?.sourceSurface === "automation_device" &&
-      flowState.context.catalogItemId === device.id
-    ) {
-      setRequestSent(true);
-    }
-  }, [flowState.step, flowState.context, device.id]);
+    if (!flowConfirmedForDevice) return;
+    // Deferred so the state write happens in a timer callback, not
+    // synchronously in the effect body (react-hooks/set-state-in-effect).
+    const t = window.setTimeout(() => setRequestSent(true), 0);
+    return () => window.clearTimeout(t);
+  }, [flowConfirmedForDevice]);
 
   useEffect(() => {
     if (!requestSent) return;
@@ -154,7 +157,7 @@ export function AutomationDeviceCard({ device, siteId, accessToken }: Automation
           className="pointer-events-none absolute inset-x-4 top-4 flex items-center justify-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-500 backdrop-blur"
         >
           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-          Request sent — we'll reach out to set this up
+          Request sent — we&apos;ll reach out to set this up
         </div>
       ) : null}
     </article>

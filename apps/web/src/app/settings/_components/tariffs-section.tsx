@@ -15,7 +15,7 @@
  *     know their own rates.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   COUNTRY_TARIFF_DEFAULTS,
@@ -56,11 +56,15 @@ export function TariffsSection({ initial, suggestedCountryCode, onSave }: Tariff
   const [dismissedSuggestion, setDismissedSuggestion] = useState<string | null>(null);
 
   // Keep country in sync if the parent hydrates us with a new default
-  // (e.g. dashboard aggregate lands after the first render).
-  useEffect(() => {
-    setValues((prev) => (prev.countryCode ? prev : { ...prev, countryCode: initial.countryCode }));
-    // only want this on initial mount / when initial country changes
-  }, [initial.countryCode]);
+  // (e.g. dashboard aggregate lands after the first render). Uses the
+  // "adjust state during render" pattern instead of an effect.
+  const [seenInitialCountry, setSeenInitialCountry] = useState(initial.countryCode);
+  if (initial.countryCode !== seenInitialCountry) {
+    setSeenInitialCountry(initial.countryCode);
+    if (!values.countryCode) {
+      setValues((prev) => ({ ...prev, countryCode: initial.countryCode }));
+    }
+  }
 
   const update = <K extends keyof TariffsFormValues>(key: K, value: TariffsFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }));

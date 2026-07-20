@@ -27,10 +27,11 @@ export class SitesController {
   }
 
   @Post()
-  async create(@Body() payload: CreateSiteDto) {
+  async create(@Request() req: any, @Body() payload: CreateSiteDto) {
     return {
       success: true,
-      data: await this.sitesService.create(payload),
+      // Ownership always comes from the authenticated user — never from the body.
+      data: await this.sitesService.create({ ...payload, userId: req.user.sub }),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -39,10 +40,10 @@ export class SitesController {
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string) {
+  async findOne(@Request() req: any, @Param("id") id: string) {
     return {
       success: true,
-      data: await this.sitesService.findOne(id),
+      data: await this.sitesService.findOne(id, req.user.sub),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -51,10 +52,10 @@ export class SitesController {
   }
 
   @Patch(":id")
-  async update(@Param("id") id: string, @Body() payload: UpdateSiteDto) {
+  async update(@Request() req: any, @Param("id") id: string, @Body() payload: UpdateSiteDto) {
     return {
       success: true,
-      data: await this.sitesService.update(id, payload),
+      data: await this.sitesService.update(id, payload, req.user.sub),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"

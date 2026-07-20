@@ -44,12 +44,6 @@ interface ListEnvelope<T> {
   meta?: unknown;
 }
 
-interface ItemEnvelope<T> {
-  success: boolean;
-  data: T;
-  meta?: unknown;
-}
-
 interface ErrorEnvelope {
   success?: false;
   message?: string | string[];
@@ -192,7 +186,11 @@ export interface SolarSystemPatch {
   azimuth?: number;
   panelWattage?: number;
   panelEfficiency?: number;
+  panelCount?: number;
+  panelType?: string;
   inverterType?: string;
+  /** ISO-8601 date string. */
+  installationDate?: string;
   lastCleaningDate?: string;
 }
 

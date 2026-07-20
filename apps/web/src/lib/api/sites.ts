@@ -18,28 +18,34 @@ interface SitesListResponse {
   };
 }
 
+/**
+ * Fetches the authenticated user's sites.
+ *
+ * Errors are intentionally NOT caught here. Callers (e.g. `SiteSelector`)
+ * need to discriminate:
+ *   - 401 → token is stale, clear it and render the logged-out shell
+ *   - 5xx / network → log a warn and degrade gracefully
+ *
+ * Catching and `console.error`-ing inside this helper would (a) hide the
+ * recoverable 401 from upstream cleanup logic and (b) trip the Next.js
+ * dev overlay, because Next 15+/Turbopack treats `console.error(<Error>)`
+ * as an unhandled error.
+ */
 export async function fetchUserSites(accessToken?: string): Promise<Site[]> {
-  try {
-    const defaultHeaders: Record<string, string> = accessToken
-      ? { Authorization: `Bearer ${accessToken}` }
-      : {};
+  const headers: Record<string, string> = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {};
 
-    const url = new URL(API_ENDPOINTS.onboarding.sites, "http://localhost:3000"); // Just need path to build with getJson which handles base URL
-    
-    // We get all sites, the server will filter by accessToken's userId
-    const response = await getJson<SitesListResponse>(
-      API_ENDPOINTS.onboarding.sites,
-      undefined,
-      { headers: defaultHeaders }
-    );
-    
-    if (response && response.success && Array.isArray(response.data)) {
-      return response.data;
-    }
-    
-    return [];
-  } catch (error) {
-    console.error("Failed to fetch user sites:", error);
-    return [];
+  // The API filters by the userId encoded in the access token.
+  const response = await getJson<SitesListResponse>(
+    API_ENDPOINTS.onboarding.sites,
+    undefined,
+    { headers }
+  );
+
+  if (response?.success && Array.isArray(response.data)) {
+    return response.data;
   }
+
+  return [];
 }

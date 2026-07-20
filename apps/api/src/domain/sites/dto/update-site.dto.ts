@@ -9,10 +9,6 @@ import {
 export class UpdateSiteDto {
   @IsOptional()
   @IsString()
-  userId?: string;
-
-  @IsOptional()
-  @IsString()
   @MinLength(2)
   siteName?: string;
 

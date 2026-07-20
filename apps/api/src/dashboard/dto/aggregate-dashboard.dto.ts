@@ -50,6 +50,18 @@ export class AggregateDashboardRequestDto {
   lossPercent?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(90)
+  tilt?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(360)
+  azimuth?: number;
+
+  @IsOptional()
   @IsString()
   timezone?: string;
 

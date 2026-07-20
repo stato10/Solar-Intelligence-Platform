@@ -12,6 +12,7 @@ import {
   formatScore,
   formatTimeRange,
   formatDateTime,
+  resolveAggregateCurrency,
   type CurrencyCode,
 } from "@/lib/utils/formatters";
 
@@ -257,10 +258,7 @@ function buildHeatConcern(
   };
 }
 
-function buildRiskConcerns(
-  data: DashboardAggregateData,
-  options: { currency: CurrencyCode; locale: string },
-): MaintenanceConcernVm[] {
+function buildRiskConcerns(data: DashboardAggregateData): MaintenanceConcernVm[] {
   return data.risks.alerts
     .filter((a) => a.severity === "high" || a.severity === "moderate")
     .slice(0, 2)
@@ -304,8 +302,13 @@ export function toMaintenancePageViewModel(
   data: DashboardAggregateData,
   options: MaintenanceViewModelOptions = {},
 ): MaintenancePageViewModel {
-  const currency: CurrencyCode = options.currency ?? "ILS";
-  const locale = options.locale ?? (currency === "ILS" ? "en-IL" : "en-US");
+  // Default to the tariff currency echoed on the aggregate; explicit
+  // options (from a caller that already resolved currency) win.
+  const aggregateFmt = resolveAggregateCurrency(data);
+  const currency: CurrencyCode = options.currency ?? aggregateFmt.currency;
+  const locale =
+    options.locale ??
+    (options.currency ? (currency === "ILS" ? "en-IL" : "en-US") : aggregateFmt.locale);
   const fmt = { currency, locale } as const;
   const recommendationItems = data.optimization.recommendations.map(toRecommendationVm);
   const maintenanceLikely = recommendationItems.filter((item) => item.isMaintenanceLikely);
@@ -349,7 +352,7 @@ export function toMaintenancePageViewModel(
   if (soilingConcern) concerns.push(soilingConcern);
   const heatConcern = buildHeatConcern(data, leakageMonthly, fmt);
   if (heatConcern) concerns.push(heatConcern);
-  concerns.push(...buildRiskConcerns(data, fmt));
+  concerns.push(...buildRiskConcerns(data));
   concerns.sort((a, b) => {
     const byS = severityOrder(a.severity) - severityOrder(b.severity);
     if (byS !== 0) return byS;

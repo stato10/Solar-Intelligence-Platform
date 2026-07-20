@@ -45,9 +45,16 @@ export class PrismaSitesRepository implements SitesRepository {
     return site ? toSiteEntity(site) : null;
   }
 
-  async create(payload: CreateSiteDto): Promise<SiteEntity> {
+  async create(payload: CreateSiteDto & { userId: string }): Promise<SiteEntity> {
     const site = await this.prisma.site.create({
-      data: payload
+      data: {
+        userId: payload.userId,
+        siteName: payload.siteName,
+        address: payload.address,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        timezone: payload.timezone
+      }
     });
     return toSiteEntity(site);
   }
@@ -56,7 +63,6 @@ export class PrismaSitesRepository implements SitesRepository {
     const site = await this.prisma.site.update({
       where: { id },
       data: {
-        ...(payload.userId !== undefined ? { userId: payload.userId } : {}),
         ...(payload.siteName !== undefined ? { siteName: payload.siteName } : {}),
         ...(payload.address !== undefined ? { address: payload.address } : {}),
         ...(payload.latitude !== undefined ? { latitude: payload.latitude } : {}),

@@ -2,8 +2,10 @@ import { cookies } from "next/headers";
 import type { AiInsightContractOutput, DashboardAggregateData } from "@/lib/contracts";
 import { fetchAiInsights } from "@/lib/api/ai-insights";
 import { ApiHttpError } from "@/lib/api/client";
-import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
+import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
 import { toSavingsPageViewModel } from "@/lib/view-models/savings";
+import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
+import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
 import { SavingsAiInsightsSection } from "./_components/savings-ai-insights-section";
 import { SavingsEmptyState, SavingsErrorState } from "./_components/savings-state";
 import {
@@ -31,10 +33,9 @@ export default async function SavingsPage() {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("sip.accessToken")?.value;
     const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
+    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
 
-    aggregate = activeSiteId
-      ? await fetchDashboardBySiteId(activeSiteId, accessToken)
-      : await fetchDashboardAggregate();
+    aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
 
     vm = toSavingsPageViewModel(aggregate);
 
@@ -79,6 +80,7 @@ export default async function SavingsPage() {
 
   return (
     <section className="space-y-6 pb-12">
+      <NavBadgesBridge {...deriveNavBadgeCounts(aggregate)} />
       {/* ─── Hero Section ─────────────────────────────────────────── */}
       <article className="glass-card relative overflow-hidden rounded-3xl p-8 md:p-10">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/15 via-emerald-400/5 to-transparent" />
