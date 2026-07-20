@@ -7,7 +7,8 @@ import {
   formatTimeRange,
   formatDate,
   deviationToStatus,
-  statusLabel,
+  resolveAggregateCurrency,
+  type CurrencyFormatOptions,
   type SemanticStatus,
 } from "@/lib/utils/formatters";
 
@@ -188,6 +189,7 @@ function deriveSystemState(
 // ---------------------------------------------------------------------------
 function deriveHeroFromIntelligence(
   intel: DashboardIntelligence,
+  fmt: CurrencyFormatOptions,
   forceNoData = false,
 ): HeroInsightVm {
   const status = intel.status;
@@ -206,7 +208,7 @@ function deriveHeroFromIntelligence(
   return {
     headline: status.headline,
     explanation: status.primaryCause,
-    moneyImpact: formatCurrency(status.moneyImpactIls),
+    moneyImpact: formatCurrency(status.moneyImpactIls, fmt),
     moneyPeriod: PERIOD_LABELS[status.moneyPeriod] ?? status.moneyPeriod,
     status: legacyStatus,
     systemState,
@@ -223,6 +225,7 @@ function deriveHeroFromIntelligence(
 // ---------------------------------------------------------------------------
 function deriveHeroFallback(
   data: DashboardAggregateData,
+  fmt: CurrencyFormatOptions,
   forceNoData = false,
 ): HeroInsightVm {
   const devPercent = data.benchmark.productionDeviationPercent;
@@ -234,7 +237,7 @@ function deriveHeroFallback(
     return {
       headline: "Cleaning recommended — production is below expected",
       explanation: `Your system is underperforming by ${formatPercent(Math.abs(devPercent))}. Dust accumulation is the likely cause based on soiling analysis.`,
-      moneyImpact: formatCurrency(data.optimization.estimatedValue),
+      moneyImpact: formatCurrency(data.optimization.estimatedValue, fmt),
       moneyPeriod: "recoverable value",
       status: legacyStatus,
       systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
@@ -250,7 +253,7 @@ function deriveHeroFallback(
     return {
       headline: "Significant production deviation detected",
       explanation: `Production is ${devPercent < 0 ? "below" : "above"} expected by ${formatPercent(Math.abs(devPercent))}. ${data.benchmark.insight}`,
-      moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings),
+      moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings, fmt),
       moneyPeriod: "monthly savings at risk",
       status: legacyStatus,
       systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
@@ -266,7 +269,7 @@ function deriveHeroFallback(
     return {
       headline: "Panel cleaning is recommended",
       explanation: data.soiling.explanation,
-      moneyImpact: formatCurrency(data.optimization.estimatedValue),
+      moneyImpact: formatCurrency(data.optimization.estimatedValue, fmt),
       moneyPeriod: "optimization potential",
       status: legacyStatus,
       systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
@@ -281,7 +284,7 @@ function deriveHeroFallback(
   return {
     headline: "Your system is performing well",
     explanation: `Production is within expected range. ${data.benchmark.insight}`,
-    moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings),
+    moneyImpact: formatCurrency(data.financial.monthlyEstimatedSavings, fmt),
     moneyPeriod: "monthly estimated savings",
     status: legacyStatus,
     systemState: deriveSystemState(legacyStatus, optimizationHeadroomIls, forceNoData),
@@ -315,11 +318,14 @@ export function toDashboardPageViewModel(
   const devPercent = data.benchmark.productionDeviationPercent;
   const devStatus = deviationToStatus(devPercent);
   const intel = data.intelligence;
+  // Currency comes from the tariff block the backend echoes on the
+  // aggregate; older cached snapshots fall back to ILS.
+  const fmt = resolveAggregateCurrency(data);
 
   // Prefer backend intelligence for hero; fall back to client-side derivation
   const hero = intel
-    ? deriveHeroFromIntelligence(intel, forceNoData)
-    : deriveHeroFallback(data, forceNoData);
+    ? deriveHeroFromIntelligence(intel, fmt, forceNoData)
+    : deriveHeroFallback(data, fmt, forceNoData);
 
   // Build intelligence-enriched alerts for the maintenance summary
   const intelligenceAlerts = intel?.alerts ?? [];
@@ -335,7 +341,7 @@ export function toDashboardPageViewModel(
         severity: a.severity,
         message: a.message,
         actionHint: a.actionHint,
-        moneyImpact: a.moneyImpactIls ? formatCurrency(a.moneyImpactIls) : undefined,
+        moneyImpact: a.moneyImpactIls ? formatCurrency(a.moneyImpactIls, fmt) : undefined,
       }))
     : data.risks.alerts.map((a, i) => ({
         id: `alert-${i}`,
@@ -346,13 +352,13 @@ export function toDashboardPageViewModel(
 
   // Build savings with intelligence profit data when available
   const savings: SavingsSummaryVm = {
-    dailySavings: formatCurrency(intel?.profit.dailySavingsIls ?? data.financial.dailyEstimatedSavings),
-    monthlySavings: formatCurrency(intel?.profit.monthlySavingsIls ?? data.financial.monthlyEstimatedSavings),
-    yearlySavings: formatCurrency(intel?.profit.yearlySavingsIls ?? data.financial.yearlyOptimizationPotential),
+    dailySavings: formatCurrency(intel?.profit.dailySavingsIls ?? data.financial.dailyEstimatedSavings, fmt),
+    monthlySavings: formatCurrency(intel?.profit.monthlySavingsIls ?? data.financial.monthlyEstimatedSavings, fmt),
+    yearlySavings: formatCurrency(intel?.profit.yearlySavingsIls ?? data.financial.yearlyOptimizationPotential, fmt),
     opportunityScore: formatScore(data.optimization.opportunityScore),
-    opportunityValue: formatCurrency(data.optimization.estimatedValue),
-    maintenanceLeakage: intel ? formatCurrency(intel.profit.maintenanceLeakageMonthlyIls) : undefined,
-    headroom: intel ? formatCurrency(intel.profit.headroomMonthlyIls) : undefined,
+    opportunityValue: formatCurrency(data.optimization.estimatedValue, fmt),
+    maintenanceLeakage: intel ? formatCurrency(intel.profit.maintenanceLeakageMonthlyIls, fmt) : undefined,
+    headroom: intel ? formatCurrency(intel.profit.headroomMonthlyIls, fmt) : undefined,
   };
 
   return {
@@ -401,7 +407,7 @@ export function toDashboardPageViewModel(
       windowStart: data.selfConsumption.recommendedUsageWindow.start,
       windowEnd: data.selfConsumption.recommendedUsageWindow.end,
       selfConsumptionScore: formatScore(data.selfConsumption.selfConsumptionScore),
-      estimatedSavings: formatCurrency(data.selfConsumption.estimatedSavingsIls),
+      estimatedSavings: formatCurrency(data.selfConsumption.estimatedSavingsIls, fmt),
       actions: data.selfConsumption.actions,
     },
 

@@ -20,8 +20,10 @@ export class DashboardQueryService {
    * Passes solar system metadata (tilt, azimuth, lastCleaningDate)
    * so the ingestion layer can use them for PVGIS accuracy.
    */
-  async aggregateBySiteId(siteId: string, correlationId?: string) {
-    const site = await this.sitesService.findOne(siteId);
+  async aggregateBySiteId(siteId: string, correlationId?: string, requesterId?: string) {
+    // When a requester is provided (JWT-guarded route), site ownership is
+    // enforced — a foreign siteId 404s without leaking existence.
+    const site = await this.sitesService.findOne(siteId, requesterId);
     if (!site) {
       throw new NotFoundException(`Site ${siteId} not found`);
     }
@@ -43,6 +45,8 @@ export class DashboardQueryService {
       longitude: site.longitude,
       systemSizeKw: system.systemSizeKw,
       lossPercent: 14, // standard default
+      tilt: system.tilt,
+      azimuth: system.azimuth,
       timezone: site.timezone,
       generatedAt: new Date().toISOString()
     };

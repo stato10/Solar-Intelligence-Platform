@@ -108,7 +108,7 @@ function NoMatchesFallback() {
       <p className="text-sm text-foreground/90">
         No verified providers match your area yet. We can notify you as
         soon as one becomes available, or continue by listing your details
-        and we'll route the request manually.
+        and we&apos;ll route the request manually.
       </p>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="outline" onClick={() => close("cancel")}>

@@ -44,7 +44,7 @@ interface ZeroDataHeroProps {
    *   - no-site      → /onboarding
    *   - never-synced → #connect (deep-link to the existing connect CTA
    *                    that already lives in the right column)
-   *   - stale        → /settings/integrations
+   *   - stale        → /settings#integrations
    */
   ctaHref?: string;
   /** Override for the CTA label. Falls back to the substate default. */
@@ -58,7 +58,7 @@ const DEFAULT_CTA_HREF: Record<OnboardingSubstate, string> = {
   anonymous: "/login?intent=signup",
   "no-site": "/onboarding",
   "never-synced": "#connect",
-  "stale-telemetry": "/settings/integrations",
+  "stale-telemetry": "/settings#integrations",
   live: "#",
 };
 

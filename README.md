@@ -1,83 +1,190 @@
+<div align="center">
+
 # Solar Intelligence Platform
 
-Web-first monorepo for the Solar Intelligence Platform.
+**Deterministic solar production intelligence — forecast, score, and act on every watt.**
 
-## Monorepo Structure
+[![CI](https://github.com/stato10/Solar-Intelligence-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/stato10/Solar-Intelligence-Platform/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
-```text
-apps/
-  web/        # Next.js web app
-  api/        # NestJS backend API
-  engine/     # FastAPI calculation engine
-packages/
-  types/      # Shared TypeScript types
-  config/     # Shared configuration
+</div>
+
+---
+
+## Overview
+
+The **Solar Intelligence Platform** is a web-first, service-oriented system that turns
+raw solar, weather, and tariff data into actionable production intelligence. It ingests
+data from external providers (PVGIS, Open-Meteo, OpenWeather One Call 3.0, OpenCage),
+runs a **deterministic Python calculation engine** for forecasts, soiling/heat/risk
+scoring, and financial estimation, then layers an AI insight service on top of the
+deterministic outputs for human-readable explanations.
+
+> **Status:** active development — scaffold, domain CRUD, providers, engine, dashboard,
+> PostgreSQL/Prisma persistence, JWT auth with ownership enforcement, and the
+> marketplace/leads flow are implemented. See [`TODO.md`](./TODO.md) for the live phase tracker.
+
+## Features
+
+- **Deterministic forecasting** — Python FastAPI engine produces reproducible
+  production, soiling, heat, risk, opportunity, and financial outputs from a single
+  versioned input payload.
+- **Multi-provider orchestration** — pluggable solar/weather/geolocation adapters
+  with explicit fallback chains (PVGIS → engine fallback, Open-Meteo ↔ OpenWeather,
+  OpenCage geocoding).
+- **Recommendation router** — converts deterministic engine output into prioritized
+  user actions (alerts, opportunities, maintenance, finance).
+- **AI insight layer** — OpenAI structured outputs for natural-language explanations
+  on top of deterministic results only (never as a source of truth).
+- **Production-grade web app** — Next.js 16 + React 19 + Tailwind 4 + Radix UI +
+  Framer Motion, with a design-token system and reusable shell.
+- **Type-safe contracts** — shared `@sip/types` package between web and api;
+  `class-validator` DTOs on the API; Zod on the web.
+- **First-class local dev** — Docker Compose for Postgres + Redis, one-command
+  monorepo dev (`npm run dev`), seeded demo data via Prisma.
+
+## Tech Stack
+
+| Layer        | Technology                                                                          |
+| ------------ | ----------------------------------------------------------------------------------- |
+| Web          | Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS 4, Radix UI, Framer Motion |
+| API          | NestJS 11, TypeScript 5, Prisma 7, class-validator, JWT (`jsonwebtoken`), bcryptjs  |
+| Engine       | Python 3.12, FastAPI, Uvicorn, Pydantic                                             |
+| Data         | PostgreSQL 16, Redis 7 (optional cache)                                             |
+| AI           | OpenAI structured outputs (explanations only)                                       |
+| Tooling      | npm workspaces, ESLint 9, Prettier, Conventional Commits, Husky, lint-staged        |
+| Infra        | Docker Compose (local), container-ready images for `web` / `api` / `engine`        |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    User([User])
+    Web[apps/web<br/>Next.js 16]
+    API[apps/api<br/>NestJS 11]
+    DL[Decision Layer<br/>Orchestrator + Router]
+    Engine[apps/engine<br/>FastAPI / Python]
+    DB[(PostgreSQL 16)]
+    Cache[(Redis 7)]
+    AI{{OpenAI<br/>Insights}}
+
+    subgraph Providers [External Providers]
+      PV[PVGIS]
+      OM[Open-Meteo]
+      OW[OpenWeather One Call 3.0]
+      OC[OpenCage]
+    end
+
+    User -->|HTTPS| Web
+    Web -->|REST| API
+    API --> DB
+    API --> Cache
+    API --> DL
+    DL --> Engine
+    DL --> Providers
+    Engine --> Providers
+    API --> AI
 ```
 
-## External Provider Docs
+Full diagram and component responsibilities: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-- `EXTERNAL_APIS.md` - provider integration contracts (`PVGIS`, `Open-Meteo`, `OpenWeather One Call 3.0`, `OpenCage`)
+## Monorepo Layout
 
-## Governance Docs
+```text
+solar-intelligence-platform/
+├── apps/
+│   ├── web/        # Next.js 16 (App Router) + React 19 + Tailwind 4
+│   ├── api/        # NestJS 11 + Prisma 7 + PostgreSQL
+│   └── engine/     # FastAPI deterministic calculation engine (Python 3.12)
+├── packages/
+│   ├── types/      # Shared TypeScript types (@sip/types)
+│   └── config/     # Shared configuration (@sip/config)
+├── docs/           # Product map + redesign specs (core docs live at repo root)
+├── .github/        # CI workflows
+└── docker-compose.yml
+```
 
-- `TODO.md` - phase tracking and cross-cutting execution checklist
-- `TESTING_STRATEGY.md` - phase-aware testing gates and fixture strategy
-- `RISK_REGISTER.md` - active technical/product risks and mitigations
-- `RECOMMENDATION_SCHEMA.md` - canonical recommendation payload contract
-- `NORMALIZATION_RULES.md` - frozen units and normalization standards
-- `WORKFLOW_RULES.md` - mandatory task execution lifecycle
-- `PHASE_GATE_CHECKLIST.md` - phase closure gate checklist
-- `TASK_TEMPLATE.md` - standard task brief format
-- `SYNC_PROTOCOL.md` - anti-drift synchronization protocol
+## Getting Started
 
-## Execution Control System
+### Prerequisites
 
-Use this project workflow for all implementation tasks:
+| Tool       | Version                | Notes                                                  |
+| ---------- | ---------------------- | ------------------------------------------------------ |
+| Node.js    | `22.x` (LTS)           | Pinned via [`.nvmrc`](./.nvmrc) — run `nvm use`        |
+| npm        | `>= 10`                | Ships with Node 22                                     |
+| Python     | `3.12+`                | Required for the FastAPI engine                        |
+| Docker     | `>= 24`                | Postgres + Redis via the bundled `docker-compose.yml`  |
 
-`Command -> Implement -> Report -> Audit -> Close`
-
-Minimum session start sequence:
-1. Read `TODO.md`, `CURSOR_RULES.md`, `WORKFLOW_RULES.md`, `SYNC_PROTOCOL.md`.
-2. Confirm active phase and active task.
-3. Implement only active task scope.
-4. Keep touched services runnable.
-
-Before closing a phase, satisfy `PHASE_GATE_CHECKLIST.md`.
-
-## Workspace Commands
-
-From repository root:
+### Install
 
 ```bash
+git clone https://github.com/stato10/Solar-Intelligence-Platform.git
+cd Solar-Intelligence-Platform
+nvm use
+cp .env.example .env
 npm install
 npm run engine:setup
 ```
 
-Run all services:
+### Configure environment
+
+Copy `.env.example` to `.env` at the repo root and fill in the secrets you need
+(OpenAI, OpenCage, OpenWeather). All variables are documented inline in
+[`.env.example`](./.env.example); provider-specific details live in
+[`EXTERNAL_APIS.md`](./EXTERNAL_APIS.md).
+
+### Run the platform
 
 ```bash
-npm run dev
+docker compose up -d postgres redis   # data services
+npm run dev                            # web + api + engine concurrently
 ```
 
-Run with Docker Compose:
+Or run services individually:
 
 ```bash
-docker compose up --build
+npm run dev:web      # Next.js on http://localhost:3001
+npm run dev:api      # NestJS  on http://localhost:${API_PORT} (3002 in .env.example)
+npm run dev:engine   # FastAPI on http://localhost:8000
 ```
 
-Run specific services:
+### Build & lint
 
 ```bash
-npm run dev:web
-npm run dev:api
-npm run dev:engine
+npm run build       # build web + api
+npm run lint        # eslint (web) + tsc --noEmit (api)
 ```
 
-Quality/build:
+### Database (Prisma)
 
 ```bash
-npm run lint
-npm run build
+npm --workspace @sip/api run prisma:generate
+npm --workspace @sip/api run prisma:migrate:dev
+npm --workspace @sip/api run db:seed
+```
+
+The Prisma schema lives at [`apps/api/prisma/schema.prisma`](./apps/api/prisma/schema.prisma);
+the persistence model is documented in [`DB_SCHEMA.md`](./DB_SCHEMA.md).
+
+## Scripts
+
+Root-level scripts (defined in [`package.json`](./package.json)):
+
+| Script                  | What it does                                                            |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `npm run dev`           | Run `web`, `api`, and `engine` concurrently                             |
+| `npm run dev:web`       | Next.js dev server on port `3001`                                       |
+| `npm run dev:api`       | NestJS dev server (watch mode)                                          |
+| `npm run dev:engine`    | FastAPI engine via Uvicorn on port `8000`                               |
+| `npm run build`         | Build the web and api workspaces                                        |
+| `npm run lint`          | ESLint (web) + `tsc --noEmit` (api)                                     |
+| `npm run engine:setup`  | `pip install -r apps/engine/requirements.txt`                           |
+
+Engine and integration smoke tests:
+
+```bash
 python -m py_compile apps/engine/src/main.py
 python apps/engine/tests/run_golden.py
 python apps/api/tests/run_engine_contract_smoke.py
@@ -85,35 +192,41 @@ python apps/api/tests/run_dashboard_contract_smoke.py
 python apps/api/tests/run_dashboard_snapshot.py
 ```
 
-## Current Status
+## Deployment
 
-- Phase 0 documentation freeze: completed
-- Phase 1 scaffold package (1.1-1.10): completed
-- Phase 2 domain CRUD scaffolding (2.1-2.4): completed
-- Phase 3 provider layer (3.1-3.7): completed
-  - Real adapters live: Open-Meteo, OpenWeather One Call 3.0, OpenCage, PVGIS
-  - Strategy/orchestration + fallback chains live for weather/geolocation/solar
-- Phase 2 closure mode: scaffold-complete (currently in-memory domain storage)
-- Phase 4 deterministic calculation engine: completed
-- Phase 5 dashboard integration: completed
-- Governance-first gate is active with executable checks and phase closure protocol
+- **Web** — Vercel-friendly (Next.js 16 App Router). Set `NEXT_PUBLIC_API_BASE_URL`.
+- **API** — Container image; deploy to any container runtime (ECS, Fly.io, Render,
+  Kubernetes). Requires `DATABASE_URL`, `JWT_SECRET`, and provider keys.
+- **Engine** — Container image; stateless FastAPI service. Expose port `8000`.
+- **Database** — Managed PostgreSQL recommended (RDS, Neon, Supabase, Cloud SQL).
 
-## Phase 1 Verification Notes
+All services ship with Dockerfiles and are wired together in
+[`docker-compose.yml`](./docker-compose.yml); the env reference is
+[`.env.example`](./.env.example).
 
-### Verified
-- Web app runs locally (`npm run dev:web`)
-- Web routes available: `/`, `/auth`, `/dashboard`, `/settings`
-- API compiles and lints (`npm run lint:api`, `npm run build:api`)
-- Engine module compiles (`python -m py_compile apps/engine/src/main.py`)
-- Auth scaffold endpoints are present (`/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/me`)
-- API-engine placeholder endpoint is present (`/api/v1/integrations/engine/health`)
-- Design-system baseline is active (tokens + shell + reusable button)
+## Roadmap
 
-### Known Gaps / Blockers
-- Docker runtime could not be executed in this environment because `docker` command was unavailable in PATH.
-- PostgreSQL runtime connectivity was not fully verified via docker-compose in this environment.
+- [x] Phase 0 — Documentation freeze
+- [x] Phase 1 — Monorepo scaffold
+- [x] Phase 2 — Domain CRUD scaffolding
+- [x] Phase 3 — Provider adapters & orchestration
+- [x] Phase 4 — Deterministic calculation engine
+- [x] Phase 5 — Dashboard integration
+- [x] Phase 6 — Persistence hardening (Postgres/Prisma-backed domain stores)
+- [x] Phase 7 — Marketplace conversion flow (providers, products, lead intents)
+- [x] Phase 8 — Authentication & ownership enforcement (JWT, per-user resource scoping)
+- [ ] Phase 9 — Observability (OpenTelemetry, Sentry, structured logs)
+- [ ] Phase 10 — Automated test suites & CI hardening
 
-### Ready for Phase 4
-- Domain and provider scaffolds are in place.
-- External provider integrations are wired and validated.
-- Next focus is Phase 4.7 fixture-based validation and golden output checks.
+Live tracker: [`TODO.md`](./TODO.md).
+
+## Contributing
+
+We welcome issues and pull requests. Please read
+[`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup, branching, Conventional Commits,
+and the PR process.
+
+## License
+
+Released under the [MIT License](./LICENSE) — Copyright © 2026 Solar Intelligence
+Platform contributors.

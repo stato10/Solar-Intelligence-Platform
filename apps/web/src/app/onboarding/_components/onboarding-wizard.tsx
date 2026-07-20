@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Sun, Zap, Home, Plug, Receipt, CheckCircle2,
+  Sun, Zap, Home, Receipt, CheckCircle2,
   ChevronRight, ChevronLeft, Info, Loader2, MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,11 @@ import type { AuthUser } from "@/lib/contracts";
 import type { OnboardingStep1Snapshot } from "@/lib/contracts/onboarding-step1";
 import { getDefaultTariff } from "@/lib/utils/tariff";
 import {
+  COUNTRY_TARIFF_DEFAULTS,
+  SUPPORTED_TARIFF_COUNTRY_CODES,
+  getTariffDefaultsForCountry,
+} from "@/lib/utils/tariff-defaults";
+import {
   OnboardingApiError,
   createSite,
   createSolarSystem,
@@ -26,6 +31,12 @@ import {
   resolveDomainUserId,
 } from "@/lib/api/onboarding";
 import { geocodeAddress } from "@/lib/api/geocoding";
+import { setActiveSite } from "@/app/actions";
+import {
+  generateSolarSetupExplanation,
+  isValidIanaTimezone,
+  type SolarSetupRecommendation,
+} from "@/lib/utils/solar-setup";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -47,7 +58,6 @@ const STEPS = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toNum(v: string) { return Number(v.trim()); }
-function toInt(v: string) { return parseInt(v, 10); }
 
 function parseAuthUser(raw: string | null): AuthUser | null {
   if (!raw) return null;
@@ -176,6 +186,8 @@ export function OnboardingWizard() {
   const [geocoding, setGeocoding] = useState(false);
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState<string | null>(null);
+  // Location-based setup recommendation, regenerated on every resolve.
+  const [setupRec, setSetupRec] = useState<SolarSetupRecommendation | null>(null);
 
   // Step 3 — Solar System
   const [systemSizeKw, setSystemSizeKw] = useState("8.5");
@@ -197,19 +209,78 @@ export function OnboardingWizard() {
   const [selfConsumptionRate, setSelfConsumptionRate] = useState("0.62");
   const [exportRate, setExportRate] = useState("0.28");
   const [currency, setCurrency] = useState("ILS");
+  // Country the tariff defaults come from ("" = Other / manual entry).
+  const [tariffCountry, setTariffCountry] = useState("IL");
 
   // Derived snapshot holder
   const [step1Snapshot, setStep1Snapshot] = useState<OnboardingStep1Snapshot | null>(null);
 
   const todayDateValue = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  // ── Apply country defaults when address is resolved ──
+  // ── Apply country defaults when address is resolved or the user picks
+  //    a country in the tariff step. Currency + typical rates follow the
+  //    chosen country automatically; the user can still edit everything.
   const applyCountryDefaults = (code: string | null) => {
     const defaults = getDefaultTariff(code ?? undefined);
     setSelfConsumptionRate(String(defaults.selfConsumptionRate));
     setExportRate(String(defaults.exportRate));
     setCurrency(defaults.currency);
+    if (code && getTariffDefaultsForCountry(code)) {
+      setTariffCountry(code.toUpperCase());
+    }
   };
+
+  // ── Location-based setup recommendation ──
+  // Generates dynamic suggestions (tilt/azimuth/efficiency) for the resolved
+  // coordinates and pre-fills the editable step-3 fields. Real installation
+  // data (system size, panel wattage, inverter) is never guessed.
+  function applyLocationRecommendation(params: {
+    resolvedAddress: string;
+    latitude: number;
+    longitude: number;
+    timezone: string;
+    country?: string;
+  }) {
+    const rec = generateSolarSetupExplanation(params);
+    setSetupRec(rec);
+    setTilt(String(rec.recommendedTilt));
+    setAzimuth(String(rec.recommendedAzimuth));
+    setPanelEfficiency(String(rec.recommendedEfficiency));
+  }
+
+  // ── Use the browser's real location ──
+  const [locating, setLocating] = useState(false);
+  function handleUseMyLocation() {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setError("Geolocation is not available in this browser.");
+      return;
+    }
+    setLocating(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        setLatitude(lat.toFixed(4));
+        setLongitude(lon.toFixed(4));
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) setTimezone(tz);
+        setResolvedAddress(null);
+        applyLocationRecommendation({
+          resolvedAddress: "your current location",
+          latitude: lat,
+          longitude: lon,
+          timezone: tz ?? timezone,
+        });
+        setLocating(false);
+      },
+      () => {
+        setError("Could not read your location. Allow location access or enter coordinates manually.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   // ── Geocode address ──
   async function handleGeocode() {
@@ -226,12 +297,25 @@ export function OnboardingWizard() {
       }
       setLatitude(String(result.lat));
       setLongitude(String(result.lon));
-      if (result.timezone) setTimezone(result.timezone);
+      // Only accept real IANA timezones (e.g. "Asia/Jerusalem"), never vague
+      // values like a country name. Fall back to the browser's IANA zone.
+      const resolvedTz =
+        result.timezone && isValidIanaTimezone(result.timezone)
+          ? result.timezone
+          : Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (resolvedTz) setTimezone(resolvedTz);
       setResolvedAddress(result.formattedAddress);
       if (result.countryCode) {
         setCountryCode(result.countryCode);
         applyCountryDefaults(result.countryCode);
       }
+      applyLocationRecommendation({
+        resolvedAddress: result.formattedAddress,
+        latitude: result.lat,
+        longitude: result.lon,
+        timezone: resolvedTz ?? timezone,
+        country: result.countryCode ?? undefined,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Address resolution failed.");
     } finally {
@@ -249,6 +333,9 @@ export function OnboardingWizard() {
       if (!isFinite(lat) || lat < -90 || lat > 90) return "Valid latitude required (−90 to 90).";
       if (!isFinite(lon) || lon < -180 || lon > 180) return "Valid longitude required (−180 to 180).";
       if (!timezone.trim()) return "Timezone is required.";
+      if (!isValidIanaTimezone(timezone.trim())) {
+        return "Timezone must be a valid IANA identifier like Asia/Jerusalem or America/Chicago — not a country name.";
+      }
     }
     if (step === 3) {
       if (!isFinite(toNum(systemSizeKw)) || toNum(systemSizeKw) < 0.1) return "System size must be ≥ 0.1 kW.";
@@ -285,7 +372,7 @@ export function OnboardingWizard() {
         const authUser = parseAuthUser(localStorage.getItem(AUTH_USER_KEY));
         if (!authUser) throw new Error("Not authenticated. Please sign in again.");
         const token = localStorage.getItem(ACCESS_TOKEN_KEY) ?? undefined;
-        const domainUserId = await resolveDomainUserId(authUser, token);
+        const domainUserId = await resolveDomainUserId(authUser);
         const createdSite = await createSite({
           userId: domainUserId, siteName: siteName.trim(),
           address: address.trim(), latitude: toNum(latitude),
@@ -305,6 +392,9 @@ export function OnboardingWizard() {
         };
         localStorage.setItem(STEP1_SNAPSHOT_KEY, JSON.stringify(snapshot));
         setStep1Snapshot(snapshot);
+        // Make the freshly created site the active one so the dashboard
+        // aggregates its real data instead of falling back to demo mode.
+        await setActiveSite(createdSite.id).catch(() => {});
         setStep(step + 1);
       } catch (e) {
         setError(e instanceof OnboardingApiError ? e.message : e instanceof Error ? e.message : "Setup failed. Please try again.");
@@ -430,6 +520,12 @@ export function OnboardingWizard() {
                   {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
                   {geocoding ? "Resolving…" : "Resolve"}
                 </Button>
+                <Button type="button" variant="outline" size="default"
+                  disabled={pending || locating}
+                  onClick={handleUseMyLocation} className="shrink-0 gap-1.5">
+                  {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                  {locating ? "Locating…" : "Use my location"}
+                </Button>
               </div>
               {resolvedAddress && (
                 <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
@@ -452,6 +548,58 @@ export function OnboardingWizard() {
                   onChange={e => setLongitude(e.target.value)} placeholder="34.7818" disabled={pending} />
               </FieldGroup>
             </div>
+
+            {setupRec && (
+              <div className="space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Recommended setup for this location</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    We detected your site location and suggested default solar settings.
+                    Use real installer values when available.
+                  </p>
+                </div>
+                <div className="grid gap-x-4 gap-y-1.5 text-xs sm:grid-cols-2">
+                  {resolvedAddress && (
+                    <div className="sm:col-span-2">
+                      <span className="text-muted-foreground">Resolved address: </span>
+                      <strong>{resolvedAddress}</strong>
+                    </div>
+                  )}
+                  <div><span className="text-muted-foreground">Timezone: </span><strong>{timezone}</strong></div>
+                  <div>
+                    <span className="text-muted-foreground">Coordinates: </span>
+                    <strong>{latitude}, {longitude}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Suggested tilt: </span>
+                    <strong>{setupRec.recommendedTilt}&deg;</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Suggested azimuth: </span>
+                    <strong>{setupRec.recommendedAzimuth}&deg; ({setupRec.preferredDirection})</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Suggested efficiency: </span>
+                    <strong>{setupRec.recommendedEfficiency}%</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Suggested loss percent: </span>
+                    <strong>{setupRec.recommendedLossPercent}%</strong>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  We use this location to calculate your local sunlight hours, sunrise and sunset
+                  times, weather impact, air quality, expected solar production, and production
+                  windows. The suggested tilt, azimuth, and efficiency have been pre-filled in the
+                  next step — you can edit them there.
+                </p>
+                <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                  These are location-based estimates. Real installation data is always more accurate.
+                  System size and panel wattage must come from your real installation — we never
+                  guess them from the address.
+                </p>
+              </div>
+            )}
           </div>
         );
 
@@ -463,52 +611,81 @@ export function OnboardingWizard() {
               <div>
                 <h2 className="text-xl font-semibold tracking-tight">Your solar system specs</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Used to calculate expected production and detect deviations.</p>
+                {setupRec && (
+                  <p className="mt-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                    Tilt, azimuth, and efficiency below were pre-filled with location-based
+                    estimates for your site. Replace them with real values from your installer,
+                    roof plans, inverter app, or solar proposal if you know them.
+                  </p>
+                )}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FieldGroup>
                   <Label htmlFor="size">
-                    <FieldTooltip label="System size (kW)" tip="Total installed capacity of your solar panels in kilowatts." />
+                    <FieldTooltip label="System size (kW)"
+                      tip={setupRec?.fieldHelp.systemSize ?? "Total installed capacity of your solar panels in kilowatts."} />
                   </Label>
                   <Input id="size" type="number" step="any" min="0.1" value={systemSizeKw}
                     onChange={e => setSystemSizeKw(e.target.value)} placeholder="8.5" disabled={pending} />
+                  <HelperText>Real installation value — enter your actual installed capacity.</HelperText>
                 </FieldGroup>
                 <FieldGroup>
                   <Label htmlFor="tilt">
-                    <FieldTooltip label="Tilt (°)" tip="The angle of your panels from horizontal. 0° = flat, 90° = vertical." />
+                    <FieldTooltip label="Tilt (°)"
+                      tip={setupRec?.fieldHelp.tilt ?? "The angle of your panels from horizontal. 0° = flat, 90° = vertical."} />
                   </Label>
                   <Input id="tilt" type="number" step="any" min="0" max="90" value={tilt}
                     onChange={e => setTilt(e.target.value)} placeholder="20" disabled={pending} />
+                  {setupRec && (
+                    <HelperText>Suggested for your latitude: {setupRec.recommendedTilt}&deg; (editable).</HelperText>
+                  )}
                 </FieldGroup>
                 <FieldGroup>
                   <Label htmlFor="azimuth">
-                    <FieldTooltip label="Azimuth (°)" tip="Direction panels face. 180° = south-facing (optimal for northern hemisphere)." />
+                    <FieldTooltip label="Azimuth (°)"
+                      tip={setupRec?.fieldHelp.azimuth ?? "Direction panels face. 180° = south, 90° = east, 270° = west, 0° = north."} />
                   </Label>
                   <Input id="azimuth" type="number" step="any" min="0" max="360" value={azimuth}
                     onChange={e => setAzimuth(e.target.value)} placeholder="180" disabled={pending} />
+                  {setupRec && (
+                    <HelperText>
+                      Suggested for your hemisphere: {setupRec.recommendedAzimuth}&deg; ({setupRec.preferredDirection}).
+                    </HelperText>
+                  )}
                 </FieldGroup>
                 <FieldGroup>
                   <Label htmlFor="wattage">
-                    <FieldTooltip label="Panel wattage (W)" tip="Rated output per panel under standard test conditions." />
+                    <FieldTooltip label="Panel wattage (W)"
+                      tip={setupRec?.fieldHelp.panelWattage ?? "Rated output per panel under standard test conditions."} />
                   </Label>
                   <Input id="wattage" type="number" step="any" min="1" value={panelWattage}
                     onChange={e => setPanelWattage(e.target.value)} placeholder="400" disabled={pending} />
+                  <HelperText>Real installation value — from your panel model or solar proposal.</HelperText>
                 </FieldGroup>
                 <FieldGroup>
                   <Label htmlFor="efficiency">
-                    <FieldTooltip label="Panel efficiency (%)" tip="Percentage of sunlight converted to electricity. Typical range: 17–23%." />
+                    <FieldTooltip label="Panel efficiency (%)"
+                      tip={setupRec?.fieldHelp.panelEfficiency ?? "Percentage of sunlight converted to electricity. Typical range: 17–23%."} />
                   </Label>
                   <Input id="efficiency" type="number" step="any" min="0" max="100" value={panelEfficiency}
                     onChange={e => setPanelEfficiency(e.target.value)} placeholder="20" disabled={pending} />
+                  {setupRec && (
+                    <HelperText>If unknown, {setupRec.recommendedEfficiency}% is a reasonable default.</HelperText>
+                  )}
                 </FieldGroup>
                 <FieldGroup>
-                  <Label htmlFor="cleaning">Last cleaning date</Label>
+                  <Label htmlFor="cleaning">
+                    <FieldTooltip label="Last cleaning date"
+                      tip={setupRec?.fieldHelp.lastCleaningDate ?? "Used to calculate soiling loss since last maintenance."} />
+                  </Label>
                   <Input id="cleaning" type="date" value={lastCleaningDate}
                     onChange={e => setLastCleaningDate(e.target.value)} max={todayDateValue} disabled={pending} />
-                  <HelperText>Used to calculate soiling loss since last maintenance.</HelperText>
+                  <HelperText>Optional — used to estimate soiling loss. Leave empty if unknown.</HelperText>
                 </FieldGroup>
                 <FieldGroup>
                   <Label htmlFor="inverter">
-                    <FieldTooltip label="Inverter type (optional)" tip="e.g. String inverter, Hybrid inverter, Microinverter." />
+                    <FieldTooltip label="Inverter type (optional)"
+                      tip={setupRec?.fieldHelp.inverterType ?? "e.g. String inverter, Hybrid inverter, Microinverter."} />
                   </Label>
                   <Input id="inverter" value={inverterType}
                     onChange={e => setInverterType(e.target.value)}
@@ -597,11 +774,60 @@ export function OnboardingWizard() {
               <p className="font-medium text-foreground">Why does this matter?</p>
               <p className="mt-1">
                 We use your tariff rates to calculate the financial value of every kWh you produce,
-                consume, or export. Without accurate rates, savings estimates won't reflect your real situation.
+                consume, or export. Without accurate rates, savings estimates won&apos;t reflect your real situation.
               </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              <FieldGroup>
+                <Label htmlFor="tariffCountry">Country / region</Label>
+                <select
+                  id="tariffCountry"
+                  value={tariffCountry}
+                  onChange={e => {
+                    const code = e.target.value;
+                    setTariffCountry(code);
+                    if (code) {
+                      const defaults = getTariffDefaultsForCountry(code);
+                      if (defaults) {
+                        setCurrency(defaults.currency);
+                        setSelfConsumptionRate(String(defaults.importRate));
+                        setExportRate(String(defaults.exportRate));
+                      }
+                    }
+                  }}
+                  disabled={pending}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                >
+                  {SUPPORTED_TARIFF_COUNTRY_CODES.map(code => {
+                    const entry = COUNTRY_TARIFF_DEFAULTS[code];
+                    return (
+                      <option key={code} value={code}>
+                        {entry.name} ({entry.currency})
+                      </option>
+                    );
+                  })}
+                  <option value="">Other — set manually</option>
+                </select>
+                <HelperText>
+                  Picking a country auto-fills currency and typical residential rates. You can edit them.
+                </HelperText>
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="currency">Currency</Label>
+                <select
+                  id="currency"
+                  value={currency}
+                  onChange={e => setCurrency(e.target.value)}
+                  disabled={pending}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+                >
+                  {["ILS", "USD", "EUR", "GBP", "CAD", "AUD"].map(code => (
+                    <option key={code} value={code}>{code}</option>
+                  ))}
+                </select>
+                <HelperText>Every money figure in the product is shown in this currency.</HelperText>
+              </FieldGroup>
               <FieldGroup>
                 <Label htmlFor="selfRate">Self-consumption rate ({currency}/kWh)</Label>
                 <Input id="selfRate" type="number" step="any" min="0"
@@ -618,18 +844,11 @@ export function OnboardingWizard() {
                   placeholder="0.28" disabled={pending} />
                 <HelperText>Rate you receive per kWh fed back to the grid.</HelperText>
               </FieldGroup>
-              <FieldGroup>
-                <Label htmlFor="currency">Currency</Label>
-                <Input id="currency" value={currency}
-                  onChange={e => setCurrency(e.target.value)}
-                  placeholder="ILS" disabled={pending} />
-                <HelperText>e.g. ILS, EUR, USD</HelperText>
-              </FieldGroup>
             </div>
 
             {(toNum(selfConsumptionRate) === 0 && toNum(exportRate) === 0) && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2.5 text-sm text-amber-700 dark:text-amber-400">
-                ⚠️ Both rates are 0 — your savings estimates will show ₪0. Please enter your tariff rates.
+                ⚠️ Both rates are 0 — your savings estimates will show 0 {currency}. Please enter your tariff rates.
               </div>
             )}
           </div>

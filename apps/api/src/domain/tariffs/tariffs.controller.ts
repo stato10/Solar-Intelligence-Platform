@@ -1,16 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { CreateTariffDto } from "./dto/create-tariff.dto";
 import { TariffsListQueryDto } from "./dto/tariffs-list-query.dto";
 import { UpdateTariffDto } from "./dto/update-tariff.dto";
 import { TariffsService } from "./tariffs.service";
 
+@UseGuards(JwtAuthGuard)
 @Controller("tariffs")
 export class TariffsController {
   constructor(private readonly tariffsService: TariffsService) {}
 
   @Get()
-  async findAll(@Query() query: TariffsListQueryDto) {
-    const result = await this.tariffsService.findAll(query);
+  async findAll(@Request() req: any, @Query() query: TariffsListQueryDto) {
+    const result = await this.tariffsService.findAll(query, req.user.sub);
     return {
       success: true,
       data: result.items,
@@ -23,10 +25,10 @@ export class TariffsController {
   }
 
   @Post()
-  async create(@Body() payload: CreateTariffDto) {
+  async create(@Request() req: any, @Body() payload: CreateTariffDto) {
     return {
       success: true,
-      data: await this.tariffsService.create(payload),
+      data: await this.tariffsService.create(payload, req.user.sub),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -35,10 +37,10 @@ export class TariffsController {
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string) {
+  async findOne(@Request() req: any, @Param("id") id: string) {
     return {
       success: true,
-      data: await this.tariffsService.findOne(id),
+      data: await this.tariffsService.findOne(id, req.user.sub),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"
@@ -47,10 +49,10 @@ export class TariffsController {
   }
 
   @Patch(":id")
-  async update(@Param("id") id: string, @Body() payload: UpdateTariffDto) {
+  async update(@Request() req: any, @Param("id") id: string, @Body() payload: UpdateTariffDto) {
     return {
       success: true,
-      data: await this.tariffsService.update(id, payload),
+      data: await this.tariffsService.update(id, payload, req.user.sub),
       meta: {
         timestamp: new Date().toISOString(),
         version: "v1"

@@ -32,24 +32,32 @@ export class SitesService {
     return paginateArray(filtered, query);
   }
 
-  async create(payload: CreateSiteDto) {
+  async create(payload: CreateSiteDto & { userId: string }) {
     await this.usersService.findOne(payload.userId);
     return this.sitesRepository.create(payload);
   }
 
-  async findOne(id: string) {
+  /**
+   * Loads a site by id. When `requesterId` is provided, the site must
+   * belong to that user — otherwise a 404 is thrown so resource
+   * existence is never leaked across tenants.
+   */
+  async findOne(id: string, requesterId?: string) {
     const site = await this.sitesRepository.findById(id);
-    if (!site) {
+    if (!site || (requesterId !== undefined && site.userId !== requesterId)) {
       throw new NotFoundException(`Site ${id} not found`);
     }
     return site;
   }
 
-  async update(id: string, payload: UpdateSiteDto) {
-    await this.findOne(id);
-    if (payload.userId !== undefined) {
-      await this.usersService.findOne(payload.userId);
-    }
+  /** IDs of every site owned by the given user (ownership filter for child resources). */
+  async getOwnedSiteIds(userId: string): Promise<Set<string>> {
+    const sites = await this.sitesRepository.findAll();
+    return new Set(sites.filter((site) => site.userId === userId).map((site) => site.id));
+  }
+
+  async update(id: string, payload: UpdateSiteDto, requesterId?: string) {
+    await this.findOne(id, requesterId);
     return this.sitesRepository.update(id, payload);
   }
 }

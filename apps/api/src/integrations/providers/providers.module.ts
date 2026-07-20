@@ -1,11 +1,13 @@
 import { Module } from "@nestjs/common";
 import { MockOpenCageGeolocationProvider } from "./adapters/mock-opencage-geolocation.provider";
 import { MockPvgisSolarProvider } from "./adapters/mock-pvgis-solar.provider";
+import { OpenMeteoAirQualityProvider } from "./adapters/open-meteo-air-quality.provider";
 import { OpenMeteoWeatherProvider } from "./adapters/open-meteo-weather.provider";
 import { OpenCageGeolocationProvider } from "./adapters/opencage-geolocation.provider";
 import { OpenWeatherWeatherProvider } from "./adapters/openweather-weather.provider";
 import { PvgisSolarProvider } from "./adapters/pvgis-solar.provider";
 import {
+  AIR_QUALITY_PROVIDER_TOKEN,
   GEOLOCATION_PROVIDER_TOKEN,
   SOLAR_PROVIDER_TOKEN,
   WEATHER_PROVIDER_TOKEN
@@ -22,6 +24,7 @@ import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-
     MockPvgisSolarProvider,
     PvgisSolarProvider,
     OpenMeteoWeatherProvider,
+    OpenMeteoAirQualityProvider,
     OpenWeatherWeatherProvider,
     MockOpenCageGeolocationProvider,
     OpenCageGeolocationProvider,
@@ -40,12 +43,17 @@ import { WeatherProviderOrchestratorService } from "./strategy/weather-provider-
     {
       provide: GEOLOCATION_PROVIDER_TOKEN,
       useExisting: GeolocationProviderOrchestratorService
+    },
+    {
+      provide: AIR_QUALITY_PROVIDER_TOKEN,
+      useExisting: OpenMeteoAirQualityProvider
     }
   ],
   exports: [
     SOLAR_PROVIDER_TOKEN,
     WEATHER_PROVIDER_TOKEN,
     GEOLOCATION_PROVIDER_TOKEN,
+    AIR_QUALITY_PROVIDER_TOKEN,
     ProviderSelectionService,
     SolarProviderOrchestratorService,
     WeatherProviderOrchestratorService,

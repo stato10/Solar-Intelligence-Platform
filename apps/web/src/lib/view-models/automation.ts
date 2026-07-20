@@ -1,4 +1,11 @@
-import { formatCurrency, formatScore, formatTimeRange, formatDate, type CurrencyCode } from "@/lib/utils/formatters";
+import {
+  formatCurrency,
+  formatScore,
+  formatTimeRange,
+  formatDate,
+  resolveAggregateCurrency,
+  type CurrencyCode,
+} from "@/lib/utils/formatters";
 import type { DashboardAggregateData } from "@/lib/contracts";
 
 // ---------------------------------------------------------------------------
@@ -168,8 +175,13 @@ export function toAutomationPageViewModel(
   data: DashboardAggregateData,
   options: AutomationViewModelOptions = {},
 ): AutomationPageViewModel {
-  const currency: CurrencyCode = options.currency ?? "ILS";
-  const locale = options.locale ?? (currency === "ILS" ? "en-IL" : "en-US");
+  // Default to the tariff currency echoed on the aggregate; explicit
+  // options (from a caller that already resolved currency) win.
+  const aggregateFmt = resolveAggregateCurrency(data);
+  const currency: CurrencyCode = options.currency ?? aggregateFmt.currency;
+  const locale =
+    options.locale ??
+    (options.currency ? (currency === "ILS" ? "en-IL" : "en-US") : aggregateFmt.locale);
   const fmt = { currency, locale } as const;
 
   const sc = data.selfConsumption;

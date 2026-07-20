@@ -83,7 +83,8 @@ export function AuthForm() {
       }
 
       persistSession(result.accessToken, result.user);
-      router.push("/onboarding/step-1");
+      // The unified wizard at /onboarding supersedes the legacy step pages.
+      router.push("/onboarding");
     } catch (error) {
       if (error instanceof AuthApiError) {
         setErrorMessage(error.message);

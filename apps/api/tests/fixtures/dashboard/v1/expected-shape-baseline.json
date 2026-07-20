@@ -1,83 +1,184 @@
 {
-  "siteId": "string",
-  "generatedAt": "string",
-  "source": "string",
-  "forecast": {
-    "expectedDailyKwh": "number",
-    "expectedWeeklyKwh": "number",
-    "expectedMonthlyKwh": "number"
+  "benchmark": {
+    "actualExportKwh": "number",
+    "actualProductionKwh": "number",
+    "expectedExportKwh": "number",
+    "expectedProductionKwh": "number",
+    "exportDeviationPercent": "number",
+    "insight": "string",
+    "performanceStatus": "string",
+    "productionDeviationPercent": "number"
   },
-  "soiling": {
-    "score": "number",
-    "estimatedLossPercent": "number",
-    "cleaningRecommended": "boolean",
-    "recommendedCleaningDate": "string",
-    "explanation": "string"
+  "engineContext": {
+    "cloudCover": "number",
+    "daysWithoutRain": "number",
+    "ghi": "number",
+    "pm10": "number",
+    "temperature": "number"
   },
-  "heat": {
-    "score": "number",
-    "estimatedLossPercent": "number",
-    "peakHeatWindowStart": "string",
-    "peakHeatWindowEnd": "string"
-  },
-  "risks": {
-    "alerts": [
-      {
-        "riskType": "string",
-        "severity": "string",
-        "message": "string",
-        "expectedStart": "string",
-        "expectedEnd": "string"
-      }
-    ]
-  },
-  "optimization": {
-    "opportunityScore": "number",
-    "recommendations": [
-      {
-        "id": "string",
-        "type": "string",
-        "title": "string",
-        "message": "string",
-        "severity": "string",
-        "priority": "number",
-        "estimatedValue": "number",
-        "validFrom": "string",
-        "validUntil": "string",
-        "sourceModule": "string"
-      }
-    ],
-    "estimatedValue": "number"
+  "engineTariff": {
+    "exportRate": "number",
+    "importRate": "number"
   },
   "financial": {
     "dailyEstimatedSavings": "number",
     "monthlyEstimatedSavings": "number",
     "yearlyOptimizationPotential": "number"
   },
-  "benchmark": {
-    "expectedProductionKwh": "number",
-    "actualProductionKwh": "number",
-    "expectedExportKwh": "number",
-    "actualExportKwh": "number",
-    "productionDeviationPercent": "number",
-    "exportDeviationPercent": "number",
-    "performanceStatus": "string",
-    "insight": "string"
+  "forecast": {
+    "expectedDailyKwh": "number",
+    "expectedMonthlyKwh": "number",
+    "expectedWeeklyKwh": "number"
   },
-  "selfConsumption": {
-    "recommendedUsageWindow": {
-      "start": "string",
-      "end": "string"
+  "generatedAt": "string",
+  "heat": {
+    "estimatedLossPercent": "number",
+    "peakHeatWindowEnd": "string",
+    "peakHeatWindowStart": "string",
+    "score": "number"
+  },
+  "intelligence": {
+    "alerts": [
+      {
+        "actionHint": "string",
+        "category": "string",
+        "id": "string",
+        "message": "string",
+        "moneyImpactIls": "number",
+        "severity": "string",
+        "title": "string"
+      }
+    ],
+    "debug": {
+      "estimated": "number",
+      "expected": "number",
+      "factors": {
+        "cloud": "number",
+        "dust": "number",
+        "radiation": "number",
+        "soiling": "number",
+        "temperature": "number"
+      }
     },
-    "selfConsumptionScore": "number",
-    "estimatedSavingsIls": "number",
-    "actions": [
-      "string"
+    "engineRecommendations": [
+      {
+        "actionMode": "string",
+        "confidence": "string",
+        "id": "string",
+        "impactIls": "number",
+        "message": "string",
+        "title": "string",
+        "type": "string"
+      }
+    ],
+    "estimation": {
+      "estimatedKwh": "number",
+      "factors": {
+        "cloud": "number",
+        "dust": "number",
+        "radiation": "number",
+        "soiling": "number",
+        "temperature": "number"
+      }
+    },
+    "generatedAt": "string",
+    "lossBreakdown": "null",
+    "opportunities": [
+      {
+        "confidence": "string",
+        "description": "string",
+        "estimatedValueIls": "number",
+        "id": "string",
+        "priority": "number",
+        "title": "string",
+        "type": "string"
+      }
+    ],
+    "profit": {
+      "currentMonthlyIls": "number",
+      "dailySavingsIls": "number",
+      "exportValueDailyIls": "number",
+      "headroomMonthlyIls": "number",
+      "maintenanceLeakageMonthlyIls": "number",
+      "monthlySavingsIls": "number",
+      "optimalMonthlyIls": "number",
+      "selfConsumptionValueDailyIls": "number",
+      "yearlySavingsIls": "number"
+    },
+    "simulations": {
+      "actions": [
+        "string"
+      ],
+      "afterMonthlyIls": "number",
+      "currentMonthlyIls": "number",
+      "deltaMonthlyIls": "number",
+      "roiYears": "number"
+    },
+    "status": {
+      "cta": {
+        "label": "string",
+        "type": "string"
+      },
+      "headline": "string",
+      "level": "string",
+      "moneyImpactIls": "number",
+      "moneyPeriod": "string",
+      "primaryCause": "string",
+      "statusLabel": "string"
+    }
+  },
+  "optimization": {
+    "estimatedValue": "number",
+    "opportunityScore": "number",
+    "recommendations": [
+      {
+        "estimatedValue": "number",
+        "id": "string",
+        "message": "string",
+        "priority": "number",
+        "severity": "string",
+        "sourceModule": "string",
+        "title": "string",
+        "type": "string",
+        "validFrom": "string",
+        "validUntil": "string"
+      }
     ]
   },
   "providers": {
-    "weather": "string",
+    "engine": "string",
     "solar": "string",
-    "engine": "string"
-  }
+    "weather": "string"
+  },
+  "risks": {
+    "alerts": [
+      {
+        "expectedEnd": "string",
+        "expectedStart": "string",
+        "message": "string",
+        "riskType": "string",
+        "severity": "string"
+      }
+    ]
+  },
+  "selfConsumption": {
+    "actions": [
+      "string"
+    ],
+    "estimatedSavingsIls": "number",
+    "recommendedUsageWindow": {
+      "end": "string",
+      "start": "string"
+    },
+    "selfConsumptionScore": "number"
+  },
+  "siteId": "string",
+  "soiling": {
+    "cleaningRecommended": "boolean",
+    "estimatedLossPercent": "number",
+    "explanation": "string",
+    "recommendedCleaningDate": "string",
+    "score": "number"
+  },
+  "source": "string"
 }

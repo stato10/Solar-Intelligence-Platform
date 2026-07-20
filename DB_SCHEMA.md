@@ -8,10 +8,10 @@
 ## Database Engine
 - PostgreSQL (primary system of record)
 
-## Runtime Truth (Phase 4.9 Decision)
-- Active runtime persistence in the current scaffold is in-memory in API domain services.
-- This document defines the target PostgreSQL persistence model, not the active runtime source yet.
-- Any implementation that introduces PostgreSQL as active runtime persistence must be tracked as explicit phase tasks and synchronized with `ARCHITECTURE.md`, `API_CONTRACTS.md`, and `TODO.md`.
+## Runtime Truth (Current)
+- Active runtime persistence is **PostgreSQL via Prisma**.
+- The live schema source of truth is `apps/api/prisma/schema.prisma` (with migrations under `apps/api/prisma/migrations/`).
+- This document summarizes the live model plus not-yet-implemented target tables; where they differ, the Prisma schema wins.
 
 ## Naming and Type Conventions (Strict)
 - Table names: `snake_case` plural.
@@ -24,93 +24,76 @@
   - score fields constrained to `0..100`
   - percent fields constrained to `0..100`
 
-## Entities and Tables
-### `users`
-- `id`, `full_name`, `email`, `password_hash`, `role`, `created_at`, `updated_at`
+## Entities and Tables (Live — Prisma models)
 
-### `sites`
-- `id`, `user_id`, `site_name`, `address`, `latitude`, `longitude`, `timezone`, `created_at`
+Prisma models use camelCase field names and PascalCase model names; the
+canonical definitions live in `apps/api/prisma/schema.prisma`.
 
-### `solar_systems`
-- `id`, `site_id`, `system_size_kw`, `tilt`, `azimuth`, `panel_wattage`, `panel_efficiency`, `inverter_type`, `last_cleaning_date`, `created_at`, `updated_at`
+### `User` (unified auth + domain user)
+- `id`, `email` (unique), `passwordHash` (bcrypt), `fullName`, `role` (`owner` | `admin`), `createdAt`, `updatedAt`
 
-### `user_devices`
-- `id`, `site_id`, `has_boiler`, `has_ev`, `has_battery`, `has_dishwasher`, `has_washing_machine`, `has_ac`, `flexible_load_shifting_possible`, `open_to_upgrades`, `home_occupancy_profile`
+### `Site`
+- `id`, `userId` (FK → User, cascade), `siteName`, `address`, `latitude`, `longitude`, `timezone`, `createdAt`, `updatedAt`
 
-### `tariffs`
-- `id`, `site_id`, `self_consumption_rate`, `export_rate`, `currency`, `effective_from`
+### `SolarSystem`
+- `id`, `siteId` (FK → Site, cascade), `systemSizeKw`, `tilt`, `azimuth`, `panelWattage`, `panelEfficiency` (percent 0–100), `panelCount?`, `panelType?`, `inverterType?`, `installationDate?`, `lastCleaningDate`, `isActive`, `createdAt`, `updatedAt`
 
-### `weather_snapshots`
-- `id`, `site_id`, `timestamp`, `temperature`, `cloud_cover`, `wind_speed`, `humidity`, `precipitation`, `weather_source`
+### `SiteDeviceProfile` (one per site)
+- `id`, `siteId` (unique FK → Site), `hasBoiler`, `hasEv`, `hasBattery`, `hasDishwasher`, `hasWashingMachine`, `hasAc`, `usageFlexibilityLevel` (1–5), `flexibleLoadShiftingPossible`, `openToUpgrades`, `homeOccupancyProfile` (`mostly_day` | `mostly_evening` | `mixed`), `createdAt`, `updatedAt`
 
-### `air_quality_snapshots`
-- `id`, `site_id`, `timestamp`, `pm10`, `pm25`, `dust`, `aod`, `aq_source`
+### `Tariff`
+- `id`, `siteId` (FK → Site, cascade), `selfConsumptionRate`, `exportRate`, `currency`, `isActive`, `effectiveFrom`, `effectiveUntil?`, `createdAt`, `updatedAt`
 
-### `forecast_runs`
-- `id`, `site_id`, `run_date`, `expected_daily_kwh`, `expected_weekly_kwh`, `expected_monthly_kwh`, `peak_window_start`, `peak_window_end`, `forecast_source`
+### Marketplace: `Provider`, `Product`, `LeadIntent`, `RecommendationLink`
+- `Provider`: `id`, `name`, `slug` (unique), `category` (cleaning/maintenance/installation/battery/ev_charging/automation), `description?`, `serviceAreas[]`, contact fields, `isActive`.
+- `Product`: `id`, `name`, `slug` (unique), `category` (battery/ev_charger/switcher/cooling/automatic_cleaning), `brand?`, price range, `affiliateUrl?`, `isActive`.
+- `LeadIntent`: `id`, `siteId`, `userId`, `sourceType` (…_recommendation), `sourceReference?`, `title`, `message?`, `status` (new_lead/submitted/contacted/closed/cancelled), `estimatedValue?`, `metadataJson?`.
+- `RecommendationLink`: `id`, `triggerType`, `providerId?`, `productId?`, `priority`, `countryCode?`, `isActive`.
 
-### `soiling_scores`
-- `id`, `site_id`, `score`, `estimated_loss_percent`, `cleaning_recommended`, `recommended_cleaning_date`, `explanation`, `created_at`
+### Snapshot & summary cache: `SiteCurrentSnapshot`, `SiteDailySummary`, `SiteMonthlySummary`
+- `SiteCurrentSnapshot`: one per site — `fetchedAt`, `weatherJson?`, `solarJson?`, `aggregateJson?`, `aiContextJson?`.
+- `SiteDailySummary`: unique per `(siteId, date)` — `expectedKwh`, `actualKwh`, `deviationPercent`, `soilingScore?`, `heatScore?`, `dailySavings?`.
+- `SiteMonthlySummary`: unique per `(siteId, month)` — `totalExpected`, `totalActual`, `totalSavings?`, `avgDeviation`.
 
-### `heat_loss_scores`
-- `id`, `site_id`, `score`, `estimated_loss_percent`, `peak_heat_window_start`, `peak_heat_window_end`, `created_at`
+## Target Tables (Not Yet Implemented)
 
-### `risk_alerts`
-- `id`, `site_id`, `risk_type`, `severity`, `message`, `expected_start`, `expected_end`, `created_at`, `resolved_at`
+These remain design targets for future telemetry/history phases and do not
+exist in the live schema yet:
 
-### `optimization_recommendations`
-- `id`, `site_id`, `recommendation_type`, `title`, `description`, `estimated_value`, `priority`, `valid_from`, `valid_until`, `created_at`
+- `weather_snapshots` — per-site weather time series.
+- `air_quality_snapshots` — per-site air-quality time series (pm10/pm25/dust/aod).
+- `forecast_runs` — historical forecast run log.
+- `soiling_scores`, `heat_loss_scores` — score history tables.
+- `risk_alerts`, `optimization_recommendations`, `insight_summaries` — currently derived on demand and cached in `SiteCurrentSnapshot.aggregateJson` rather than persisted as rows.
 
-### `insight_summaries`
-- `id`, `site_id`, `summary_type`, `summary_text`, `generated_at`
+## Required Constraints (Live)
+- `User.email` unique and not null.
+- `User.role` enum-constrained (`owner`, `admin`).
+- `Site.userId` not null FK → `User.id` with `onDelete: Cascade`.
+- `SiteDeviceProfile.siteId` unique FK → `Site.id` (one device profile per site).
+- `Tariff.siteId` not null FK → `Site.id` with `onDelete: Cascade`.
+- `Provider.slug` / `Product.slug` unique.
+- `SiteCurrentSnapshot.siteId` unique; `SiteDailySummary` unique on `(siteId, date)`; `SiteMonthlySummary` unique on `(siteId, month)`.
+- All `createdAt` default `now()`; `updatedAt` maintained by Prisma `@updatedAt`.
+- Note: one-solar-system-per-site is enforced at the service layer (Conflict on duplicate create), not by a DB unique constraint.
 
-## Required Constraints (Freeze Baseline)
-- `users.email` unique and not null.
-- `users.role` check-constrained to allowed roles (`owner`, `admin` for MVP baseline).
-- `sites.user_id` not null FK -> `users.id` (delete cascade or restrict based on policy).
-- `solar_systems.site_id` unique FK -> `sites.id` (one system per site in MVP).
-- `user_devices.site_id` unique FK -> `sites.id` (one device profile per site in MVP).
-- `tariffs.site_id` not null FK -> `sites.id`.
-- `soiling_scores.score`, `heat_loss_scores.score` check `between 0 and 100`.
-- `estimated_loss_percent` fields check `between 0 and 100`.
-- `risk_alerts.severity` constrained enum (`low`, `medium`, `high`, `critical`).
-- `optimization_recommendations.priority` constrained enum (`low`, `medium`, `high`).
-- All `created_at` / `updated_at` fields default to `now()` where applicable.
-- `updated_at` auto-update trigger on mutable tables.
+## Relationships (Live)
+- `User (1) -> (N) Site`
+- `Site (1) -> (N) SolarSystem` (service layer enforces 1 active per site)
+- `Site (1) -> (1) SiteDeviceProfile`
+- `Site (1) -> (N) Tariff`
+- `Site (1) -> (1) SiteCurrentSnapshot`
+- `Site (1) -> (N) SiteDailySummary`
+- `Site (1) -> (N) SiteMonthlySummary`
+- `LeadIntent` references `siteId`/`userId` by value (indexed, no FK) to survive demo-site flows.
+- `RecommendationLink (N) -> (0..1) Provider / Product`
 
-## Relationships
-- `users (1) -> (N) sites`
-- `sites (1) -> (1) solar_systems`
-- `sites (1) -> (1) user_devices`
-- `sites (1) -> (N) tariffs`
-- `sites (1) -> (N) weather_snapshots`
-- `sites (1) -> (N) air_quality_snapshots`
-- `sites (1) -> (N) forecast_runs`
-- `sites (1) -> (N) soiling_scores`
-- `sites (1) -> (N) heat_loss_scores`
-- `sites (1) -> (N) risk_alerts`
-- `sites (1) -> (N) optimization_recommendations`
-- `sites (1) -> (N) insight_summaries`
+## Indexing Strategy (Live)
+- Unique index on `User.email`, `Provider.slug`, `Product.slug`.
+- FK/value indexes: `Site.userId`, `SolarSystem.siteId`, `SiteDeviceProfile.siteId`, `Tariff.siteId`, `LeadIntent.siteId`, `LeadIntent.userId`, `LeadIntent.status`, `RecommendationLink.triggerType`, snapshot/summary `siteId` indexes.
 
-## Indexing Strategy
-- Unique index on `users.email`.
-- FK indexes on all `*_id` columns (`user_id`, `site_id`).
-- Time-series indexes:
-  - `weather_snapshots(site_id, timestamp desc)`
-  - `air_quality_snapshots(site_id, timestamp desc)`
-  - `forecast_runs(site_id, run_date desc)`
-- Query optimization indexes:
-  - `risk_alerts(site_id, severity, expected_start)`
-  - `optimization_recommendations(site_id, priority, valid_from)`
-  - `insight_summaries(site_id, generated_at desc)`
-  - `soiling_scores(site_id, created_at desc)`
-  - `heat_loss_scores(site_id, created_at desc)`
-
-## Seed Data Baseline (Phase 1 Ready)
-- Create one demo user with one site and one solar system.
-- Seed one device profile and one tariff row for demo site.
-- Seed minimum 7 days of weather and air quality snapshots for local demos.
-- Seed one forecast run, soiling score, heat score, risk alert list, and recommendation sample.
+## Seed Data Baseline
+- `POST /api/v1/dashboard/demo/seed` idempotently creates the demo owner, site, solar system, and tariff, then computes a dashboard aggregate (see `apps/api/src/dashboard/dashboard-demo-seed.service.ts`).
 
 ## Migration Notes
 - Use migration files only (no schema drift by manual DB edits).

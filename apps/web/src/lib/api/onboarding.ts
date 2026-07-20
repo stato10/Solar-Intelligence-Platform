@@ -7,7 +7,6 @@ import type {
   Tariff
 } from "@/lib/contracts";
 import type {
-  DomainUserSummary,
   OnboardingStep1CreateSiteRequest,
   OnboardingStep1CreateSolarSystemRequest
 } from "@/lib/contracts/onboarding-step1";
@@ -18,14 +17,6 @@ import type {
 } from "@/lib/contracts/onboarding-step2";
 import { API_ENDPOINTS } from "./endpoints";
 import { getApiBaseUrl } from "./env";
-
-const USERS_ENDPOINT = "/users";
-
-interface CreateDomainUserPayload {
-  fullName: string;
-  email: string;
-  role: "owner" | "admin";
-}
 
 export class OnboardingApiError extends Error {
   readonly status: number;
@@ -81,29 +72,6 @@ async function parseJsonSafe(response: Response): Promise<unknown> {
   }
 }
 
-async function getEnvelopeData<TData>(path: string, accessToken?: string): Promise<TData> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    method: "GET",
-    headers: buildHeaders(accessToken),
-    cache: "no-store"
-  });
-  const payload = await parseJsonSafe(response);
-
-  if (!response.ok) {
-    throw new OnboardingApiError(
-      response.status,
-      extractErrorMessage(payload, `Request failed with status ${response.status}`)
-    );
-  }
-
-  const envelope = payload as Partial<ApiSuccessEnvelope<TData>>;
-  if (envelope.success !== true || envelope.data === undefined) {
-    throw new OnboardingApiError(response.status, "Onboarding response payload is invalid");
-  }
-
-  return envelope.data;
-}
-
 async function postEnvelopeData<TReq, TData>(
   path: string,
   body: TReq,
@@ -135,33 +103,14 @@ async function postEnvelopeData<TReq, TData>(
   return envelope.data;
 }
 
-function normalizeEmail(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-export async function resolveDomainUserId(authUser: AuthUser, accessToken?: string): Promise<string> {
-  const email = normalizeEmail(authUser.email);
-  const users = await getEnvelopeData<DomainUserSummary[]>(
-    `${USERS_ENDPOINT}?search=${encodeURIComponent(email)}&page=1&limit=50`,
-    accessToken
-  );
-
-  const matchedUser = users.find((item) => normalizeEmail(item.email) === email);
-  if (matchedUser) {
-    return matchedUser.id;
-  }
-
-  const createdUser = await postEnvelopeData<CreateDomainUserPayload, DomainUserSummary>(
-    USERS_ENDPOINT,
-    {
-      fullName: authUser.fullName,
-      email: email,
-      role: "owner"
-    },
-    accessToken
-  );
-
-  return createdUser.id;
+/**
+ * Auth users and domain users share the same database table, so the
+ * authenticated user IS the domain user. The historical search/create
+ * roundtrip against /users is gone — the API also derives site ownership
+ * from the JWT now, so the id is informational only.
+ */
+export async function resolveDomainUserId(authUser: AuthUser): Promise<string> {
+  return authUser.id;
 }
 
 export async function createSite(

@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, ArrowDownRight, Info, ShieldAlert, BadgeInfo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/formatters";
@@ -23,6 +23,8 @@ interface LossIntelligenceCardProps {
 }
 
 export function LossIntelligenceCard({ lossBreakdown, className = "" }: LossIntelligenceCardProps) {
+  const { currency, locale } = useCurrency();
+
   if (!lossBreakdown) {
     return (
       <Card className={`border-slate-800 bg-slate-900 shadow-sm ${className}`}>
@@ -35,7 +37,6 @@ export function LossIntelligenceCard({ lossBreakdown, className = "" }: LossInte
   }
 
   const { mode, totalMoneyLossIls, selfConsumptionLossIls, exportLossIls, confidence } = lossBreakdown;
-  const { currency, locale } = useCurrency();
   const money = (value: number) =>
     formatCurrency(Math.round(value), { currency, locale, decimals: 0 });
 

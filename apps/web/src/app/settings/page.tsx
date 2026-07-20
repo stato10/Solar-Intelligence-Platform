@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
+import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
 import type { DashboardAggregateData } from "@/lib/contracts";
 import type {
   DeviceProfile,
@@ -14,7 +14,17 @@ import {
   fetchTariffBySite,
 } from "@/lib/api/settings-persist";
 import { SettingsShell, type SettingsShellInitialValues } from "./_components/settings-shell";
+import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
+import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
 import type { CurrencyCode } from "@/lib/utils/formatters";
+
+/** ISO timestamp → `<input type="date">` value (yyyy-MM-dd). */
+function toDateInputValue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
 
 function clampFlexibility(raw: number | undefined): 1 | 2 | 3 | 4 | 5 {
   if (raw == null) return 3;
@@ -84,10 +94,9 @@ export default async function SettingsPage() {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get("sip.accessToken")?.value;
     const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
+    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
 
-    aggregate = activeSiteId
-      ? await fetchDashboardBySiteId(activeSiteId, accessToken)
-      : await fetchDashboardAggregate();
+    aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
 
     const siteId = activeSiteId ?? aggregate.siteId;
     records = await loadSettingsRecords(siteId, accessToken);
@@ -100,6 +109,7 @@ export default async function SettingsPage() {
 
   return (
     <section className="space-y-6 pb-12">
+      {aggregate ? <NavBadgesBridge {...deriveNavBadgeCounts(aggregate)} /> : null}
       <header className="glass-card relative overflow-hidden rounded-3xl p-6 md:p-8">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.12),transparent_45%),radial-gradient(circle_at_25%_75%,rgba(59,130,246,0.1),transparent_42%)]" />
         <div className="relative">
@@ -168,15 +178,12 @@ function buildInitialValues(
       // Country code isn't in the Site record; Resolve fills it on edit.
       countryCode: "",
       systemSizeKw: solarSystem?.systemSizeKw ?? "",
-      // Panel count / type / installation date aren't in the solar-system
-      // DTO yet — they live in the form but are not persisted until we
-      // extend the backend schema.
-      panelCount: "",
-      panelType: "",
+      panelCount: solarSystem?.panelCount ?? "",
+      panelType: solarSystem?.panelType ?? "",
       inverterModel: solarSystem?.inverterType ?? "",
       tiltDegrees: solarSystem?.tilt ?? "",
       azimuthDegrees: solarSystem?.azimuth ?? "",
-      installationDate: "",
+      installationDate: toDateInputValue(solarSystem?.installationDate),
     },
     energyBehavior: {
       typicalAtHome: "evening",

@@ -75,7 +75,7 @@ export function ConversionModal() {
                   : "Request a quote"}
               </DialogTitle>
               <DialogDescription>
-                We'll get back to you within 48 hours.
+                We&apos;ll get back to you within 48 hours.
               </DialogDescription>
             </DialogHeader>
             <LeadFormStep />

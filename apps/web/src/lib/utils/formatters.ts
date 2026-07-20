@@ -38,6 +38,41 @@ export function defaultLocaleForCurrency(currency: CurrencyCode): string {
   }
 }
 
+/**
+ * Coerce an arbitrary ISO-4217 string (e.g. from a server Tariff row) into
+ * a `CurrencyCode` we explicitly support. Unknown codes fall back to ILS so
+ * the UI never throws. Pure — safe for server components and view-models.
+ */
+export function toSupportedCurrencyCode(
+  raw: string | null | undefined,
+): CurrencyCode {
+  if (!raw) return "ILS";
+  const normalized = raw.toUpperCase();
+  switch (normalized) {
+    case "ILS":
+    case "USD":
+    case "EUR":
+    case "GBP":
+    case "CAD":
+    case "AUD":
+      return normalized;
+    default:
+      return "ILS";
+  }
+}
+
+/**
+ * Resolve the currency + locale a dashboard aggregate should be rendered
+ * in, from the tariff block the backend echoes on the response. Falls back
+ * to ILS for older cached snapshots that lack the tariff block.
+ */
+export function resolveAggregateCurrency(aggregate?: {
+  tariff?: { currency?: string };
+}): { currency: CurrencyCode; locale: string } {
+  const currency = toSupportedCurrencyCode(aggregate?.tariff?.currency);
+  return { currency, locale: defaultLocaleForCurrency(currency) };
+}
+
 export interface CurrencyFormatOptions {
   currency?: CurrencyCode;
   locale?: string;

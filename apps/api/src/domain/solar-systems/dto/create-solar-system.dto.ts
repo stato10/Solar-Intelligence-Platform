@@ -1,4 +1,12 @@
-import { IsDateString, IsNumber, IsOptional, IsString, Max, Min } from "class-validator";
+import {
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min
+} from "class-validator";
 
 export class CreateSolarSystemDto {
   @IsString()
@@ -28,8 +36,22 @@ export class CreateSolarSystemDto {
   panelEfficiency!: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  panelCount?: number;
+
+  @IsOptional()
+  @IsString()
+  panelType?: string;
+
+  @IsOptional()
   @IsString()
   inverterType?: string;
+
+  @IsOptional()
+  @IsDateString()
+  installationDate?: string;
 
   @IsDateString()
   lastCleaningDate!: string;

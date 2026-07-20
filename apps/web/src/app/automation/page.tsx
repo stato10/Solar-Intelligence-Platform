@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
+import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
 import { toAutomationPageViewModel } from "@/lib/view-models/automation";
+import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
+import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
+import type { NavBadgeCounts } from "@/components/layout/NavBadgesBridge";
 import { AutomationDayTimeline } from "@/components/dashboard/AutomationDayTimeline";
 import { AutomationDeviceCard } from "@/components/dashboard/AutomationDeviceCard";
 import {
@@ -18,17 +21,18 @@ export default async function AutomationPage() {
   let errorMessage: string | null = null;
   let vm: ReturnType<typeof toAutomationPageViewModel> | null = null;
   let accessToken: string | undefined;
+  let navBadges: NavBadgeCounts | null = null;
 
   try {
     const cookieStore = await cookies();
     accessToken = cookieStore.get("sip.accessToken")?.value;
     const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
+    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
 
-    const data = activeSiteId
-      ? await fetchDashboardBySiteId(activeSiteId, accessToken)
-      : await fetchDashboardAggregate();
+    const data = await fetchDashboardForSession(activeSiteId, accessToken, geo);
 
     vm = toAutomationPageViewModel(data);
+    navBadges = deriveNavBadgeCounts(data);
   } catch (err) {
     errorMessage = err instanceof Error ? err.message : "Failed to load automation data";
   }
@@ -46,6 +50,7 @@ export default async function AutomationPage() {
 
   return (
     <section className="space-y-6 pb-12">
+      {navBadges ? <NavBadgesBridge {...navBadges} /> : null}
       {/* ─── Hero ─────────────────────────────────────────────────── */}
       <article className="glass-card relative overflow-hidden rounded-3xl p-8 md:p-10">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-500/15 via-indigo-400/5 to-transparent" />
@@ -104,7 +109,7 @@ export default async function AutomationPage() {
               Automation opportunities
             </h2>
             <p className="text-sm text-muted-foreground">
-              Configure each device once; we'll run it on solar going forward.
+              Configure each device once; we&apos;ll run it on solar going forward.
             </p>
           </div>
           <span className="text-xs text-muted-foreground">
@@ -114,7 +119,7 @@ export default async function AutomationPage() {
 
         {vm.deviceRecommendations.length === 0 ? (
           <article className="glass-card rounded-2xl border border-border/60 p-6 text-sm text-muted-foreground">
-            No automation opportunities detected yet. We'll surface device
+            No automation opportunities detected yet. We&apos;ll surface device
             recommendations here as your consumption patterns stabilize.
           </article>
         ) : (

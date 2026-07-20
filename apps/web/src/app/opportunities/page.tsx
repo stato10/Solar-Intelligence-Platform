@@ -1,11 +1,10 @@
 import { cookies } from "next/headers";
 import { ShoppingBag, Sparkles, PlugZap } from "lucide-react";
-import {
-  fetchDashboardAggregate,
-  fetchDashboardBySiteId,
-} from "@/lib/api/dashboard";
+import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
 import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
 import { toOpportunitiesCatalogViewModel } from "@/lib/view-models/marketplace-catalog";
+import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
+import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
 import { OpportunitySection } from "./_components/opportunity-section";
 import type { DashboardAggregateData } from "@/lib/contracts";
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
@@ -35,10 +34,9 @@ export default async function OpportunitiesPage() {
     accessToken = cookieStore.get("sip.accessToken")?.value;
     const activeSiteId = cookieStore.get("sip.activeSiteId")?.value;
     serviceArea = cookieStore.get("sip.serviceArea")?.value;
+    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
 
-    aggregate = activeSiteId
-      ? await fetchDashboardBySiteId(activeSiteId, accessToken)
-      : await fetchDashboardAggregate();
+    aggregate = await fetchDashboardForSession(activeSiteId, accessToken, geo);
 
     rawOpportunities = await fetchMarketplaceOpportunities(
       aggregate,
@@ -72,6 +70,7 @@ export default async function OpportunitiesPage() {
 
   return (
     <section className="space-y-8 pb-12">
+      <NavBadgesBridge {...deriveNavBadgeCounts(aggregate)} />
       {/* ─── Hero ──────────────────────────────────────────────────── */}
       <article className="glass-card relative overflow-hidden rounded-3xl p-8 md:p-10">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-500/15 via-blue-400/5 to-transparent" />
@@ -147,7 +146,7 @@ function ZeroDataMarketplaceBlock({
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row">
           <a
-            href="/settings/integrations"
+            href="/settings#integrations"
             className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             Connect system

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EngineClientService } from "../integrations/engine/engine-client.service";
+import { AirQualityIngestionService } from "../data-ingestion/air-quality-ingestion.service";
 import { FreshnessPolicyService } from "../data-ingestion/freshness-policy.service";
 import { SnapshotWriterService } from "../data-ingestion/snapshot-writer.service";
 import { WeatherIngestionService } from "../data-ingestion/weather-ingestion.service";
@@ -20,6 +21,7 @@ export class DashboardService {
     private readonly freshnessPolicy: FreshnessPolicyService,
     private readonly weatherIngestion: WeatherIngestionService,
     private readonly solarIngestion: SolarIngestionService,
+    private readonly airQualityIngestion: AirQualityIngestionService,
     private readonly intelligence: IntelligenceEvaluatorService
   ) {}
 
@@ -50,7 +52,7 @@ export class DashboardService {
 
     // ─── Step 2: Fetch fresh data from providers ──────────────────────
     try {
-      const [weatherSnapshot, solarBaseline] = await Promise.all([
+      const [weatherSnapshot, solarBaseline, airQualitySnapshot] = await Promise.all([
         this.weatherIngestion.ingestWeather({
           siteId: payload.siteId,
           latitude: payload.latitude,
@@ -62,7 +64,15 @@ export class DashboardService {
           latitude: payload.latitude,
           longitude: payload.longitude,
           systemSizeKw: payload.systemSizeKw,
-          lossPercent
+          lossPercent,
+          tilt: payload.tilt,
+          azimuth: payload.azimuth
+        }),
+        this.airQualityIngestion.ingestAirQuality({
+          siteId: payload.siteId,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          timezone: payload.timezone
         })
       ]);
 
@@ -131,6 +141,13 @@ export class DashboardService {
           weather: weatherSnapshot?.source ?? "fallback",
           solar: solarBaseline?.source ?? "fallback",
           engine: engine.engineBaseUrl
+        },
+        // Echo the tariff used for the calculation so clients can render
+        // money values in the user's actual currency without a second fetch.
+        tariff: {
+          currency: payload.tariff?.currency ?? "ILS",
+          importRate: payload.tariff?.importRate ?? 0.6,
+          exportRate: payload.tariff?.exportRate ?? 0.2
         }
       };
 
@@ -141,8 +158,10 @@ export class DashboardService {
           ghi: weatherForEngine.ghi ?? 1000,
           cloudCover: weatherForEngine.cloudCover,
           temperature: weatherForEngine.temperature,
-          pm10: 45, // Hardcoded for MVP until OpenWeather dust integration
-          daysWithoutRain: 5 // Hardcoded for MVP until trend history is aggregated
+          // Live Open-Meteo Air Quality pm10; conservative fallback when unavailable
+          pm10: airQualitySnapshot?.pm10 ?? 45,
+          // Real trailing dry-spell length from weather history; fallback when unavailable
+          daysWithoutRain: weatherSnapshot?.daysWithoutRain ?? 5
         },
         engineTariff: {
           importRate: payload.tariff?.importRate ?? 0.6,
@@ -236,6 +255,14 @@ export class DashboardService {
     aggregateResponse: any,
     engineData: any
   ) {
+    // Stateless aggregate calls may reference site ids that are not persisted
+    // (e.g. anonymous demo payloads) — skip persistence instead of violating FKs.
+    const siteExists = await this.snapshotWriter.siteExists(siteId);
+    if (!siteExists) {
+      this.logger.debug(`Skipping snapshot persistence for unknown site ${siteId}`);
+      return;
+    }
+
     // Save current snapshot
     await this.snapshotWriter.saveCurrentSnapshot({
       siteId,

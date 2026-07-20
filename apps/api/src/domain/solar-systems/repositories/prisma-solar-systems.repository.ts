@@ -13,7 +13,10 @@ function toSolarSystemEntity(model: {
   azimuth: number;
   panelWattage: number;
   panelEfficiency: number;
+  panelCount: number | null;
+  panelType: string | null;
   inverterType: string | null;
+  installationDate: Date | null;
   lastCleaningDate: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -26,7 +29,10 @@ function toSolarSystemEntity(model: {
     azimuth: model.azimuth,
     panelWattage: model.panelWattage,
     panelEfficiency: model.panelEfficiency,
+    panelCount: model.panelCount ?? undefined,
+    panelType: model.panelType ?? undefined,
     inverterType: model.inverterType ?? undefined,
+    installationDate: model.installationDate?.toISOString() ?? undefined,
     lastCleaningDate: model.lastCleaningDate.toISOString(),
     createdAt: model.createdAt.toISOString(),
     updatedAt: model.updatedAt.toISOString()
@@ -59,10 +65,14 @@ export class PrismaSolarSystemsRepository implements SolarSystemsRepository {
   }
 
   async create(payload: CreateSolarSystemDto): Promise<SolarSystemEntity> {
+    const { lastCleaningDate, installationDate, ...rest } = payload;
     const system = await this.prisma.solarSystem.create({
       data: {
-        ...payload,
-        lastCleaningDate: new Date(payload.lastCleaningDate)
+        ...rest,
+        lastCleaningDate: new Date(lastCleaningDate),
+        ...(installationDate !== undefined
+          ? { installationDate: new Date(installationDate) }
+          : {})
       }
     });
     return toSolarSystemEntity(system);
@@ -80,7 +90,12 @@ export class PrismaSolarSystemsRepository implements SolarSystemsRepository {
         ...(payload.panelEfficiency !== undefined
           ? { panelEfficiency: payload.panelEfficiency }
           : {}),
+        ...(payload.panelCount !== undefined ? { panelCount: payload.panelCount } : {}),
+        ...(payload.panelType !== undefined ? { panelType: payload.panelType } : {}),
         ...(payload.inverterType !== undefined ? { inverterType: payload.inverterType } : {}),
+        ...(payload.installationDate !== undefined
+          ? { installationDate: new Date(payload.installationDate) }
+          : {}),
         ...(payload.lastCleaningDate !== undefined
           ? { lastCleaningDate: new Date(payload.lastCleaningDate) }
           : {})

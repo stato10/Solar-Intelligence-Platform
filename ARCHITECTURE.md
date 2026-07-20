@@ -14,17 +14,17 @@ Web-first, service-oriented monorepo:
 
 The API orchestrates provider data and engine results, persists outputs, then returns typed responses to the web app.
 
-## Runtime Persistence Truth (Phase 4.9)
-- Active runtime persistence for current scaffold scope is in-memory in API modules.
-- PostgreSQL remains the target persistence architecture and schema source of truth for future persistence hardening phases.
-- No architecture change is implied by this note; it clarifies current runtime behavior vs target-state design.
+## Runtime Persistence Truth (Current)
+- Active runtime persistence is **PostgreSQL via Prisma** (`apps/api/prisma/schema.prisma` is the schema source of truth).
+- All domain CRUD (users, sites, solar systems, device profiles, tariffs), marketplace entities, lead intents, and dashboard snapshot caching are database-backed.
+- The historical in-memory scaffold (Phase 4.9 note) has been fully replaced; `DB_SCHEMA.md` documents the live schema.
 
 ## Tech Stack
-- Client: Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui, Radix UI, Framer Motion, TanStack Query, Zod.
-- Backend: Node.js, NestJS, REST, OpenAPI docs.
-- Engine: Python, FastAPI, Pydantic, NumPy/Pandas where useful.
-- Data: PostgreSQL (primary), optional Redis cache abstraction.
-- AI: OpenAI structured outputs for explanations only.
+- Client: Next.js App Router (Server Components), React, TypeScript, Tailwind CSS, shadcn/ui-style components, Radix UI.
+- Backend: Node.js, NestJS, REST, Prisma ORM.
+- Engine: Python, FastAPI, Pydantic (deterministic, no network calls).
+- Data: PostgreSQL (primary), optional Redis in compose (not yet consumed by app code).
+- AI: OpenAI structured outputs for explanations only, with a deterministic fallback when no API key is configured.
 - Infra: Docker Compose, `.env`, local health checks.
 
 ## Components
@@ -56,8 +56,8 @@ The API orchestrates provider data and engine results, persists outputs, then re
   - Air Quality
 
 ## Data Flow
-1. Web app sends authenticated request to API.
-2. API loads site/system/device/tariff context from active in-memory services (Phase 4.9 runtime truth).
+1. Web app sends authenticated request to API (JWT bearer; domain CRUD routes are guarded and ownership-scoped to the token's user).
+2. API loads site/system/device/tariff context from PostgreSQL via Prisma repositories.
 3. Solar Orchestrator Agent triggers provider fetch and normalization flow.
 4. API/provider layer fetches solar/weather/air-quality data from abstractions.
 5. API calls engine calculators for deterministic scoring outputs.

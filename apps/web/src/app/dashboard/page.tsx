@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
 import type { AiInsightContractOutputV3, DashboardAggregateData } from "@/lib/contracts";
-import { fetchAiInsightsV3 } from "@/lib/api/ai-insights";
+import { fetchAiInsightsV3, type AiInsightsV3Context } from "@/lib/api/ai-insights";
 import { ApiHttpError } from "@/lib/api/client";
-import { fetchDashboardAggregate, fetchDashboardBySiteId } from "@/lib/api/dashboard";
+import { fetchDashboardForSession, parseGeoCookie } from "@/lib/api/dashboard";
+import { fetchDeviceProfileBySite, fetchTariffBySite } from "@/lib/api/settings-persist";
 import { fetchMarketplaceOpportunities } from "@/lib/api/marketplace";
 import type { MarketplaceOpportunity } from "@/lib/contracts/marketplace";
 import { toDashboardPageViewModel } from "@/lib/view-models/dashboard";
+import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
 import { partitionDecisionsByPriority } from "@/lib/view-models/energy-decisions";
 import {
   deriveOnboardingSubstate,
@@ -20,7 +22,9 @@ import { DashboardEmptyState, DashboardErrorState } from "./_components/dashboar
 import { HeroInsightCard } from "@/components/dashboard/HeroInsightCard";
 import { ZeroDataHero } from "@/components/dashboard/ZeroDataHero";
 import { StaleTelemetryBanner } from "@/components/dashboard/StaleTelemetryBanner";
+import { LiveDataStatusBadge } from "@/components/dashboard/LiveDataStatusBadge";
 import { SubstateBridge } from "@/components/dashboard/SubstateBridge";
+import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
 import { EstimatedSurface } from "@/components/dashboard/EstimatedBadge";
 import { ActionLane } from "@/components/dashboard/ActionLane";
 import { LossIntelligenceCard } from "@/components/dashboard/LossIntelligenceCard";
@@ -85,11 +89,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           ? substateParam[0]
           : undefined;
 
-    if (activeSiteId) {
-      dashboard = await fetchDashboardBySiteId(activeSiteId, accessToken);
-    } else {
-      dashboard = await fetchDashboardAggregate(); // Default demo 
-    }
+    const geo = parseGeoCookie(cookieStore.get("sip.geo")?.value);
+    dashboard = await fetchDashboardForSession(activeSiteId, accessToken, geo);
 
     // Detect the natural substate from signals the data layer gave us.
     const naturalSubstate = deriveOnboardingSubstate({
@@ -124,8 +125,23 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       forceNoData: shouldReplaceHero(substate),
     });
 
+    // Real site context (device profile + tariff) for the AI request —
+    // best-effort: any failure falls back to the demo defaults inside
+    // fetchAiInsightsV3 rather than blocking insights entirely.
+    let aiContext: AiInsightsV3Context | undefined;
+    if (activeSiteId && accessToken) {
+      const [profileResult, tariffResult] = await Promise.allSettled([
+        fetchDeviceProfileBySite(activeSiteId, accessToken),
+        fetchTariffBySite(activeSiteId, accessToken),
+      ]);
+      aiContext = {
+        deviceProfile: profileResult.status === "fulfilled" ? profileResult.value : null,
+        tariff: tariffResult.status === "fulfilled" ? tariffResult.value : null,
+      };
+    }
+
     try {
-      aiInsights = await fetchAiInsightsV3(dashboard, accessToken);
+      aiInsights = await fetchAiInsightsV3(dashboard, accessToken, aiContext);
     } catch (aiError) {
       if (aiError instanceof ApiHttpError && aiError.status === 401) {
         aiInsightsError = "Sign in again to load personalized AI insights.";
@@ -137,7 +153,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     // Opportunities are completely non-breaking and additive
     try {
       opportunities = await fetchMarketplaceOpportunities(dashboard, aiInsights ?? undefined, accessToken);
-    } catch (oppError) {
+    } catch {
       console.warn("Failed to load opportunities dynamically, continuing without them");
     }
   } catch (error) {
@@ -201,18 +217,36 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? formatRelativeShort(dashboard?.generatedAt)
     : undefined;
 
+  // ── Sidebar urgency badge counts (doc 09 §5) ─────────────────────────
+  // Mirrored to cookies via NavBadgesBridge so every page can read them
+  // without re-fetching the aggregate. Counts are best-effort derivations
+  // from the same data the dashboard already has in hand.
+  const { alertCount, maintenanceCount, hasNewOpportunity } =
+    deriveNavBadgeCounts(dashboard);
+
   return (
     <div className="relative pb-12">
       <OnboardingDialog />
       {/* Mirror the server-computed substate into a client cookie so the
           sidebar status chip shows the accurate state. */}
       <SubstateBridge substate={substate} detail={staleDetail} />
+      {/* Mirror nav-badge counts so sidebar urgency badges render on every
+          page without an extra fetch. */}
+      <NavBadgesBridge
+        alertCount={alertCount}
+        maintenanceCount={maintenanceCount}
+        hasNewOpportunity={hasNewOpportunity}
+      />
       <div id="connect" className="scroll-mt-24"></div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_360px]">
 
         {/* LEFT COLUMN — priority stream: hero → lanes → supporting data → AI */}
         <section className="space-y-8">
+          {/* Live-data transparency: are these numbers backed by real
+              provider data at the site's coordinates, or fallbacks? */}
+          <LiveDataStatusBadge providers={dashboard?.providers} />
+
           {/* 0. Stale-telemetry ribbon — Layer 2 of progressive disclosure.
                Non-destructive; the last-known dashboard stays visible below. */}
           {renderStaleRibbon ? (

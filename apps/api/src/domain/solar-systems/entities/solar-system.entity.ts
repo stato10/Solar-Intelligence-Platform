@@ -6,7 +6,10 @@ export interface SolarSystemEntity {
   azimuth: number;
   panelWattage: number;
   panelEfficiency: number;
+  panelCount?: number;
+  panelType?: string;
   inverterType?: string;
+  installationDate?: string;
   lastCleaningDate: string;
   createdAt: string;
   updatedAt: string;

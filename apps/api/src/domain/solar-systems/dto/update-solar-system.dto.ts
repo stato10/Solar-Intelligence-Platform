@@ -1,5 +1,6 @@
 import {
   IsDateString,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -41,8 +42,22 @@ export class UpdateSolarSystemDto {
   panelEfficiency?: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  panelCount?: number;
+
+  @IsOptional()
+  @IsString()
+  panelType?: string;
+
+  @IsOptional()
   @IsString()
   inverterType?: string;
+
+  @IsOptional()
+  @IsDateString()
+  installationDate?: string;
 
   @IsOptional()
   @IsDateString()

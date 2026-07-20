@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ProvidersModule } from "../integrations/providers/providers.module";
 import { PrismaModule } from "../prisma/prisma.module";
+import { AirQualityIngestionService } from "./air-quality-ingestion.service";
 import { FreshnessPolicyService } from "./freshness-policy.service";
 import { ProviderNormalizerService } from "./provider-normalizer.service";
 import { SnapshotWriterService } from "./snapshot-writer.service";
@@ -12,6 +13,7 @@ import { MonthlySiteSummaryService } from "./monthly-site-summary.service";
 @Module({
   imports: [ProvidersModule, PrismaModule],
   providers: [
+    AirQualityIngestionService,
     FreshnessPolicyService,
     ProviderNormalizerService,
     SnapshotWriterService,
@@ -21,6 +23,7 @@ import { MonthlySiteSummaryService } from "./monthly-site-summary.service";
     MonthlySiteSummaryService
   ],
   exports: [
+    AirQualityIngestionService,
     FreshnessPolicyService,
     SnapshotWriterService,
     SolarIngestionService,

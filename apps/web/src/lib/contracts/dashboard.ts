@@ -118,17 +118,34 @@ export interface IntelligenceOpportunityItem {
   priority: number;
 }
 
+/** Mirrors `LossBreakdown` produced by the API loss engine. */
+export interface IntelligenceLossBreakdown {
+  mode: "forecast" | "estimated" | "real";
+  totalLossKwh: number;
+  totalMoneyLossIls: number;
+  selfConsumptionLossIls: number;
+  exportLossIls: number;
+  confidence: IntelligenceConfidence;
+  confidenceScore: number;
+  causes?: {
+    dust?: number;
+    temperature?: number;
+    clouds?: number;
+  };
+}
+
 export interface DashboardIntelligence {
   status: IntelligenceStatusBlock;
   profit: IntelligenceProfitBlock;
   alerts: IntelligenceAlertItem[];
   opportunities: IntelligenceOpportunityItem[];
   generatedAt: string;
-  lossBreakdown?: any;
-  estimation?: any;
-  engineRecommendations?: any[];
-  simulations?: any;
-  debug?: any;
+  lossBreakdown?: IntelligenceLossBreakdown;
+  /** Extended engine payloads — not yet consumed by the web UI. */
+  estimation?: unknown;
+  engineRecommendations?: unknown[];
+  simulations?: unknown;
+  debug?: unknown;
 }
 
 export interface DashboardAggregateData {
@@ -197,6 +214,16 @@ export interface DashboardAggregateData {
    * all consumers MUST treat it as optional.
    */
   intelligence?: DashboardIntelligence;
+  /**
+   * Tariff used for the calculation, echoed back by the backend so the
+   * client can render money in the user's real currency. Optional because
+   * older cached snapshots may omit it.
+   */
+  tariff?: {
+    currency?: string;
+    importRate?: number;
+    exportRate?: number;
+  };
 }
 
 export type DashboardAggregateSuccessEnvelope = ApiSuccessEnvelope<DashboardAggregateData>;

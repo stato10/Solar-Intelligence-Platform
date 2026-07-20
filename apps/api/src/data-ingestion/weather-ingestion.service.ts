@@ -44,6 +44,8 @@ export interface CanonicalWeatherSnapshot {
   dailyForecast: WeatherDailyEntry[];
   alerts: WeatherRiskAlert[];
   solarAlerts: SolarWeatherAlert[];
+  /** Consecutive dry days ending today, derived from real past-days data. */
+  daysWithoutRain: number;
   source: string;
 }
 
@@ -91,8 +93,12 @@ export class WeatherIngestionService {
         dailyForecast: this.normalizer.normalizeArray(rawSnapshot.dailyForecast),
         alerts: this.normalizer.normalizeArray(rawSnapshot.alerts),
         solarAlerts: [],
+        daysWithoutRain: 0,
         source: rawSnapshot.source || "unknown"
       };
+
+      // Trailing dry-spell length from real history (past days included in forecast payload)
+      canonical.daysWithoutRain = this.countTrailingDryDays(canonical.dailyForecast);
 
       // Compute solar-specific alerts from weather data
       canonical.solarAlerts = this.computeSolarAlerts(canonical);
@@ -268,6 +274,35 @@ export class WeatherIngestionService {
     }
 
     return alerts;
+  }
+
+  /**
+   * Counts consecutive dry days ending today by scanning backwards through
+   * the daily entries up to (and including) today's date. The Open-Meteo
+   * request includes `past_days=7`, so real history is present in the array.
+   */
+  private countTrailingDryDays(daily: WeatherDailyEntry[]): number {
+    if (daily.length === 0) return 0;
+
+    const todayIso = new Date().toISOString().split("T")[0];
+    let todayIdx = -1;
+    for (let i = daily.length - 1; i >= 0; i--) {
+      if (daily[i].date <= todayIso) {
+        todayIdx = i;
+        break;
+      }
+    }
+    if (todayIdx === -1) return 0;
+
+    let count = 0;
+    for (let i = todayIdx; i >= 0; i--) {
+      if (daily[i].precipitationSum < 0.5) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
   }
 
   /**

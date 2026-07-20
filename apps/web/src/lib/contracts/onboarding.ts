@@ -19,7 +19,10 @@ export interface SolarSystem {
   azimuth: number;
   panelWattage: number;
   panelEfficiency: number;
+  panelCount?: number | null;
+  panelType?: string | null;
   inverterType?: string | null;
+  installationDate?: string | null;
   lastCleaningDate?: string | null;
   createdAt: string;
   updatedAt: string;

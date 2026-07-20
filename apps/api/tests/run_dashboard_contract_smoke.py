@@ -1,4 +1,5 @@
 import json
+import os
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -6,7 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES_DIR = ROOT / "apps" / "api" / "tests" / "fixtures" / "dashboard" / "v1"
-API_URL = "http://localhost:3002/api/v1/dashboard/aggregate"
+API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:3002/api/v1")
+API_URL = f"{API_BASE_URL}/dashboard/aggregate"
 
 
 def load_json(path: Path):

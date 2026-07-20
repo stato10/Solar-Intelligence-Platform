@@ -1,123 +1,277 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { SunMedium, LayoutDashboard, Wrench, PiggyBank, Bell, Zap, TrendingUp, Settings, Menu, X, HelpCircle, Info } from "lucide-react";
+/**
+ * AppShell — global product chrome (sidebar + main column).
+ *
+ * Layout (per docs/redesign/09-sidebar-shell.md and 10-responsive.md):
+ *   1. Brand lockup     — h-16, logo + wordmark, fixed.
+ *   2. Site selector    — two-line layout, see SiteSelector.
+ *   3. Ambient status   — SidebarSystemStatus chip.
+ *   4. Primary nav      — scrollable. Each item may render an urgency
+ *                         badge driven by `useSidebarBadges()`.
+ *   5. Secondary nav    — Support & Learning.
+ *   6. Utility zone     — bottom-pinned, never scrolls. Connect CTA
+ *                         (conditional), integration status, plan,
+ *                         support link.
+ *
+ * Mobile: below `lg` the sidebar slides in as a drawer; the utility
+ * zone is included so connect / support are reachable everywhere.
+ *
+ * Instrumentation: `sidebar_nav_click` fires on every primary nav
+ * click with `{ destination, hasUrgencyBadge }`.
+ */
+
+import { useState } from "react";
+import {
+  SunMedium,
+  LayoutDashboard,
+  Wrench,
+  PiggyBank,
+  Bell,
+  Zap,
+  TrendingUp,
+  Settings,
+  Menu,
+  X,
+  HelpCircle,
+  Info,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics/client";
+import { useSidebarBadges } from "@/hooks/use-sidebar-badges";
 import { SiteSelector } from "./site-selector";
 import { SidebarSystemStatus } from "./SidebarSystemStatus";
+import { SidebarUtilityZone } from "./SidebarUtilityZone";
+import {
+  NavUrgencyBadge,
+  type BadgeTone,
+  type BadgeVariant,
+} from "./NavUrgencyBadge";
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+}
+
+const NAV_ITEMS: ReadonlyArray<NavItem> = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/opportunities", label: "Upgrades", icon: TrendingUp },
   { href: "/maintenance", label: "Maintenance", icon: Wrench },
   { href: "/savings", label: "Savings", icon: PiggyBank },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/automation", label: "Automation", icon: Zap },
-  { href: "/settings", label: "Settings", icon: Settings }
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
+
+interface ResolvedBadge {
+  variant: BadgeVariant;
+  tone: BadgeTone;
+  count?: number;
+  label?: string;
+  ariaLabel: string;
+}
+
+/**
+ * Map a nav destination to its current urgency badge — or null when
+ * nothing is unresolved. Per doc 09 §5:
+ *   - Alerts        → critical/warning dot, count chip when >1.
+ *   - Maintenance   → warning dot when an unresolved concern exists.
+ *   - Opportunities → "New" info chip when a high-priority
+ *                     opportunity surfaced today.
+ */
+function resolveBadge(
+  href: string,
+  badges: ReturnType<typeof useSidebarBadges>,
+): ResolvedBadge | null {
+  if (href === "/alerts" && badges.alertCount > 0) {
+    if (badges.alertCount === 1) {
+      return {
+        variant: "dot",
+        tone: "critical",
+        ariaLabel: "1 unresolved alert",
+      };
+    }
+    return {
+      variant: "count",
+      tone: "critical",
+      count: badges.alertCount,
+      ariaLabel: `${badges.alertCount} unresolved alerts`,
+    };
+  }
+  if (href === "/maintenance" && badges.maintenanceCount > 0) {
+    return {
+      variant: "dot",
+      tone: "warning",
+      ariaLabel: `${badges.maintenanceCount} unresolved maintenance concern${
+        badges.maintenanceCount === 1 ? "" : "s"
+      }`,
+    };
+  }
+  if (href === "/opportunities" && badges.hasNewOpportunity) {
+    return {
+      variant: "label",
+      tone: "info",
+      label: "New",
+      ariaLabel: "New high-priority opportunity",
+    };
+  }
+  return null;
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const badges = useSidebarBadges();
 
-  // Close mobile menu when route changes
-  useEffect(() => {
+  // Close the mobile drawer whenever the route changes — "adjust state
+  // during render" pattern (avoids a cascading setState-in-effect).
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setIsMobileMenuOpen(false);
-  }, [pathname]);
+  }
+
+  const handleNavClick = (item: NavItem, hasBadge: boolean) => {
+    track(
+      "sidebar_nav_click",
+      { destination: item.href, hasUrgencyBadge: hasBadge },
+      { surface: "sidebar" },
+    );
+  };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 relative">
-      
-      {/* Mobile Drawer Overlay */}
+    <div className="relative flex min-h-screen bg-slate-950 text-slate-100">
+      {/* Mobile drawer overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden
         />
       )}
 
-      {/* Left Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800 bg-slate-950 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        
-        {/* Brand Header */}
-        <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-slate-800/60 lg:h-20 lg:justify-start">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center rounded-xl bg-indigo-500/10 p-2 text-indigo-400">
-              <SunMedium className="h-5 w-5" />
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-800 bg-slate-950 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:flex",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        {/* 1. Brand lockup */}
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-800/60 px-5">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2.5 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 rounded-lg"
+            aria-label="Solar Intelligence — go to dashboard"
+          >
+            <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/25">
+              <SunMedium className="size-5" aria-hidden />
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-tight text-white">Solar Intelligence</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Control Center</span>
+            <div className="flex flex-col leading-tight">
+              <span className="font-plus-jakarta text-sm font-semibold tracking-tight text-white">
+                Solar Intelligence
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
+                Control Center
+              </span>
             </div>
-          </div>
-          {/* Close button for mobile */}
-          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
-            <X className="h-5 w-5" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="text-slate-400 hover:text-white lg:hidden"
+            aria-label="Close menu"
+          >
+            <X className="size-5" />
           </button>
         </div>
 
-        {/* Global Context (Site Selector + ambient status chip).
-            Layer 1 of the progressive-disclosure architecture
-            (docs/redesign/12-empty-states.md §3): the chip tells the user
-            at a glance whether what they are seeing is real, estimated,
-            stale, or absent — without disrupting the dashboard. */}
-        <div className="px-4 py-4 space-y-2">
+        {/* 2. + 3. Site selector + ambient status */}
+        <div className="space-y-2 px-3 py-4">
           <SiteSelector />
           <SidebarSystemStatus />
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 flex flex-col px-3 py-2 overflow-y-auto">
-          <div className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Main Menu
+        {/* 4. Primary nav (scrollable) + 5. secondary nav.
+            The nav region scrolls if it overflows; the utility zone
+            below stays pinned. */}
+        <nav className="flex flex-1 flex-col overflow-y-auto px-3">
+          <div className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            Main menu
           </div>
           <div className="space-y-1">
             {NAV_ITEMS.map((item) => {
-              const isActive = pathname?.startsWith(item.href);
+              const isActive = pathname?.startsWith(item.href) ?? false;
               const Icon = item.icon;
+              const badge = resolveBadge(item.href, badges);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => handleNavClick(item, badge !== null)}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                    "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                     isActive
-                      ? "bg-indigo-500/10 text-indigo-400"
-                      : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
+                      ? "bg-indigo-500/10 text-indigo-300"
+                      : "text-slate-400 hover:bg-slate-900 hover:text-slate-100",
                   )}
                 >
-                  <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300")} />
-                  {item.label}
+                  {/* Left active rail */}
+                  {isActive ? (
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-indigo-400"
+                    />
+                  ) : null}
+                  <Icon
+                    className={cn(
+                      "size-4 shrink-0 transition-colors",
+                      isActive
+                        ? "text-indigo-300"
+                        : "text-slate-500 group-hover:text-slate-200",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {badge ? (
+                    <NavUrgencyBadge
+                      variant={badge.variant}
+                      tone={badge.tone}
+                      count={badge.count}
+                      label={badge.label}
+                      ariaLabel={badge.ariaLabel}
+                    />
+                  ) : null}
                 </Link>
               );
             })}
           </div>
 
-          {/* Guides Section */}
-          <div className="mt-auto pt-6 pb-2 px-3">
+          {/* Secondary nav — Support & Learning */}
+          <div className="mt-auto pb-4 pt-6">
             <div className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600">
-              Support & Learning
+              Support &amp; Learning
             </div>
-            
+
             <Link
               href="/onboarding"
               className={cn(
-                "group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
+                "group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                 pathname === "/onboarding"
-                  ? "text-indigo-400 bg-indigo-500/5"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/50"
+                  ? "bg-indigo-500/5 text-indigo-300"
+                  : "text-slate-500 hover:bg-slate-900/50 hover:text-slate-300",
               )}
             >
-              <Info className="h-3.5 w-3.5 shrink-0" />
+              <Info className="size-3.5 shrink-0" aria-hidden />
               System Setup
             </Link>
 
             <button
+              type="button"
               onClick={() => {
                 if (pathname !== "/dashboard") {
                   window.location.href = "/dashboard?tour=true";
@@ -125,46 +279,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   window.dispatchEvent(new CustomEvent("sip:open-onboarding"));
                 }
               }}
-              className="w-full group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all text-slate-500 hover:text-slate-300 hover:bg-slate-900/50"
+              className="group flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-900/50 hover:text-slate-300"
             >
-              <HelpCircle className="h-3.5 w-3.5 shrink-0" />
-              Dashboard Tour
+              <HelpCircle className="size-3.5 shrink-0" aria-hidden />
+              Dashboard tour
             </button>
           </div>
         </nav>
 
-        {/* Sticky Profile / Connection Status at bottom */}
-        <div className="border-t border-slate-800 p-4">
-          <div className="flex items-center gap-3 rounded-xl bg-slate-900/50 p-3">
-            <div className="h-8 w-8 rounded-full bg-slate-800"></div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">Premium Plan</span>
-              <span className="text-xs text-slate-400">View Account</span>
-            </div>
-          </div>
-        </div>
+        {/* 6. Utility zone — never scrolls */}
+        <SidebarUtilityZone />
       </aside>
 
-      {/* Main Content Container */}
-      <main className="flex-1 lg:pl-64 flex flex-col min-h-screen">
-        {/* Mobile Header (Only visible on small screens) */}
-        <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950 px-4 lg:hidden sticky top-0 z-30 shadow-sm">
+      {/* Main content container */}
+      <main className="flex min-h-screen flex-1 flex-col lg:pl-64">
+        {/* Mobile top bar */}
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950 px-4 shadow-sm lg:hidden">
           <div className="flex items-center gap-3">
-            <button 
+            <button
+              type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="text-slate-300 hover:text-white p-1"
+              className="p-1 text-slate-300 hover:text-white"
+              aria-label="Open menu"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="size-6" />
             </button>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-slate-500 tracking-wider uppercase font-semibold leading-none">Currently viewing</span>
-              <span className="font-bold text-sm leading-tight text-slate-200">System Dashboard</span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Currently viewing
+              </span>
+              <span className="text-sm font-bold text-slate-200">System Dashboard</span>
             </div>
           </div>
         </header>
 
-        {/* Page Content — centered within the post-sidebar area so wide
-            monitors do not leave the right half empty. */}
         <div className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-8 sm:px-6 lg:px-8 2xl:max-w-[1800px]">
           {children}
         </div>

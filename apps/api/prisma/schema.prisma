@@ -62,19 +62,26 @@ model Site {
 // 3. Hardware Modules (1:N capability)
 // -------------------------------------------------------------
 model SolarSystem {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   siteId           String
-  site             Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site             Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   systemSizeKw     Float
   tilt             Float
   azimuth          Float
   panelWattage     Float
-  panelEfficiency  Float    // Canonical unit: percentage (0–100), e.g. 21.5 means 21.5%
+  panelEfficiency  Float     // Canonical unit: percentage (0–100), e.g. 21.5 means 21.5%
+  // panelCount + panelType are user-supplied catalog metadata; nullable so
+  // existing rows (created before this column existed) keep working.
+  panelCount       Int?
+  panelType        String?
   inverterType     String?
+  // Date the system was physically installed. Optional because legacy rows
+  // pre-date this column and not every onboarding flow collects it.
+  installationDate DateTime?
   lastCleaningDate DateTime
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([siteId])
 }

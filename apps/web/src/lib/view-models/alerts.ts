@@ -1,5 +1,9 @@
-import type { DashboardAggregateData, IntelligenceAlertItem } from "@/lib/contracts";
-import { formatCurrency, formatDate, formatDateTime, formatTimeRange } from "@/lib/utils/formatters";
+import type { DashboardAggregateData } from "@/lib/contracts";
+import {
+  formatCurrency,
+  formatDate,
+  resolveAggregateCurrency,
+} from "@/lib/utils/formatters";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +40,7 @@ export interface AlertsPageViewModel {
 // Main mapper
 // ---------------------------------------------------------------------------
 export function toAlertsPageViewModel(data: DashboardAggregateData): AlertsPageViewModel {
+  const fmt = resolveAggregateCurrency(data);
   const alerts: AlertItemVm[] = [];
 
   // Prefer intelligence alerts (enriched with actionHint and moneyImpact)
@@ -49,7 +54,7 @@ export function toAlertsPageViewModel(data: DashboardAggregateData): AlertsPageV
         title: a.title,
         message: a.message,
         actionHint: a.actionHint,
-        moneyImpact: a.moneyImpactIls ? formatCurrency(a.moneyImpactIls) : undefined,
+        moneyImpact: a.moneyImpactIls ? formatCurrency(a.moneyImpactIls, fmt) : undefined,
         source: "intelligence",
       });
     });
