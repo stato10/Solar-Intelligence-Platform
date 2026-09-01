@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { ScheduleModule } from "@nestjs/schedule";
 import { AiModule } from "./ai/ai.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -16,9 +17,10 @@ import { ProvidersModule } from "./providers/providers.module";
 import { ProductsModule } from "./products/products.module";
 
 import { DataIngestionModule } from "./data-ingestion/data-ingestion.module";
+import { TelemetryModule } from "./telemetry/telemetry.module";
 
 @Module({
-  imports: [ConfigModule, PrismaModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule, LeadsModule, MarketplaceModule, ProvidersModule, ProductsModule, DataIngestionModule],
+  imports: [ScheduleModule.forRoot(), ConfigModule, PrismaModule, AuthModule, IntegrationsModule, DomainModule, DashboardModule, AiModule, LeadsModule, MarketplaceModule, ProvidersModule, ProductsModule, DataIngestionModule, TelemetryModule],
   controllers: [AppController],
   providers: [AppService]
 })

@@ -39,10 +39,22 @@ export interface IntegrationItem {
   status: IntegrationStatus;
 }
 
+export type InverterVendorOption = "solaredge" | "mock";
+
+export interface ConnectInverterInput {
+  vendor: InverterVendorOption;
+  apiKey: string;
+  externalSystemId?: string;
+}
+
 export interface IntegrationsSectionProps {
   hardware: IntegrationItem[];
   services: IntegrationItem[];
   onConnect: (kind: IntegrationKind) => Promise<void>;
+  /** Real inverter connect flow (Phase 9). Absent → button stays a stub. */
+  onConnectInverter?: (input: ConnectInverterInput) => Promise<void>;
+  /** Present only when an inverter connection exists. */
+  onDisconnectInverter?: () => Promise<void>;
 }
 
 const ICON_BY_KIND = {
@@ -75,11 +87,18 @@ export function IntegrationsSection({
   hardware,
   services,
   onConnect,
+  onConnectInverter,
+  onDisconnectInverter,
 }: IntegrationsSectionProps) {
   const [connectingKind, setConnectingKind] = useState<IntegrationKind | null>(null);
+  const [showInverterForm, setShowInverterForm] = useState(false);
 
   const handleConnect = async (kind: IntegrationKind) => {
     track("settings_control_change", { section: "integrations", controlId: `connect:${kind}` }, { surface: "settings" });
+    if (kind === "inverter" && onConnectInverter) {
+      setShowInverterForm((v) => !v);
+      return;
+    }
     setConnectingKind(kind);
     try {
       await onConnect(kind);
@@ -108,7 +127,25 @@ export function IntegrationsSection({
           <ConnectButton kind="inverter" onClick={handleConnect} busyKind={connectingKind} label="Connect inverter" />
           <ConnectButton kind="battery" onClick={handleConnect} busyKind={connectingKind} label="Connect battery" />
           <ConnectButton kind="smart-device" onClick={handleConnect} busyKind={connectingKind} label="Connect smart device" />
+          {onDisconnectInverter ? (
+            <button
+              type="button"
+              onClick={() => void onDisconnectInverter()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-background/60 px-3 py-1.5 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-500/10"
+            >
+              Disconnect inverter
+            </button>
+          ) : null}
         </div>
+        {showInverterForm && onConnectInverter ? (
+          <InverterConnectForm
+            onSubmit={async (input) => {
+              await onConnectInverter(input);
+              setShowInverterForm(false);
+            }}
+            onCancel={() => setShowInverterForm(false)}
+          />
+        ) : null}
       </FormRow>
 
       <FormRow label="Third-party services" helper="Weather and tariff providers that feed the engine.">
@@ -149,6 +186,106 @@ function IntegrationRow({ item }: { item: IntegrationItem }) {
         {style.label}
       </span>
     </li>
+  );
+}
+
+function InverterConnectForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (input: ConnectInverterInput) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [vendor, setVendor] = useState<InverterVendorOption>("solaredge");
+  const [apiKey, setApiKey] = useState("");
+  const [externalSystemId, setExternalSystemId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const needsSystemId = vendor === "solaredge";
+  const canSubmit = apiKey.trim().length > 0 && (!needsSystemId || externalSystemId.trim().length > 0);
+
+  const submit = async () => {
+    if (!canSubmit || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onSubmit({
+        vendor,
+        apiKey: apiKey.trim(),
+        externalSystemId: externalSystemId.trim() || undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not connect the inverter.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Connect inverter
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="space-y-1 text-xs">
+          <span className="font-medium">Vendor</span>
+          <select
+            value={vendor}
+            onChange={(e) => setVendor(e.target.value as InverterVendorOption)}
+            className="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm"
+          >
+            <option value="solaredge">SolarEdge</option>
+            <option value="mock">Simulated (demo)</option>
+          </select>
+        </label>
+        <label className="space-y-1 text-xs">
+          <span className="font-medium">
+            API key{vendor === "mock" ? " (any value)" : ""}
+          </span>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={vendor === "solaredge" ? "From monitoring portal → Admin → API access" : "demo"}
+            className="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm"
+          />
+        </label>
+        {needsSystemId ? (
+          <label className="space-y-1 text-xs sm:col-span-2">
+            <span className="font-medium">SolarEdge site id</span>
+            <input
+              value={externalSystemId}
+              onChange={(e) => setExternalSystemId(e.target.value)}
+              placeholder="e.g. 1234567"
+              className="w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm"
+            />
+          </label>
+        ) : null}
+      </div>
+      {error ? <p className="text-xs text-rose-500">{error}</p> : null}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => void submit()}
+          disabled={!canSubmit || busy}
+          className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-opacity disabled:opacity-50"
+        >
+          {busy ? "Verifying…" : "Verify and connect"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          className="rounded-lg border border-border/70 px-4 py-2 text-xs font-medium"
+        >
+          Cancel
+        </button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Read-only access. Your key is encrypted at rest and never shown again.
+      </p>
+    </div>
   );
 }
 

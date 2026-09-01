@@ -11,6 +11,7 @@ import {
   fetchSite,
   fetchSolarSystemBySite,
 } from "@/lib/api/settings-persist";
+import { fetchInverterConnection, type InverterConnection } from "@/lib/api/telemetry";
 import { SettingsShell, type SettingsShellInitialValues } from "./_components/settings-shell";
 import { deriveNavBadgeCounts } from "@/lib/view-models/nav-badges";
 import { NavBadgesBridge } from "@/components/layout/NavBadgesBridge";
@@ -55,6 +56,7 @@ interface LoadedRecords {
   solarSystem: SolarSystem | null;
   tariff: Tariff | null;
   deviceProfile: DeviceProfile | null;
+  inverterConnection: InverterConnection | null;
 }
 
 async function loadSettingsRecords(
@@ -62,22 +64,24 @@ async function loadSettingsRecords(
   accessToken: string | undefined,
 ): Promise<LoadedRecords> {
   if (!siteId) {
-    return { site: null, solarSystem: null, tariff: null, deviceProfile: null };
+    return { site: null, solarSystem: null, tariff: null, deviceProfile: null, inverterConnection: null };
   }
   // Fire reads in parallel; tolerate individual failures so a stale
   // tariff row doesn't nuke the whole page.
   // Tariff is request-cached with the root layout CurrencyProvider.
-  const [siteR, systemR, tariffR, deviceR] = await Promise.allSettled([
+  const [siteR, systemR, tariffR, deviceR, inverterR] = await Promise.allSettled([
     fetchSite(siteId, accessToken),
     fetchSolarSystemBySite(siteId, accessToken),
     getSessionTariff(),
     fetchDeviceProfileBySite(siteId, accessToken),
+    fetchInverterConnection(siteId, accessToken),
   ]);
   return {
     site: siteR.status === "fulfilled" ? siteR.value : null,
     solarSystem: systemR.status === "fulfilled" ? systemR.value : null,
     tariff: tariffR.status === "fulfilled" ? tariffR.value : null,
     deviceProfile: deviceR.status === "fulfilled" ? deviceR.value : null,
+    inverterConnection: inverterR.status === "fulfilled" ? inverterR.value : null,
   };
 }
 
@@ -89,6 +93,7 @@ export default async function SettingsPage() {
     solarSystem: null,
     tariff: null,
     deviceProfile: null,
+    inverterConnection: null,
   };
 
   try {
@@ -152,6 +157,33 @@ export default async function SettingsPage() {
   );
 }
 
+function inverterVendorLabel(vendor: string): string {
+  switch (vendor) {
+    case "solaredge":
+      return "SolarEdge";
+    case "enphase":
+      return "Enphase";
+    case "fronius":
+      return "Fronius";
+    case "sma":
+      return "SMA";
+    case "mock":
+      return "Simulated";
+    default:
+      return vendor;
+  }
+}
+
+function inverterConnectionDetail(connection: InverterConnection): string {
+  if (connection.status === "error") {
+    return connection.lastError ?? "Last sync failed — check the API key.";
+  }
+  if (connection.lastSyncAt) {
+    return `Live telemetry · synced ${new Date(connection.lastSyncAt).toLocaleString()}`;
+  }
+  return "Connected · awaiting first sync";
+}
+
 // ---------------------------------------------------------------------------
 // Initial values builder — hydrate every form from the real record in the
 // database when available. Falls back to sensible defaults for first-run
@@ -161,7 +193,7 @@ function buildInitialValues(
   aggregate: DashboardAggregateData | null,
   records: LoadedRecords,
 ): SettingsShellInitialValues {
-  const { site, solarSystem, tariff, deviceProfile } = records;
+  const { site, solarSystem, tariff, deviceProfile, inverterConnection } = records;
 
   const siteId = site?.id ?? aggregate?.siteId ?? null;
   const siteName = site?.siteName ?? aggregate?.siteName ?? null;
@@ -232,14 +264,28 @@ function buildInitialValues(
       quietStart: "22:00",
       quietEnd: "07:00",
     },
+    inverterConnected: Boolean(inverterConnection),
     hardware: [
-      {
-        id: "inverter-default",
-        kind: "inverter",
-        name: "Inverter",
-        detail: providers ? `Live via ${providers.solar}` : "Not connected",
-        status: providers ? "connected" : "disconnected",
-      },
+      inverterConnection
+        ? {
+            id: "inverter-connection",
+            kind: "inverter" as const,
+            name: `Inverter · ${inverterVendorLabel(inverterConnection.vendor)}`,
+            detail: inverterConnectionDetail(inverterConnection),
+            status:
+              inverterConnection.status === "active"
+                ? ("connected" as const)
+                : inverterConnection.status === "error"
+                  ? ("error" as const)
+                  : ("disconnected" as const),
+          }
+        : {
+            id: "inverter-default",
+            kind: "inverter" as const,
+            name: "Inverter",
+            detail: "Not connected — dashboard uses modeled estimates",
+            status: "disconnected" as const,
+          },
       {
         id: "battery-default",
         kind: "battery",

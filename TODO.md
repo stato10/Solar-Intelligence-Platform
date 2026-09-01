@@ -269,6 +269,20 @@ Execution Order (strict, single-task flow):
 - No active blockers in `Blocked` section.
 - `PHASE_GATE_CHECKLIST.md` and `SYNC_PROTOCOL.md` closure steps completed.
 
+## Phase 9 — Telemetry Ingestion (in progress)
+- [x] Prisma models: `InverterConnection` + `TelemetryReading` (+ migration `20260901_telemetry_foundation`)
+- [x] Vendor-neutral connector contract (`InverterConnector`)
+- [x] SolarEdge monitoring API adapter (verify + 15-min energy readings)
+- [x] Mock inverter adapter (deterministic bell curve for demos)
+- [x] JWT-guarded endpoints: create/get/delete connection, manual sync, readings query
+- [x] 15-minute background sync scheduler (`@nestjs/schedule`)
+- [x] `telemetry` summary block on the site-backed dashboard aggregate
+- [x] Settings → Integrations: real inverter connect/disconnect flow (encrypted key at rest)
+- [ ] Apply `20260901_telemetry_foundation` migration (blocked: local port 5432 occupied by another project's Postgres)
+- [ ] Feed actual telemetry kWh into engine benchmark (`actualProductionKwh`)
+- [ ] Enphase / Fronius / SMA adapters
+- [ ] Dashboard substate wiring: drive `stale-telemetry` / `live` from the aggregate `telemetry` block
+
 ## Cross-Cutting Tasks
 
 Testing:

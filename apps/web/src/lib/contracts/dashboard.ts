@@ -224,6 +224,19 @@ export interface DashboardAggregateData {
     importRate?: number;
     exportRate?: number;
   };
+  /**
+   * Real inverter telemetry summary (Phase 9). Present only on the
+   * site-backed aggregate (`GET /dashboard/site/:siteId`) when the site
+   * has an inverter connection. Anonymous/demo aggregates omit it.
+   */
+  telemetry?: {
+    connected: boolean;
+    vendor: string | null;
+    status: "pending" | "active" | "error" | "disconnected" | null;
+    lastReadingAt: string | null;
+    last24hKwh: number | null;
+    stale: boolean;
+  };
 }
 
 export type DashboardAggregateSuccessEnvelope = ApiSuccessEnvelope<DashboardAggregateData>;
