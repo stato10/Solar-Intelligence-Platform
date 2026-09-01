@@ -97,6 +97,15 @@ return `404`.
 - `GET /api/v1/dashboard/site/:siteId` **[JWT, ownership-scoped]** — site-backed aggregate built from persisted site/system/tariff records
 - `POST /api/v1/dashboard/demo/seed` — idempotent local demo seeding (dev tool)
 
+### Telemetry (Phase 9) **[JWT, ownership-scoped via site]**
+- `POST /api/v1/telemetry/connections` — connect an inverter (`{ siteId, vendor, apiKey, externalSystemId? }`); verifies against the vendor API, encrypts the key at rest, and runs a 7-day backfill. Supported vendors: `solaredge`, `mock`.
+- `GET /api/v1/telemetry/connections/:siteId` — connection status (never returns the key)
+- `DELETE /api/v1/telemetry/connections/:siteId` — disconnect
+- `POST /api/v1/telemetry/connections/:siteId/sync` — manual sync; returns `{ inserted }`
+- `GET /api/v1/telemetry/sites/:siteId/readings?hours={1..168}` — 15-min interval production readings
+- A background scheduler syncs all active connections every 15 minutes.
+- The site-backed dashboard aggregate additively includes a `telemetry` block: `{ connected, vendor, status, lastReadingAt, last24hKwh, stale }`.
+
 ### AI Insights
 - `POST /api/v1/ai/insights`
   - Auth: `Bearer <token>` required

@@ -20,5 +20,8 @@ export const API_ENDPOINTS = {
   },
   integrations: {
     geolocationForward: "/integrations/providers/geolocation/forward"
+  },
+  telemetry: {
+    connections: "/telemetry/connections"
   }
 } as const;

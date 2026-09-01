@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock, Zap, BarChart3, ActivitySquare, ArrowRight } from "lucide-react";
@@ -64,24 +65,18 @@ export function HardwareConnectCta({ className = "" }: { className?: string }) {
           <div className="bg-black/40 p-4 rounded-xl border border-indigo-500/30 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <p className="text-sm tracking-wide text-indigo-300 font-semibold mb-3 uppercase">Select Inverter Source</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button className="flex items-center justify-between p-3 rounded-lg border border-slate-800 hover:bg-slate-800 hover:border-indigo-500/50 transition-colors text-left group">
-                <span className="font-semibold text-white">SolarEdge</span>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1" />
-              </button>
-              <button className="flex items-center justify-between p-3 rounded-lg border border-slate-800 hover:bg-slate-800 hover:border-indigo-500/50 transition-colors text-left group">
-                <span className="font-semibold text-white">Enphase</span>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1" />
-              </button>
-              <button className="flex items-center justify-between p-3 rounded-lg border border-slate-800 hover:bg-slate-800 hover:border-indigo-500/50 transition-colors text-left group">
-                <span className="font-semibold text-white">SMA</span>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1" />
-              </button>
-              <button className="flex items-center justify-between p-3 rounded-lg border border-slate-800 hover:bg-slate-800 hover:border-indigo-500/50 transition-colors text-left group">
-                <span className="font-semibold text-white">Other / Pinned API</span>
-                <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1" />
-              </button>
+              {["SolarEdge", "Enphase", "SMA", "Other / Simulated"].map((vendor) => (
+                <Link
+                  key={vendor}
+                  href="/settings#integrations"
+                  className="flex items-center justify-between p-3 rounded-lg border border-slate-800 hover:bg-slate-800 hover:border-indigo-500/50 transition-colors text-left group"
+                >
+                  <span className="font-semibold text-white">{vendor}</span>
+                  <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1" />
+                </Link>
+              ))}
             </div>
-            <p className="text-xs text-slate-500 mt-4 text-center">You will be securely redirected to authenticate read-only access to your solar data.</p>
+            <p className="text-xs text-slate-500 mt-4 text-center">Enter your vendor API key in Settings → Integrations. Access is read-only and the key is encrypted at rest.</p>
           </div>
         )}
       </CardContent>

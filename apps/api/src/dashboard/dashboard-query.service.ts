@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { SitesService } from "../domain/sites/sites.service";
 import { SolarSystemsService } from "../domain/solar-systems/solar-systems.service";
 import { TariffsService } from "../domain/tariffs/tariffs.service";
+import { TelemetryService } from "../telemetry/telemetry.service";
 import { DashboardService } from "./dashboard.service";
 import { AggregateDashboardRequestDto } from "./dto/aggregate-dashboard.dto";
 
@@ -11,7 +12,8 @@ export class DashboardQueryService {
     private readonly dashboardService: DashboardService,
     private readonly sitesService: SitesService,
     private readonly solarSystemsService: SolarSystemsService,
-    private readonly tariffsService: TariffsService
+    private readonly tariffsService: TariffsService,
+    private readonly telemetryService: TelemetryService
   ) {}
 
   /**
@@ -59,10 +61,16 @@ export class DashboardQueryService {
       };
     }
 
-    const dashboardData = await this.dashboardService.aggregate(payload, correlationId);
+    // Telemetry summary and the modeled aggregate are independent — run
+    // them in parallel. Telemetry failures must never break the dashboard.
+    const [dashboardData, telemetry] = await Promise.all([
+      this.dashboardService.aggregate(payload, correlationId),
+      this.telemetryService.getSummary(siteId).catch(() => null)
+    ]);
     return {
       ...dashboardData,
-      siteName: site.siteName
+      siteName: site.siteName,
+      ...(telemetry ? { telemetry } : {})
     };
   }
 }

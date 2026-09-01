@@ -3,13 +3,14 @@ import { DomainModule } from "../domain";
 import { EngineModule } from "../integrations/engine/engine.module";
 import { DataIngestionModule } from "../data-ingestion/data-ingestion.module";
 import { IntelligenceModule } from "../intelligence";
+import { TelemetryModule } from "../telemetry/telemetry.module";
 import { DashboardController } from "./dashboard.controller";
 import { DashboardDemoSeedService } from "./dashboard-demo-seed.service";
 import { DashboardQueryService } from "./dashboard-query.service";
 import { DashboardService } from "./dashboard.service";
 
 @Module({
-  imports: [EngineModule, DomainModule, DataIngestionModule, IntelligenceModule],
+  imports: [EngineModule, DomainModule, DataIngestionModule, IntelligenceModule, TelemetryModule],
   controllers: [DashboardController],
   providers: [DashboardService, DashboardDemoSeedService, DashboardQueryService]
 })

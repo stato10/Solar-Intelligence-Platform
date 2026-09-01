@@ -34,9 +34,14 @@ import { TariffsSection, type TariffsFormValues } from "./tariffs-section";
 import { AutomationPrefsSection, type AutomationPrefsFormValues } from "./automation-prefs-section";
 import {
   IntegrationsSection,
+  type ConnectInverterInput,
   type IntegrationItem,
   type IntegrationKind,
 } from "./integrations-section";
+import {
+  createInverterConnection,
+  deleteInverterConnection,
+} from "@/lib/api/telemetry";
 import { NotificationsSection, type NotificationsFormValues } from "./notifications-section";
 
 const ACCESS_TOKEN_KEY = "sip.accessToken";
@@ -61,6 +66,8 @@ export interface SettingsShellInitialValues {
   hardware: IntegrationItem[];
   services: IntegrationItem[];
   notifications: NotificationsFormValues;
+  /** True when the active site has an inverter connection (Phase 9). */
+  inverterConnected: boolean;
 }
 
 const SECTIONS = [
@@ -270,9 +277,48 @@ export function SettingsShell({ initial }: { initial: SettingsShellInitialValues
 
   const handleConnect = useCallback(async (kind: IntegrationKind) => {
     logControlChange("integrations", `connect:${kind}`);
-    // pending-backend: integration connect flows (OAuth / pairing) TBD.
+    // pending-backend: battery / smart-device pairing flows TBD.
     await new Promise((resolve) => setTimeout(resolve, 400));
   }, [logControlChange]);
+
+  // ── Inverter telemetry — POST /telemetry/connections (Phase 9) ─────
+  const handleConnectInverter = useCallback(
+    async (input: ConnectInverterInput) => {
+      logControlChange("integrations", `connect-inverter:${input.vendor}`);
+      const token = getAccessToken();
+      if (!siteId || !token) {
+        throw new Error("Sign in and finish onboarding before connecting an inverter.");
+      }
+      try {
+        await createInverterConnection(
+          {
+            siteId,
+            vendor: input.vendor,
+            apiKey: input.apiKey,
+            externalSystemId: input.externalSystemId,
+          },
+          token,
+        );
+        router.refresh();
+      } catch (err) {
+        formatPatchError(err, "Could not connect the inverter. Check the API key and site id.");
+      }
+    },
+    [logControlChange, router, siteId],
+  );
+
+  const handleDisconnectInverter = useCallback(async () => {
+    logControlChange("integrations", "disconnect-inverter");
+    const token = getAccessToken();
+    if (!siteId || !token) return;
+    try {
+      await deleteInverterConnection(siteId, token);
+      router.refresh();
+    } catch {
+      // Row may already be gone; refresh reflects the true state either way.
+      router.refresh();
+    }
+  }, [logControlChange, router, siteId]);
 
   const handleAnchorClick = useCallback((id: string) => {
     const el = document.querySelector(`[data-section-id="${id}"]`);
@@ -363,6 +409,8 @@ export function SettingsShell({ initial }: { initial: SettingsShellInitialValues
           hardware={initial.hardware}
           services={initial.services}
           onConnect={handleConnect}
+          onConnectInverter={handleConnectInverter}
+          onDisconnectInverter={initial.inverterConnected ? handleDisconnectInverter : undefined}
         />
         <NotificationsSection initial={initial.notifications} onSave={saveNotifications} />
       </div>

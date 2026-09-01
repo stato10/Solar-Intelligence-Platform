@@ -54,6 +54,8 @@ model Site {
   currentSnapshot    SiteCurrentSnapshot?
   dailySummaries     SiteDailySummary[]
   monthlySummaries   SiteMonthlySummary[]
+  inverterConnection InverterConnection?
+  telemetryReadings  TelemetryReading[]
 
   @@index([userId])
 }
@@ -268,6 +270,60 @@ model SiteDailySummary {
 
   @@unique([siteId, date])
   @@index([siteId])
+}
+
+// -------------------------------------------------------------
+// 8. Telemetry Ingestion (Phase 9): real inverter data
+// -------------------------------------------------------------
+
+enum InverterVendor {
+  solaredge
+  enphase
+  fronius
+  sma
+  mock
+}
+
+enum InverterConnectionStatus {
+  pending
+  active
+  error
+  disconnected
+}
+
+model InverterConnection {
+  id               String                   @id @default(uuid())
+  siteId           String                   @unique
+  site             Site                     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  vendor           InverterVendor
+  // Vendor-side identifier for the plant/site (e.g. SolarEdge site id).
+  externalSystemId String?
+  // AES-256-GCM encrypted vendor API key. Never returned by the API.
+  apiKeyEncrypted  String
+  status           InverterConnectionStatus @default(pending)
+  lastSyncAt       DateTime?
+  lastError        String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@index([status])
+}
+
+model TelemetryReading {
+  id              String         @id @default(uuid())
+  siteId          String
+  site            Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  // Interval start, UTC.
+  timestamp       DateTime
+  // Energy produced during the interval, watt-hours.
+  productionWh    Float
+  intervalMinutes Int            @default(15)
+  source          InverterVendor
+
+  createdAt       DateTime       @default(now())
+
+  @@unique([siteId, timestamp])
+  @@index([siteId, timestamp(sort: Desc)])
 }
 
 model SiteMonthlySummary {

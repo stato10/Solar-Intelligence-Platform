@@ -55,6 +55,11 @@ canonical definitions live in `apps/api/prisma/schema.prisma`.
 - `SiteDailySummary`: unique per `(siteId, date)` — `expectedKwh`, `actualKwh`, `deviationPercent`, `soilingScore?`, `heatScore?`, `dailySavings?`.
 - `SiteMonthlySummary`: unique per `(siteId, month)` — `totalExpected`, `totalActual`, `totalSavings?`, `avgDeviation`.
 
+### Telemetry (Phase 9): `InverterConnection`, `TelemetryReading`
+- `InverterConnection`: one per site (`siteId` unique FK → Site, cascade) — `vendor` (`solaredge` | `enphase` | `fronius` | `sma` | `mock`), `externalSystemId?`, `apiKeyEncrypted` (AES-256-GCM, never returned by the API), `status` (`pending` | `active` | `error` | `disconnected`), `lastSyncAt?`, `lastError?`.
+- `TelemetryReading`: unique per `(siteId, timestamp)` — `productionWh` for the interval, `intervalMinutes` (default 15), `source` vendor enum. Indexed on `(siteId, timestamp DESC)`.
+- Migration: `20260901_telemetry_foundation`.
+
 ## Target Tables (Not Yet Implemented)
 
 These remain design targets for future telemetry/history phases and do not
