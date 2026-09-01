@@ -117,7 +117,7 @@ Rule: if the engine returns an insight with `confidence = low` and there is alre
 
 ## Definition of Done
 
-- A single source helper (e.g. `deriveSystemState(view)`) exists in the view-model layer; no page recomputes state locally.
-- Every card that renders state-dependent styling accepts `SystemState` or `ActionPriority` as a typed prop, not ad-hoc booleans.
-- `confidence` value is never rendered as raw text; it always resolves to the chip + CTA rules above.
-- Storybook or manual QA covers all five `SystemState` values per hero and per AI card.
+- [x] A single source helper (e.g. `deriveSystemState(view)`) exists in the view-model layer; no page recomputes state locally.
+- [ ] Every card that renders state-dependent styling accepts `SystemState` or `ActionPriority` as a typed prop, not ad-hoc booleans. *(Partial: `AiInsightCard` / `EnergyDecisionInsightCard` comply; `LossIntelligenceCard` and `AiInsightsPanel` do not.)*
+- [ ] `confidence` value is never rendered as raw text; it always resolves to the chip + CTA rules above. *(Partial: `LossIntelligenceCard` and maintenance/savings AI sections still print raw confidence text.)*
+- [ ] Storybook or manual QA covers all five `SystemState` values per hero and per AI card. *(No Storybook in repo; manual QA not recorded.)*

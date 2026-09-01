@@ -135,7 +135,7 @@ function matchesRecommendation(
   return types.some((t) => item.appliesTo.includes(t));
 }
 
-function matchesServiceArea(
+export function matchesServiceArea(
   item: CatalogItem,
   serviceArea: string | undefined,
 ): boolean {

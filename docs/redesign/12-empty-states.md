@@ -118,8 +118,8 @@ Use these copy blocks verbatim unless a per-page doc overrides them.
 
 ## 6. Definition of Done
 
-- Every page renders the correct pattern for every state in section 2.
-- Zero-data experience includes the banner, the estimated simulation, and the Connect System CTA on every page listed in section 3.
-- No card anywhere shows "No data." or "No items." as a terminal message.
-- `AiInlineEmpty` is only used with page-doc-sanctioned copy.
-- Estimated figures are visually distinguishable from real data.
+- [ ] Every page renders the correct pattern for every state in section 2. *(Partial: dashboard is complete; alerts/maintenance/savings/automation lack the full section-2 matrix.)*
+- [ ] Zero-data experience includes the banner, the estimated simulation, and the Connect System CTA on every page listed in section 3. *(Partial: dashboard + opportunities only.)*
+- [x] No card anywhere shows "No data." or "No items." as a terminal message.
+- [ ] `AiInlineEmpty` is only used with page-doc-sanctioned copy. *(Partial: some ad-hoc messages remain, e.g. "No AI summary available for this snapshot.".)*
+- [ ] Estimated figures are visually distinguishable from real data. *(Partial: `EstimatedSurface`/`EstimatedChip` on dashboard only.)*

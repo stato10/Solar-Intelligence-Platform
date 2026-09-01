@@ -99,8 +99,8 @@ Convention: page-level card wrappers must use `glass-card` plus a `state-*` modi
 
 ## 9. Definition of Done
 
-- Every new card uses tokens above, no arbitrary `px-[13px]` or `gap-[7px]` values.
-- Dashboard main grid renders at `max-w-[1280px]` with a `320–360px` right panel at `xl` breakpoint.
-- All money figures render with `font-mono` and `tabular-nums`.
-- No component imports a hex color.
-- All state color usage resolves through `--success`, `--warning`, `--danger`.
+- [ ] Every new card uses tokens above, no arbitrary `px-[13px]` or `gap-[7px]` values. *(Partial: mostly compliant; a few arbitrary widths remain, e.g. `sm:w-[320px]` in `MarketplaceCarousel.tsx`.)*
+- [ ] Dashboard main grid renders at `max-w-[1280px]` with a `320–360px` right panel at `xl` breakpoint. *(Partial: right panel is `360px`; shipped shell uses `max-w-[1600px]`, not `1280px`.)*
+- [ ] All money figures render with `font-mono` and `tabular-nums`. *(Partial: hero and `PerformanceStatsGrid` use `tabular-nums` without `font-mono`.)*
+- [x] No component imports a hex color.
+- [ ] All state color usage resolves through `--success`, `--warning`, `--danger`. *(Partial: `state-*` utilities exist, but many cards still use Tailwind `emerald-`/`rose-`/`amber-` directly.)*

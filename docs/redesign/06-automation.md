@@ -171,8 +171,8 @@ Downstream catalog routes these to `smart-switch` and `boiler-controller` catego
 
 ## 12. Definition of Done
 
-- Day Timeline renders 24 ticks, three bands, and per-device overlays with legend.
-- Every device card populates `device`, `schedule`, `monthlyGainNis`, `yearlyGainNis`, `confidence`, `cta`.
-- "How it works" panel is present under the device grid.
-- Hero includes the directive line on `healthy` / `optimization` states.
-- Every CTA routes through the conversion flow with `recommendationType = "automation_opportunity"`.
+- [x] Day Timeline renders 24 ticks, three bands, and per-device overlays with legend. *(24 hourly tick marks; labels every 3 hours for readability.)*
+- [x] Every device card populates `device`, `schedule`, `monthlyGainNis`, `yearlyGainNis`, `confidence`, `cta`.
+- [x] "How it works" panel is present under the device grid.
+- [x] Hero includes the directive line on `healthy` / `optimization` states.
+- [x] Every CTA routes through the conversion flow with `recommendationType = "automation_opportunity"`.

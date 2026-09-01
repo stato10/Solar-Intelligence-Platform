@@ -133,8 +133,8 @@ See [14-marketplace-catalog.md](./14-marketplace-catalog.md) for the mapping tab
 
 ## 10. Definition of Done
 
-- Every maintenance concern renders as a `ConcernCard` with all six fields populated; no concern ships with missing Money or Action.
-- Hero urgency pill only appears in `critical` / `warning` states.
-- AI section is an accordion; default open only on `warning` / `critical`.
-- The string "Schedule inspection" is removed from the page unless it appears as a concern-specific `recommendedAction`.
-- All CTAs route through the conversion flow in [15-conversion-flow.md](./15-conversion-flow.md) with a valid `recommendationType`.
+- [x] Every maintenance concern renders as a `ConcernCard` with all six fields populated; no concern ships with missing Money or Action. *(Risk concerns without a measured loss render an explicit "none yet — preventive" Money row.)*
+- [x] Hero urgency pill only appears in `critical` / `warning` states.
+- [x] AI section is an accordion; default open only on `warning` / `critical`.
+- [x] The string "Schedule inspection" is removed from the page unless it appears as a concern-specific `recommendedAction`.
+- [x] All CTAs route through the conversion flow in [15-conversion-flow.md](./15-conversion-flow.md) with a valid `recommendationType`.

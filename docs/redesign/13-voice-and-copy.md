@@ -128,8 +128,8 @@ The product serves Hebrew-speaking users (Israel). While these specs assume Engl
 
 ## 9. Definition of Done
 
-- No banned phrase (section 3) appears in any page, component, or string literal.
-- All money values render with `font-mono` + `tabular-nums` and two decimals.
-- Every hero follows the two-line status + money pattern (or the zero-data pattern from [12-empty-states.md](./12-empty-states.md)).
-- Every CTA label follows verb-object, two to four words.
-- Confidence and severity appear only as the approved categorical words.
+- [x] No banned phrase (section 3) appears in any page, component, or string literal.
+- [ ] All money values render with `font-mono` + `tabular-nums` and two decimals. *(Partial: mono+tabular inconsistently applied; many formatters intentionally use 0 decimals.)*
+- [ ] Every hero follows the two-line status + money pattern (or the zero-data pattern from [12-empty-states.md](./12-empty-states.md)). *(Partial: dashboard complies; opportunities hero is marketing-style.)*
+- [ ] Every CTA label follows verb-object, two to four words. *(Partial: most comply; a few longer labels remain, e.g. "Show Cleaning Providers".)*
+- [ ] Confidence and severity appear only as the approved categorical words. *(Partial: canonical chips comply; some surfaces still print raw engine strings.)*

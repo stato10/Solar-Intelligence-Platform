@@ -136,9 +136,9 @@ Items with `ActionPriority = low` and `confidence = low` are moved to the bottom
 
 ## 10. Definition of Done
 
-- Four sections render with the correct catalog filtering; empty sections hide.
-- Every card renders all mandatory fields from section 6.
-- No hardcoded catalog data remains in `MarketplaceCarousel.tsx`.
-- `MARKETPLACE_DATABASE` import is gone.
-- Zero-data experience renders when all four sections are empty.
-- All CTAs route through [15-conversion-flow.md](./15-conversion-flow.md).
+- [x] Four sections render with the correct catalog filtering; empty sections hide.
+- [ ] Every card renders all mandatory fields from section 6. *(Partial: relies on catalog-load validation rather than a hard fail at render for missing required fields.)*
+- [x] No hardcoded catalog data remains in `MarketplaceCarousel.tsx`.
+- [x] `MARKETPLACE_DATABASE` import is gone.
+- [x] Zero-data experience renders when all four sections are empty.
+- [x] All CTAs route through [15-conversion-flow.md](./15-conversion-flow.md).

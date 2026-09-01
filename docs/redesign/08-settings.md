@@ -150,8 +150,8 @@ Downstream effect: determines which alerts from [05-alerts.md](./05-alerts.md) a
 
 ## 10. Definition of Done
 
-- Six sections render with real controls per section 5; no placeholder "coming soon" copy remains.
-- Each control has a documented downstream effect (comment in code or a test asserts it).
-- `no-data` banner appears in System configuration until the site is fully set up.
-- Settings save flow is optimistic with inline success + error states.
-- The page contains no marketing copy; it is operational.
+- [ ] Six sections render with real controls per section 5; no placeholder "coming soon" copy remains. *(Partial: all six render with real inputs; §5 gaps — energy "at-home" is a select not day-part toggles, `hasEv` doesn't reveal charger fields, Automation/Notifications saves are still `pending-backend` stubs. Inverter connect is real as of Phase 9.)*
+- [ ] Each control has a documented downstream effect (comment in code or a test asserts it). *(Partial: section-level comments exist; not per-control, no tests.)*
+- [x] `no-data` banner appears in System configuration until the site is fully set up.
+- [ ] Settings save flow is optimistic with inline success + error states. *(Partial: inline success/error chips exist, but saves await the server; Automation/Notifications fake success.)*
+- [x] The page contains no marketing copy; it is operational.

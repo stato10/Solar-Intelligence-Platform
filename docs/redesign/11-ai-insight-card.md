@@ -131,8 +131,8 @@ Text-link CTAs on `low` confidence skip the modal and link to a learn-more view.
 
 ## 9. Definition of Done
 
-- All four surfaces in section 1 render insight rows using the same underlying component (or sharing the same Props contract).
-- No surface renders AI insights without Money, Recommended Action, or Confidence.
-- `low` confidence items never render a full CTA button.
-- Deep-dive copy is accordion-gated; it does not appear in the always-visible card body.
-- No hex colors; all severity/confidence styling routes through design tokens.
+- [ ] All four surfaces in section 1 render insight rows using the same underlying component (or sharing the same Props contract). *(Not done: only `EnergyDecisionInsightCard` uses `AiInsightCard`; `AiInsightsPanel` and maintenance/savings AI sections use bespoke list UIs.)*
+- [ ] No surface renders AI insights without Money, Recommended Action, or Confidence. *(Not done: `AiInsightsPanel` and maintenance AI rows omit money + structured CTA.)*
+- [x] `low` confidence items never render a full CTA button.
+- [x] Deep-dive copy is accordion-gated; it does not appear in the always-visible card body.
+- [ ] No hex colors; all severity/confidence styling routes through design tokens. *(Partial: no hex, but chips use Tailwind color utilities rather than `--success`/`--warning`/`--danger` exclusively.)*

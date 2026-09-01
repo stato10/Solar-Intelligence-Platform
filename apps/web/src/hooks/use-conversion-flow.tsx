@@ -163,7 +163,18 @@ function toLeadSourceType(rec: RecommendationType): LeadSourceType {
 // ---------------------------------------------------------------------------
 // Provider lookup — fed by the catalog.
 // ---------------------------------------------------------------------------
-import { loadCatalog } from "@/lib/view-models/marketplace-catalog";
+import { loadCatalog, matchesServiceArea } from "@/lib/view-models/marketplace-catalog";
+
+/** User's service area, persisted by onboarding in the `sip.serviceArea`
+ *  cookie. Undefined (no cookie / SSR) means "don't restrict". */
+function readServiceAreaCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("sip.serviceArea="));
+  const value = match?.split("=").slice(1).join("=");
+  return value ? decodeURIComponent(value) : undefined;
+}
 
 function selectProviders(
   context: ConversionContext,
@@ -172,8 +183,11 @@ function selectProviders(
     return []; // these flows skip provider selection
   }
   const catalog = loadCatalog();
-  return catalog.providers.filter((p) =>
-    p.appliesTo.includes(context.recommendationType),
+  const serviceArea = readServiceAreaCookie();
+  return catalog.providers.filter(
+    (p) =>
+      p.appliesTo.includes(context.recommendationType) &&
+      matchesServiceArea(p, serviceArea),
   );
 }
 
