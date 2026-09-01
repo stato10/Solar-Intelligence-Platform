@@ -187,9 +187,9 @@ All current CTAs across [EnergyDecisionsSection.tsx](../../apps/web/src/componen
 
 ## 10. Definition of Done
 
-- Every CTA in the product opens the shared modal; no bespoke lead forms remain.
-- `LeadPayload` shape is the only thing sent to `/leads` (or equivalent endpoint).
-- Provider selection respects `serviceArea` filtering.
-- No-provider fallback presents "Notify me" and "Continue anyway".
-- All eight analytics events in section 8 fire with their specified props.
-- Confirmation screen is reachable from a cold modal open in under 3 clicks for `quote` / `book` flows.
+- [ ] Every CTA in the product opens the shared modal; no bespoke lead forms remain. *(Partial: opportunities, maintenance, automation, and marketplace cards are wired; savings CTAs are not yet.)*
+- [ ] `LeadPayload` shape is the only thing sent to `/leads` (or equivalent endpoint). *(Partial: flow maps into the legacy `createLeadIntent` → `/leads/intents` with `metadataJson`.)*
+- [x] Provider selection respects `serviceArea` filtering. *(Filters by `appliesTo` + `sip.serviceArea` cookie via `matchesServiceArea`.)*
+- [ ] No-provider fallback presents "Notify me" and "Continue anyway". *(Partial: both options render, but "Notify me" closes the modal instead of capturing a waitlist email.)*
+- [x] All eight analytics events in section 8 fire with their specified props.
+- [ ] Confirmation screen is reachable from a cold modal open in under 3 clicks for `quote` / `book` flows. *(Needs manual QA.)*

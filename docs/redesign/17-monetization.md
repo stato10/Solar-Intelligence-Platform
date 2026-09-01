@@ -121,9 +121,9 @@ Variants must never affect the lead payload schema. Only UI text and ordering.
 
 ## 8. Definition of Done
 
-- Every revenue surface in section 2 emits `cta_click` with `revenueStream` derivable from `ctaKind` + `recommendationType`.
-- Every conversion-flow step emits its lifecycle event (section 3.1).
-- Every page emits `page_view` with `systemState` on mount.
-- `subscription_upsell_shown` fires on every surface listed in section 3.3.
-- No event payload contains raw PII.
-- All 6 ratios in section 4 can be computed from the emitted events alone.
+- [ ] Every revenue surface in section 2 emits `cta_click` with `revenueStream` derivable from `ctaKind` + `recommendationType`. *(Partial: wired CTAs emit `cta_click`; `revenueStream` only appears on `conversion_complete` and not all revenue surfaces emit.)*
+- [x] Every conversion-flow step emits its lifecycle event (section 3.1).
+- [ ] Every page emits `page_view` with `systemState` on mount. *(Not implemented.)*
+- [ ] `subscription_upsell_shown` fires on every surface listed in section 3.3. *(Not implemented; the Premium badge is untracked.)*
+- [x] No event payload contains raw PII.
+- [ ] All 6 ratios in section 4 can be computed from the emitted events alone. *(Blocked by missing `page_view`, impression, and upsell events.)*

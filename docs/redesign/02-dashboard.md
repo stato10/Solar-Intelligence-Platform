@@ -217,12 +217,12 @@ Events to emit (schema in [17-monetization.md](./17-monetization.md)):
 
 ## 10. Definition of Done
 
-- `apps/web/src/app/dashboard/page.tsx` renders three Action Lanes in the primary column; no other visible sections between the hero and the Supporting Data row.
-- The hero renders a different headline/sub/CTA per `SystemState`, verified for all five values.
-- AI content is collapsed into an accordion by default on initial render.
-- All action cards use tokens from [00-design-tokens.md](./00-design-tokens.md) (`p-5`, `rounded-2xl`).
-- Right panel width is `320–360px` at `xl`, `100%` below `xl`.
-- `LossIntelligenceCard` does not render when `SystemState = healthy`.
-- No literal hex colors introduced.
-- All five instrumentation events fire and include required props.
-- The user can complete the journey "see problem → click action → reach opportunities" without leaving the dashboard-to-opportunities path defined in [16-user-journey.md](./16-user-journey.md).
+- [x] `apps/web/src/app/dashboard/page.tsx` renders three Action Lanes in the primary column; no other visible sections between the hero and the Supporting Data row.
+- [ ] The hero renders a different headline/sub/CTA per `SystemState`, verified for all five values. *(Partial: `deriveHeroCopy` covers all five; full five-way visual verification pending manual QA.)*
+- [x] AI content is collapsed into an accordion by default on initial render.
+- [ ] All action cards use tokens from [00-design-tokens.md](./00-design-tokens.md) (`p-5`, `rounded-2xl`). *(Partial: `LossIntelligenceCard` still uses older `Card`/`p-6` styling.)*
+- [x] Right panel width is `320–360px` at `xl`, `100%` below `xl`.
+- [x] `LossIntelligenceCard` does not render when `SystemState = healthy`.
+- [x] No literal hex colors introduced.
+- [ ] All five instrumentation events fire and include required props. *(Not implemented: no emitters for `hero_cta_click`, `action_card_click`, `ai_accordion_toggle`, `whatif_toggle_change`, `connect_system_cta_click`.)*
+- [ ] The user can complete the journey "see problem → click action → reach opportunities" without leaving the dashboard-to-opportunities path defined in [16-user-journey.md](./16-user-journey.md). *(Needs manual QA.)*

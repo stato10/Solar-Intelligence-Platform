@@ -91,7 +91,9 @@ export function AutomationDayTimeline({ devices, siteId }: AutomationDayTimeline
     );
   };
 
-  const hourTicks = [0, 3, 6, 9, 12, 15, 18, 21, 24];
+  // 24 hourly ticks (doc 06 DoD). Every hour gets a mark; labels render
+  // every 3 hours so the row stays readable at phone widths.
+  const hourTicks = Array.from({ length: 25 }, (_, h) => h);
 
   // 3 bands: Morning (06–10), Peak solar (10–16), Evening (16–22).
   const bands = [
@@ -173,17 +175,22 @@ export function AutomationDayTimeline({ devices, siteId }: AutomationDayTimeline
         )}
       </div>
 
-      {/* Tick row */}
-      <div className="relative mt-3 h-4">
+      {/* Tick row — 24 hourly marks, labeled every 3 hours */}
+      <div className="relative mt-3 h-6">
         {hourTicks.map((h) => {
           const left = (h / 24) * 100;
+          const labeled = h % 3 === 0;
           return (
-            <span
-              key={h}
-              className="absolute top-0 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
-              style={{ left: `${left}%` }}
-            >
-              {String(h).padStart(2, "0")}:00
+            <span key={h} className="absolute top-0" style={{ left: `${left}%` }}>
+              <span
+                aria-hidden
+                className={`absolute top-0 block w-px -translate-x-1/2 ${labeled ? "h-2 bg-border" : "h-1.5 bg-border/60"}`}
+              />
+              {labeled ? (
+                <span className="absolute top-2 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground">
+                  {String(h).padStart(2, "0")}:00
+                </span>
+              ) : null}
             </span>
           );
         })}

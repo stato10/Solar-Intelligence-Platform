@@ -330,9 +330,9 @@ When `GET /marketplace/catalog` is available in [apps/api](../../apps/api), the 
 
 ## 7. Definition of Done
 
-- `apps/web/src/data/marketplace/types.ts`, `catalog.json`, `providers.json` exist (future Sprint 2 execution) with the schema in section 3.
-- [MarketplaceCarousel.tsx](../../apps/web/src/components/dashboard/MarketplaceCarousel.tsx) no longer contains `MARKETPLACE_DATABASE`.
-- Every catalog item has `appliesTo` populated with at least one `RecommendationType`.
-- Provider items always include `serviceArea` and `providerId`.
-- Copy in `title`, `whyRecommendedTags`, and `ctaLabel` obeys [13-voice-and-copy.md](./13-voice-and-copy.md).
-- JSON validates against the schema (run a schema check in CI; documented as a follow-up).
+- [x] `apps/web/src/data/marketplace/types.ts`, `catalog.json`, `providers.json` exist (future Sprint 2 execution) with the schema in section 3.
+- [x] [MarketplaceCarousel.tsx](../../apps/web/src/components/dashboard/MarketplaceCarousel.tsx) no longer contains `MARKETPLACE_DATABASE`.
+- [x] Every catalog item has `appliesTo` populated with at least one `RecommendationType`.
+- [x] Provider items always include `serviceArea` and `providerId`.
+- [ ] Copy in `title`, `whyRecommendedTags`, and `ctaLabel` obeys [13-voice-and-copy.md](./13-voice-and-copy.md). *(Spot-checks pass; full voice compliance not exhaustively verified.)*
+- [ ] JSON validates against the schema (run a schema check in CI; documented as a follow-up). *(Runtime `isValidCatalogItem` only; no CI schema job yet.)*

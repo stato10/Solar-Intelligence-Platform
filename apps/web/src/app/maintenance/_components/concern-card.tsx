@@ -177,6 +177,9 @@ export function ConcernCard({ concern, siteId, accessToken }: ConcernCardProps) 
       {/* Problem → Impact → Money */}
       <div className="mt-4 space-y-2.5 text-sm">
         <p className="text-muted-foreground">{concern.impact}</p>
+        {/* Money row always renders (doc 03 DoD): preventive concerns
+            without a measured loss state that explicitly instead of
+            hiding the row. */}
         {concern.estimatedMonthlyLoss > 0 ? (
           <p className="font-mono text-sm">
             <span className="text-muted-foreground">Estimated loss: </span>
@@ -185,7 +188,11 @@ export function ConcernCard({ concern, siteId, accessToken }: ConcernCardProps) 
             </span>
             <span className="text-muted-foreground"> / month</span>
           </p>
-        ) : null}
+        ) : (
+          <p className="font-mono text-sm text-muted-foreground">
+            Estimated loss: <span className="font-semibold text-foreground/80">none yet</span> — acting now prevents future losses
+          </p>
+        )}
       </div>
 
       {/* Recommended action */}
