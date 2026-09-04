@@ -15,7 +15,7 @@
  */
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { CircuitBoard, LifeBuoy, Plug, Sparkles } from "lucide-react";
 import { track } from "@/lib/analytics/client";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,16 @@ function subscribeToSubstate(onStoreChange: () => void): () => void {
 
 export function SidebarUtilityZone() {
   const substate = useSyncExternalStore(subscribeToSubstate, readSubstate, getServerSubstate);
+
+  // The plan badge is a subscription upsell surface — doc 17 §3.3 requires
+  // `subscription_upsell_shown` once per mount for funnel-ratio denominators.
+  useEffect(() => {
+    track(
+      "subscription_upsell_shown",
+      { surface: "sidebar_utility" },
+      { surface: "sidebar" },
+    );
+  }, []);
 
   // "live" = connected with fresh telemetry. Hide the Connect CTA there.
   const isLive = substate === "live";

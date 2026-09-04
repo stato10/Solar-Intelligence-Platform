@@ -1,6 +1,9 @@
-import type { ReactNode } from "react";
+"use client";
+
+import type { MouseEvent, ReactNode } from "react";
 import { Children } from "react";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics/client";
 
 /**
  * Action priority matching docs/redesign/01-state-contracts.md §2.
@@ -50,6 +53,13 @@ const LANE_META: Record<
   high: { title: "Now", eyebrow: "High priority" },
   medium: { title: "Recommended", eyebrow: "Medium priority" },
   low: { title: "Explore later", eyebrow: "Low priority" },
+};
+
+/** Analytics lane names per doc 02 §9. */
+const LANE_EVENT_NAME: Record<ActionLanePriority, "now" | "recommended" | "explore"> = {
+  high: "now",
+  medium: "recommended",
+  low: "explore",
 };
 
 /**
@@ -116,6 +126,24 @@ export function ActionLane({
             resolvedLayout === "stack" && "space-y-4",
             resolvedLayout === "grid" && "grid grid-cols-1 gap-4 md:grid-cols-2",
           )}
+          // Capture-phase click instrumentation for every card in the lane
+          // (doc 02 §9 `action_card_click`). Only interactive targets count
+          // so plain text selection inside a card does not emit.
+          onClickCapture={(event: MouseEvent<HTMLDivElement>) => {
+            const target = event.target as HTMLElement | null;
+            const interactive = target?.closest("a, button");
+            if (!interactive) return;
+            const card = target?.closest("section[aria-label]");
+            track(
+              "action_card_click",
+              {
+                lane: LANE_EVENT_NAME[priority],
+                actionId: card?.getAttribute("aria-label") ?? "unknown",
+                priority,
+              },
+              { surface: "dashboard" },
+            );
+          }}
         >
           {children}
         </div>

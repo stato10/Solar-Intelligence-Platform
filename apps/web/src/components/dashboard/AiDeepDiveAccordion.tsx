@@ -8,6 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import type { AiInsightContractOutputV3 } from "@/lib/contracts";
+import { track } from "@/lib/analytics/client";
 import { AiInsightsPanel } from "./AiInsightsPanel";
 
 interface AiDeepDiveAccordionProps {
@@ -26,7 +27,18 @@ export function AiDeepDiveAccordion({ data, errorMessage }: AiDeepDiveAccordionP
   if (!data && !errorMessage) return null;
 
   return (
-    <Accordion type="single" className="space-y-0">
+    <Accordion
+      type="single"
+      className="space-y-0"
+      // doc 02 §9 / doc 17 §3.4 — `ai_accordion_toggle` { page, opened }.
+      onValueChange={(value: string) =>
+        track(
+          "ai_accordion_toggle",
+          { page: "dashboard", opened: value === "ai-deep-dive" },
+          { surface: "dashboard" },
+        )
+      }
+    >
       <AccordionItem
         value="ai-deep-dive"
         className="rounded-2xl border border-border/70 bg-card/40"

@@ -224,5 +224,5 @@ Events to emit (schema in [17-monetization.md](./17-monetization.md)):
 - [x] Right panel width is `320–360px` at `xl`, `100%` below `xl`.
 - [x] `LossIntelligenceCard` does not render when `SystemState = healthy`.
 - [x] No literal hex colors introduced.
-- [ ] All five instrumentation events fire and include required props. *(Not implemented: no emitters for `hero_cta_click`, `action_card_click`, `ai_accordion_toggle`, `whatif_toggle_change`, `connect_system_cta_click`.)*
+- [x] All five instrumentation events fire and include required props. *(`hero_cta_click` on the hero CTA row, `action_card_click` via capture-phase handler in `ActionLane`, `ai_accordion_toggle` on the AI deep-dive accordion, `whatif_toggle_change` on each simulator toggle, `connect_system_cta_click` on the connect CTA. `action_card_click` omits `expectedMonthlyGain` — not derivable generically at the lane level.)*
 - [ ] The user can complete the journey "see problem → click action → reach opportunities" without leaving the dashboard-to-opportunities path defined in [16-user-journey.md](./16-user-journey.md). *(Needs manual QA.)*

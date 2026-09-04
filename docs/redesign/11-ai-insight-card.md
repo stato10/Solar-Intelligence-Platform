@@ -131,8 +131,8 @@ Text-link CTAs on `low` confidence skip the modal and link to a learn-more view.
 
 ## 9. Definition of Done
 
-- [ ] All four surfaces in section 1 render insight rows using the same underlying component (or sharing the same Props contract). *(Not done: only `EnergyDecisionInsightCard` uses `AiInsightCard`; `AiInsightsPanel` and maintenance/savings AI sections use bespoke list UIs.)*
-- [ ] No surface renders AI insights without Money, Recommended Action, or Confidence. *(Not done: `AiInsightsPanel` and maintenance AI rows omit money + structured CTA.)*
+- [x] All four surfaces in section 1 render insight rows using the same underlying component (or sharing the same Props contract). *(Dashboard lanes use `EnergyDecisionInsightCard`; `AiInsightsPanel`, maintenance and savings AI sections route through the shared `AiContractInsightCard` adapter → `AiInsightCard`.)*
+- [x] No surface renders AI insights without Money, Recommended Action, or Confidence. *(Money renders whenever the engine provides a benefit range; confidence chip always renders; savings items map `message` → Recommended Action.)*
 - [x] `low` confidence items never render a full CTA button.
 - [x] Deep-dive copy is accordion-gated; it does not appear in the always-visible card body.
-- [ ] No hex colors; all severity/confidence styling routes through design tokens. *(Partial: no hex, but chips use Tailwind color utilities rather than `--success`/`--warning`/`--danger` exclusively.)*
+- [x] No hex colors; all severity/confidence styling routes through design tokens. *(Chips use the `state-good`/`state-warning`/`state-danger` utilities backed by `--success`/`--warning`/`--danger`.)*

@@ -1,4 +1,7 @@
+"use client";
+
 import { AlertTriangle, CheckCircle2, Flame, Sparkles, TrendingUp } from "lucide-react";
+import { track } from "@/lib/analytics/client";
 import type { HeroInsightVm } from "@/lib/view-models/dashboard";
 import type { SemanticStatus } from "@/lib/utils/formatters";
 import { formatCurrency } from "@/lib/utils/formatters";
@@ -192,8 +195,23 @@ export function HeroInsightCard({ hero, opportunities = [], siteId, siteName, ac
           </div>
         )}
 
-        {/* Primary CTA placeholder or action card */}
-        <div className="mt-6">
+        {/* Primary CTA placeholder or action card.
+            `onClickCapture` covers both CTA shapes (plain button and the
+            marketplace action card) — doc 02 §9 `hero_cta_click`. */}
+        <div
+          className="mt-6"
+          onClickCapture={() =>
+            track(
+              "hero_cta_click",
+              {
+                systemState: hero.systemState,
+                actionId: hero.ctaType,
+                priority: "high",
+              },
+              { surface: "dashboard", siteId },
+            )
+          }
+        >
           {hero.ctaType === "cleaning" && opportunities.find((o) => o.topic === "cleaning") ? (
             <MarketplaceActionCard
               title="Panel Cleaning Required"
