@@ -40,6 +40,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics/client";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { useSidebarBadges } from "@/hooks/use-sidebar-badges";
 import { SiteSelector } from "./site-selector";
 import { SidebarSystemStatus } from "./SidebarSystemStatus";
@@ -144,6 +145,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen bg-slate-950 text-slate-100">
+      {/* page_view instrumentation — fires on every route change (doc 17 §3.2) */}
+      <PageViewTracker />
+
       {/* Mobile drawer overlay */}
       {isMobileMenuOpen && (
         <div

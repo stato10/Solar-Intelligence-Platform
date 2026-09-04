@@ -6,11 +6,27 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Battery, Sparkles, Zap } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { useCurrency } from "@/hooks/use-currency";
+import { track } from "@/lib/analytics/client";
 
 interface SimulationParams {
   cleaning: boolean;
   battery: boolean;
   automation: boolean;
+}
+
+/** Projected monthly profit for a toggle combination — kept pure so the
+ *  analytics handler can compute the post-toggle delta before rendering. */
+function projectMonthly(
+  params: SimulationParams,
+  currentMonthlyIls: number,
+  maintenanceLeakageMonthlyIls: number,
+  headroomMonthlyIls: number,
+): number {
+  let after = currentMonthlyIls;
+  if (params.cleaning) after += maintenanceLeakageMonthlyIls;
+  if (params.battery) after += (headroomMonthlyIls * 12 * 0.3) / 12;
+  if (params.automation) after += (headroomMonthlyIls * 12 * 0.15) / 12;
+  return after;
 }
 
 interface WhatIfSimulatorProps {
@@ -32,27 +48,32 @@ export function WhatIfSimulator({
     automation: false,
   });
 
+  // doc 02 §9 / doc 17 §3.4 — `whatif_toggle_change` { toggleId, value, deltaNis }.
+  const handleToggle = (toggleId: keyof SimulationParams) => {
+    const next = { ...params, [toggleId]: !params[toggleId] };
+    const nextDelta =
+      projectMonthly(next, currentMonthlyIls, maintenanceLeakageMonthlyIls, headroomMonthlyIls) -
+      currentMonthlyIls;
+    track(
+      "whatif_toggle_change",
+      { toggleId, value: next[toggleId], deltaNis: Math.round(nextDelta) },
+      { surface: "dashboard" },
+    );
+    setParams(next);
+  };
+
   // Replicating the backend financial engine logic for instant local state preview
   // Real deployment would hit an endpoint on toggle, but local gives instant 60fps UX.
-  let afterMonthlyIls = currentMonthlyIls;
+  const afterMonthlyIls = projectMonthly(
+    params,
+    currentMonthlyIls,
+    maintenanceLeakageMonthlyIls,
+    headroomMonthlyIls,
+  );
   let hardwareCost = 0;
-  
-  if (params.cleaning) {
-    afterMonthlyIls += maintenanceLeakageMonthlyIls;
-    hardwareCost += 400; 
-  }
-  
-  if (params.battery) {
-    const batteryGain = (headroomMonthlyIls * 12 * 0.3) / 12; // 30% of headroom
-    afterMonthlyIls += batteryGain;
-    hardwareCost += 15000;
-  }
-  
-  if (params.automation) {
-    const autoGain = (headroomMonthlyIls * 12 * 0.15) / 12; // 15% of headroom
-    afterMonthlyIls += autoGain;
-    hardwareCost += 1200;
-  }
+  if (params.cleaning) hardwareCost += 400;
+  if (params.battery) hardwareCost += 15000;
+  if (params.automation) hardwareCost += 1200;
 
   const deltaMonthly = afterMonthlyIls - currentMonthlyIls;
   const yearlyGain = deltaMonthly * 12;
@@ -85,21 +106,21 @@ export function WhatIfSimulator({
             icon={<Sparkles className="w-4 h-4" />}
             title="Clean Solar Panels" 
             desc={`Recover ~${money(maintenanceLeakageMonthlyIls)}/mo in dust losses`}
-            onToggle={() => setParams(p => ({ ...p, cleaning: !p.cleaning }))}
+            onToggle={() => handleToggle("cleaning")}
           />
           <ToggleRow 
             active={params.battery}
             icon={<Battery className="w-4 h-4" />}
             title="Add 5kWh Battery" 
             desc="Store lost exports for night-time use"
-            onToggle={() => setParams(p => ({ ...p, battery: !p.battery }))}
+            onToggle={() => handleToggle("battery")}
           />
           <ToggleRow 
             active={params.automation}
             icon={<Zap className="w-4 h-4" />}
             title="Smart Home Connect" 
             desc="Automate heavy loads to peak hours"
-            onToggle={() => setParams(p => ({ ...p, automation: !p.automation }))}
+            onToggle={() => handleToggle("automation")}
           />
         </div>
 

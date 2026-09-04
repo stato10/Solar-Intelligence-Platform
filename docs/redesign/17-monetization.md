@@ -123,7 +123,7 @@ Variants must never affect the lead payload schema. Only UI text and ordering.
 
 - [ ] Every revenue surface in section 2 emits `cta_click` with `revenueStream` derivable from `ctaKind` + `recommendationType`. *(Partial: wired CTAs emit `cta_click`; `revenueStream` only appears on `conversion_complete` and not all revenue surfaces emit.)*
 - [x] Every conversion-flow step emits its lifecycle event (section 3.1).
-- [ ] Every page emits `page_view` with `systemState` on mount. *(Not implemented.)*
-- [ ] `subscription_upsell_shown` fires on every surface listed in section 3.3. *(Not implemented; the Premium badge is untracked.)*
+- [x] Every page emits `page_view` with `systemState` on mount. *(`PageViewTracker` in `AppShell` fires on every route change; `systemState` is read from the page's `[data-system-state]` marker — dashboard hero + zero-data hero expose it, other pages report "unknown".)*
+- [x] `subscription_upsell_shown` fires on every surface listed in section 3.3. *(Fires from `SidebarUtilityZone` with `surface: "sidebar_utility"`; `dashboard_right` and `opportunities` upsell surfaces don't exist in the UI yet and will wire the same event when added.)*
 - [x] No event payload contains raw PII.
-- [ ] All 6 ratios in section 4 can be computed from the emitted events alone. *(Blocked by missing `page_view`, impression, and upsell events.)*
+- [ ] All 6 ratios in section 4 can be computed from the emitted events alone. *(Partial: `page_view`, upsell, and dashboard events now emit; `hero_impression` / `action_lane_impression` / `opportunities_section_impression` still missing, and events are console-only — no transport to a backend yet.)*

@@ -77,7 +77,9 @@ export interface AiInsightCardProps {
 }
 
 // ---------------------------------------------------------------------------
-// Chip styling — never use raw hex; routes through semantic Tailwind tokens.
+// Chip styling — routes through the `--success` / `--warning` / `--danger`
+// state tokens (docs/redesign/00-design-tokens.md) via the shared
+// `state-*` utilities; never raw hex or ad-hoc palette classes.
 // ---------------------------------------------------------------------------
 const CONFIDENCE_CHIP: Record<
   InsightConfidence,
@@ -85,30 +87,30 @@ const CONFIDENCE_CHIP: Record<
 > = {
   high: {
     label: "High confidence",
-    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    className: "state-good text-[color:var(--success)]",
   },
   medium: {
     label: "Medium confidence",
-    className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    className: "state-warning text-[color:var(--warning)]",
   },
   low: {
     label: "Low confidence",
-    className: "border-slate-500/30 bg-slate-500/10 text-slate-400",
+    className: "bg-muted/40 border-border/60 text-muted-foreground",
   },
 };
 
 const SEVERITY_CHIP: Record<InsightSeverity, { label: string; className: string }> = {
   critical: {
     label: "Critical",
-    className: "border-rose-500/30 bg-rose-500/10 text-rose-400",
+    className: "state-danger text-[color:var(--danger)]",
   },
   warning: {
     label: "Warning",
-    className: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    className: "state-warning text-[color:var(--warning)]",
   },
   info: {
     label: "Info",
-    className: "border-slate-500/30 bg-slate-500/10 text-slate-400",
+    className: "bg-muted/40 border-border/60 text-muted-foreground",
   },
 };
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock, Zap, BarChart3, ActivitySquare, ArrowRight } from "lucide-react";
+import { track } from "@/lib/analytics/client";
 
 export function HardwareConnectCta({ className = "" }: { className?: string }) {
   const [connecting, setConnecting] = useState(false);
@@ -50,7 +51,18 @@ export function HardwareConnectCta({ className = "" }: { className?: string }) {
 
         {!connecting ? (
           <div className="bg-black/30 p-4 rounded-xl border border-indigo-500/10 flex flex-col gap-3 transition-all">
-            <Button onClick={() => setConnecting(true)} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold group shadow-lg shadow-indigo-900/50">
+            <Button
+              onClick={() => {
+                // doc 02 §9 — `connect_system_cta_click` { surface: "dashboard_right" }.
+                track(
+                  "connect_system_cta_click",
+                  { surface: "dashboard_right" },
+                  { surface: "dashboard" },
+                );
+                setConnecting(true);
+              }}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold group shadow-lg shadow-indigo-900/50"
+            >
               <Zap className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform text-indigo-200" />
               Connect System safely
             </Button>

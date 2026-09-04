@@ -30,9 +30,21 @@ interface AccordionRootProps {
    * that copy Radix patterns keep compiling.
    */
   collapsible?: boolean;
+  /**
+   * Radix-parity change callback. In `single` mode receives the newly open
+   * item's value, or `""` when the open item was collapsed. In `multiple`
+   * mode receives the toggled item's value.
+   */
+  onValueChange?: (value: string) => void;
 }
 
-function Accordion({ type = "single", defaultValue, className, children }: AccordionRootProps) {
+function Accordion({
+  type = "single",
+  defaultValue,
+  className,
+  children,
+  onValueChange,
+}: AccordionRootProps) {
   const initial = defaultValue
     ? Array.isArray(defaultValue)
       ? defaultValue
@@ -43,15 +55,20 @@ function Accordion({ type = "single", defaultValue, className, children }: Accor
 
   const toggle = React.useCallback(
     (value: string) => {
-      if (type === "single") {
-        setOpenItems((prev) => (prev.includes(value) ? [] : [value]));
-      } else {
-        setOpenItems((prev) =>
-          prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-        );
-      }
+      const next =
+        type === "single"
+          ? openItems.includes(value)
+            ? []
+            : [value]
+          : openItems.includes(value)
+            ? openItems.filter((v) => v !== value)
+            : [...openItems, value];
+      setOpenItems(next);
+      // Notify outside the state updater so StrictMode's double-invoke
+      // never fires the callback twice per interaction.
+      onValueChange?.(type === "single" ? (next[0] ?? "") : value);
     },
-    [type]
+    [type, openItems, onValueChange]
   );
 
   return (

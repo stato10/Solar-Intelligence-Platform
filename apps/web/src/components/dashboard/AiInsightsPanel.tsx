@@ -3,35 +3,36 @@
 import { Sparkles, Terminal } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { AiInsightContractOutputV3, InsightItem, EnergyDecisionItem, ProductRecommendationItem } from "@/lib/contracts";
-import { formatBenefitRangeIlsMonthly, formatSourceRefsForDisplay } from "@/lib/view-models/ai-insights";
-import { useCurrency } from "@/hooks/use-currency";
+import { AiContractInsightCard, type ContractInsightLike } from "@/components/ai/AiContractInsightCard";
 
 interface AiInsightsPanelProps {
   data: AiInsightContractOutputV3 | null;
   errorMessage: string | null;
 }
 
+/** Both v3 item unions fit `ContractInsightLike` structurally; energy
+ *  decisions name their benefit range `estimated…` instead of `expected…`. */
+function toContractInsight(item: InsightItem | EnergyDecisionItem): ContractInsightLike {
+  // Both range props are optional, so `in`-narrowing cannot discriminate the
+  // union — read each side through a Partial view instead.
+  const asInsight = item as Partial<InsightItem>;
+  const asDecision = item as Partial<EnergyDecisionItem>;
+  return {
+    ...item,
+    expectedBenefitRangeIlsMonthly:
+      asInsight.expectedBenefitRangeIlsMonthly ??
+      asDecision.estimatedBenefitRangeIlsMonthly,
+  };
+}
+
 function InsightList({ items }: { items: InsightItem[] | EnergyDecisionItem[] }) {
   if (!items.length) return <p className="text-sm text-muted-foreground">No insights in this category.</p>;
-  
+
   return (
     <ul className="space-y-3">
       {items.map((item) => (
-        <li key={item.id} className="rounded-xl border border-border/80 bg-card/60 px-4 py-3">
-          <div className="flex items-start justify-between">
-            <p className="font-semibold text-sm">{item.title}</p>
-            <span className="text-[10px] uppercase tracking-wider font-semibold opacity-70 bg-muted px-2 py-0.5 rounded-full">
-              {item.severity} severity
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">{item.message}</p>
-          <div className="mt-3 text-xs opacity-80 border-l-2 border-primary/20 pl-2">
-            <p className="font-medium text-foreground">Why this was flagged:</p>
-            <p>{item.reason.text}</p>
-            <p className="mt-1 text-[10px] opacity-70">
-              Sources: {formatSourceRefsForDisplay(item.reason.sourceRefs)}
-            </p>
-          </div>
+        <li key={item.id}>
+          <AiContractInsightCard item={toContractInsight(item)} />
         </li>
       ))}
     </ul>
@@ -39,27 +40,27 @@ function InsightList({ items }: { items: InsightItem[] | EnergyDecisionItem[] })
 }
 
 function ProductList({ items }: { items: ProductRecommendationItem[] }) {
-  const { currency, locale } = useCurrency();
   if (!items.length) return <p className="text-sm text-muted-foreground">No products suggested at this time.</p>;
-  
+
   return (
     <ul className="space-y-3">
-      {items.map((p) => {
-        const rangeText = formatBenefitRangeIlsMonthly(p.expectedBenefitRangeIlsMonthly, { currency, locale });
-        return (
-          <li key={p.id} className="rounded-xl border border-border/80 bg-card/60 px-4 py-3">
-            <div className="flex items-start justify-between">
-              <p className="font-semibold text-sm">{p.name}</p>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">{p.useCase}</p>
-            <div className="mt-3 text-xs opacity-80 border-l-2 border-primary/20 pl-2">
-              <p className="font-medium text-foreground">Why relevant:</p>
-              <p>{p.whyRelevant.text}</p>
-              {rangeText && <p className="mt-1 font-medium text-emerald-600 dark:text-emerald-400">Est. benefit: {rangeText}</p>}
-            </div>
-          </li>
-        );
-      })}
+      {items.map((p) => (
+        <li key={p.id}>
+          <AiContractInsightCard
+            item={{
+              id: p.id,
+              title: p.name,
+              message: p.useCase,
+              severity: p.severity,
+              confidence: p.confidence,
+              actionability: p.actionability,
+              reason: p.reason,
+              expectedBenefitRangeIlsMonthly: p.expectedBenefitRangeIlsMonthly,
+            }}
+            extraWhy={p.whyRelevant.text}
+          />
+        </li>
+      ))}
     </ul>
   );
 }
